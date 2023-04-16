@@ -36,5 +36,14 @@ Based on the extracted metadata about the matches, video metadata should be crea
 * Screen with image of the MVP and the players statistics over the entire match.
 
 ## Extracting highlights
+When the vods are downloaded and ready, the next step is cutting the full video into a video that only includes the highlights. The method for finding the segments of the video that need to be kept depends on the specific game but the objective is the same. For each vod the exact time of the game starting in the video needs to be found. Ater this, a timeline of all relevant events in the game can be created and overlayed on the vod. Based on certain parameters, created to make the video short while still capturing all the most relevant moments, actual segments can be cut out of the vod. 
 
-## Creating videos
+### Counter-Strike
+For Counter-Strike we want to capture all kills in the timeline and other large damage events such as hits without killing, grenades, and incendiary damage. Furthermore we want to capture large round events such as the round starting, bomb being planted, bomb exploding, bomb being defused, and round ending. The full list of events can be found [here](https://wiki.alliedmods.net/Counter-Strike:_Global_Offensive_Events). 
+
+### Valorant
+
+### League of Legends
+
+## Creating and uploading videos
+The highlight segments are put together into a single video with minor extra changes such as adding a longer intro, statistics between each map, and statistics at the end of the game.
