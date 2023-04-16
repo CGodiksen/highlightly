@@ -20,6 +20,20 @@ For League of Legends, matches are scraped from the [op.gg](https://esports.op.g
 The above is for pre-game scraping, when getting close to the estimated end time, the match page URL should be repeatedly checked for if the match is done. Based on the current result the estimated end time can be changed. When finished, the corresponding vod page on the LoL Esports website should be found. The VOD for each map should be downloaded from the page for the game. Furthermore, to make it possible to show statistics at the end of the video and between maps the per-player and per-map statistics are extracted. The MVP of the match is estimated based on the the players statistics (inspired by OP score). 
 
 ## Creating video metadata
+Based on the extracted metadata about the matches, video metadata should be created. The objective is to generate as much as possible before the game is finished to avoid extra processing after the game. The following is a list of what needs to be generated for each video and how it is generated.
+
+### Pre-game
+* Title - Generated based on the teams, tournament and tournament context.
+* Description - Generated based on the teams, tournament and links used for external services.
+* Tags - Generated based on teams, players, tournament, tournament context and countries.
+* Thumbnail - Generated based on in-game image, teams, countries, tournament, and tournament context.
+* Game - What game the video is created for.
+* Category - Always gaming.
+
+### Post-game
+* Scoreboard and general statistics for each map.
+* Scoreboard and general statistics for the entire match.
+* Screen with image of the MVP and the players statistics over the entire match.
 
 ## Extracting highlights
 
