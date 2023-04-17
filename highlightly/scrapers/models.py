@@ -23,6 +23,7 @@ class Team(models.Model):
 
     nationality = models.CharField(max_length=256)
     ranking = models.IntegerField(validators=[MinValueValidator(1)])
+    url = models.URLField(max_length=128)
 
 
 class ScheduledMatch(models.Model):
@@ -44,4 +45,5 @@ class ScheduledMatch(models.Model):
     start_time = models.DateTimeField()
     estimated_end_time = models.DateTimeField()
 
+    create_video = models.BooleanField()
     finished = models.BooleanField(default=False)
