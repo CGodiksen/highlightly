@@ -37,3 +37,9 @@ class ScheduledMatchSerializer(serializers.ModelSerializer):
         model = ScheduledMatch
         fields = ["id", "team_1", "team_2", "tournament", "tournament_context", "type", "tier", "url", "created_at",
                   "start_time", "estimated_end_time", "create_video", "finished"]
+
+
+class ScheduledMatchUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScheduledMatch
+        fields = ["create_video"]
