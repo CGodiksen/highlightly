@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -13,3 +14,12 @@ class Tournament(models.Model):
 
     logo_filename = models.CharField(max_length=256)
     url = models.URLField(max_length=128)
+
+
+class Team(models.Model):
+    game = models.CharField(max_length=32, choices=Game.choices)
+    name = models.CharField(max_length=128)
+    logo_filename = models.CharField(max_length=256)
+
+    nationality = models.CharField(max_length=256)
+    ranking = models.IntegerField(validators=[MinValueValidator(1)])
