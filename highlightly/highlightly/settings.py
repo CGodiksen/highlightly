@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'scrapers.apps.ScrapersConfig',
     'highlights.apps.HighlightsConfig',
+    'videos.apps.VideosConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
