@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from scrapers.models import Tournament, Team, ScheduledMatch
+
+admin.site.register(Tournament)
+admin.site.register(Team)
+admin.site.register(ScheduledMatch)

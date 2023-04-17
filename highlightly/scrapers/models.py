@@ -27,6 +27,9 @@ class Team(models.Model):
 
 
 class ScheduledMatch(models.Model):
+    class Meta:
+        verbose_name_plural = "Scheduled matches"
+
     class Type(models.TextChoices):
         BEST_OF_1 = "BEST_OF_1", "Best of 1"
         BEST_OF_3 = "BEST_OF_3", "Best of 3"
