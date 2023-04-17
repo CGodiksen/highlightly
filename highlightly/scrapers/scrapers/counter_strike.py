@@ -1,13 +1,17 @@
-def list_upcoming_matches() -> list:
-    """Scrape HLTV for upcoming Counter-Strike matches and return the list of matches."""
-    return []
+from scrapers.scrapers.scraper import Scraper
 
 
-def filter_already_scheduled_matches(matches: list) -> list:
-    """Remove the matches from the given list of matches that already have a corresponding ScheduledMatch object."""
-    return matches
+class CounterStrikeScraper(Scraper):
+    """Webscraper that scrapes hltv.org for upcoming Counter-Strike matches."""
 
+    @staticmethod
+    def list_upcoming_matches() -> list:
+        return []
 
-def create_scheduled_match(match) -> None:
-    """Based on the match data and extra information retrieved from the match URL, create a ScheduledMatch object."""
-    pass
+    @staticmethod
+    def filter_already_scheduled_matches(matches: list) -> list:
+        return matches
+
+    @staticmethod
+    def create_scheduled_match(match) -> None:
+        pass
