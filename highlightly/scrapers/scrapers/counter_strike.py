@@ -51,7 +51,7 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def create_tournament(match: Match) -> Tournament:
-        tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"])
+        tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
             # TODO: Retrieve the team logo.
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
@@ -59,10 +59,27 @@ class CounterStrikeScraper(Scraper):
 
         return tournament
 
-
     @staticmethod
-    def create_teams(match: Match) -> (Team, Team):
-        pass
+    def create_team(match: Match, team_name) -> Team:
+        team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
+        if team is None:
+            # Find the HLTV team url using the name of the team.
+            team_url = get_hltv_team_url(team_name)
+
+            # Extract the nationality and world ranking of the team.
+            html = requests.get(url=team_url).text
+            soup = BeautifulSoup(html, "html.parser")
+
+            nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
+            ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
+
+            # TODO: Retrieve the team logo.
+            logo_filename = None
+
+            team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
+                                       nationality=nationality, ranking=ranking, url=team_url)
+
+        return team
 
     @staticmethod
     def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
