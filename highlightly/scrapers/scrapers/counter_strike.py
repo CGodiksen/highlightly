@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -53,9 +53,11 @@ class CounterStrikeScraper(Scraper):
     def create_tournament(match: Match) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
-            # TODO: Retrieve the team logo.
+            # TODO: Retrieve the tournament logo.
+            logo_filename = None
+
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
-                                                   logo_filename=None, url=match["tournament_url"])
+                                                   logo_filename=logo_filename, url=match["tournament_url"])
 
         return tournament
 
@@ -83,9 +85,23 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
-        # TODO: Open the match url to find the tournament context.
-        # TODO: Estimate the end datetime based on the start datetime and format.
-        pass
+        # Open the match url to find the tournament context.
+        html = requests.get(url=match["url"]).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        tournament_context = soup.find("a", class_="stage", href=True).text
+
+        # Estimate the end datetime based on the start datetime and format.
+        minimum_minutes = convert_format_to_minimum_time(match["format"])
+        estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
+
+        # Automatically mark the scheduled game for highlight creation if it is tier 4 or higher.
+        create_video = match["tier"] >= 4
+
+        ScheduledMatch.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
+                                      tournament_context=tournament_context, tier=match["tier"], url=match["url"],
+                                      start_datetime=match["start_datetime"], create_video=create_video,
+                                      estimated_end_datetime=estimated_end_datetime)
 
 
 def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
@@ -103,6 +119,19 @@ def convert_number_to_format(number: int) -> ScheduledMatch.Format:
         return ScheduledMatch.Format.BEST_OF_3
     else:
         return ScheduledMatch.Format.BEST_OF_5
+
+
+def convert_format_to_minimum_time(match_format: ScheduledMatch.Format) -> int:
+    """
+    Return the minimum number of minutes required to complete a match with the given format. We assume each game takes
+    at least 30 minutes and that there is at least 5 minutes of break between games.
+    """
+    if match_format == ScheduledMatch.Format.BEST_OF_1:
+        return 1 * 30
+    elif match_format == ScheduledMatch.Format.BEST_OF_3:
+        return (2 * 30) + 5
+    else:
+        return (3 * 30) + 10
 
 
 def get_hltv_team_url(team_name: str) -> str | None:
