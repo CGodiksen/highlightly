@@ -12,7 +12,7 @@ class Tournament(models.Model):
     game = models.CharField(max_length=32, choices=Game.choices)
     name = models.CharField(max_length=128)
 
-    logo_filename = models.CharField(max_length=256)
+    logo_filename = models.CharField(max_length=256, blank=True, null=True)
     url = models.URLField(max_length=128, blank=True, null=True)
 
 
@@ -26,6 +26,9 @@ class Team(models.Model):
     url = models.URLField(max_length=128)
 
 
+# TODO: When a scheduled match is created a websocket message should be sent.
+# TODO: A new task to create metadata for the video related to the match should also be started.
+# TODO: A django celery beat periodic task should also be started to check for if the video is done.
 class ScheduledMatch(models.Model):
     class Meta:
         verbose_name_plural = "Scheduled matches"

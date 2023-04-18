@@ -3,7 +3,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scrapers.models import ScheduledMatch, Tournament, Team
+from scrapers.models import ScheduledMatch, Tournament, Team, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import Match
 
@@ -48,6 +48,21 @@ class CounterStrikeScraper(Scraper):
                                      "tournament_name": tournament_name, "tournament_url": tournament_url})
 
         return upcoming_matches
+
+    @staticmethod
+    def create_tournament(match: Match) -> Tournament:
+        tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"])
+        if tournament is None:
+            # TODO: Retrieve the team logo.
+            tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
+                                                   logo_filename=None, url=match["tournament_url"])
+
+        return tournament
+
+
+    @staticmethod
+    def create_teams(match: Match) -> (Team, Team):
+        pass
 
     @staticmethod
     def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
