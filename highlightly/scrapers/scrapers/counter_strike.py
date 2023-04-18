@@ -50,10 +50,6 @@ class CounterStrikeScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def filter_already_scheduled_matches(matches: list[Match]) -> list[Match]:
-        return matches
-
-    @staticmethod
     def create_scheduled_match(match: Match) -> None:
         pass
 

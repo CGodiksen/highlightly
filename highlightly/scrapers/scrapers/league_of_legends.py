@@ -9,9 +9,5 @@ class LeagueOfLegendsScraper(Scraper):
         return []
 
     @staticmethod
-    def filter_already_scheduled_matches(matches: list) -> list:
-        return matches
-
-    @staticmethod
     def create_scheduled_match(match) -> None:
         pass
