@@ -26,8 +26,12 @@ class CounterStrikeScraper(Scraper):
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
             cell_anchor = row.find(class_="c-global-match-link")
+            team_divs = cell_anchor.find_all(class_="team-name")
             table_cell = row.find(class_="table-cell tournament")
             tournament_anchor = row.find(class_="o-link", href=True)
+
+            team_1_name = team_divs[0].text
+            team_2_name = team_divs[1].text
 
             match_url_postfix = cell_anchor["href"].replace("/prematch", "")
             match_url = f"{base_url}{match_url_postfix}"
@@ -39,9 +43,9 @@ class CounterStrikeScraper(Scraper):
             tournament_name: str = table_cell["tournament-name"]
             tournament_url = f"{base_url}{tournament_anchor['href']}"
 
-            upcoming_matches.append({"url": match_url, "start_datetime": start_datetime, "tier": tier,
-                                     "format": match_format, "tournament_name": tournament_name,
-                                     "tournament_url": tournament_url})
+            upcoming_matches.append({"url": match_url, "team_1": team_1_name, "team_2": team_2_name,
+                                     "start_datetime": start_datetime, "tier": tier, "format": match_format,
+                                     "tournament_name": tournament_name, "tournament_url": tournament_url})
 
         return upcoming_matches
 
