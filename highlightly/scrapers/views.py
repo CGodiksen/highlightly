@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
 from scrapers import tasks
+from scrapers import serializers
 from scrapers.models import ScheduledMatch
-from scrapers.serializers import ScheduledMatchUpdateSerializer, ScheduledMatchSerializer
 
 T = TypeVar("T", bound=ModelSerializer)
 
@@ -18,17 +18,25 @@ class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, m
                             viewsets.GenericViewSet):
     def get_serializer_class(self) -> Type[T]:
         if self.action == "update":
-            return ScheduledMatchUpdateSerializer
+            return serializers.ScheduledMatchUpdateSerializer
         else:
-            return ScheduledMatchSerializer
+            return serializers.ScheduledMatchSerializer
 
     def get_queryset(self) -> QuerySet[ScheduledMatch]:
         return ScheduledMatch.objects.all().order_by("-start_time")
 
     @action(detail=False, methods=["POST"])
     def scrape(self, request: Request) -> Response:
-        tasks.scrape_counter_strike_matches.delay()
-        tasks.scrape_league_of_legends_matches.delay()
-        tasks.scrape_valorant_matches.delay()
+        serializer = serializers.ScrapeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if "game" not in serializer.validated_data or serializer.validated_data["game"] == "counter-strike":
+            tasks.scrape_counter_strike_matches.delay()
+
+        if "game" not in serializer.validated_data or serializer.validated_data["game"] == "league-of-legends":
+            tasks.scrape_league_of_legends_matches.delay()
+
+        if "game" not in serializer.validated_data or serializer.validated_data["game"] == "valorant":
+            tasks.scrape_valorant_matches.delay()
 
         return Response({}, status=status.HTTP_200_OK)

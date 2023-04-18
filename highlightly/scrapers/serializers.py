@@ -43,3 +43,7 @@ class ScheduledMatchUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScheduledMatch
         fields = ["create_video"]
+
+
+class ScrapeSerializer(serializers.Serializer):
+    game = serializers.ChoiceField(choices=["counter-strike", "valorant", "league-of-legends"], required=False)
