@@ -86,3 +86,16 @@ def convert_number_to_format(number: int) -> ScheduledMatch.Format:
         return ScheduledMatch.Format.BEST_OF_3
     else:
         return ScheduledMatch.Format.BEST_OF_5
+
+
+def get_hltv_team_url(team_name: str) -> str | None:
+    """Search HLTV for the team name and find the url for the HLTV team page."""
+    html = requests.get(url=f"https://www.hltv.org/search?query={team_name}").text
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Find the table with the "Team" header.
+    team_table_header = soup.find(class_="table-header", string="Team")
+    team_row = team_table_header.find_parent().find_next_sibling() if team_table_header else None
+
+    # Return the url in the first row of the team table.
+    return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None

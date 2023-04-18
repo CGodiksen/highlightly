@@ -21,9 +21,9 @@ class Team(models.Model):
     name = models.CharField(max_length=128)
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
 
-    nationality = models.CharField(max_length=256)
-    ranking = models.IntegerField(validators=[MinValueValidator(1)])
-    url = models.URLField(max_length=128)
+    nationality = models.CharField(max_length=256, blank=True, null=True)
+    ranking = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    url = models.URLField(max_length=128, blank=True, null=True)
 
 
 # TODO: When a scheduled match is created a websocket message should be sent.
