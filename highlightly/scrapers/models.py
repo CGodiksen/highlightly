@@ -30,17 +30,17 @@ class ScheduledMatch(models.Model):
     class Meta:
         verbose_name_plural = "Scheduled matches"
 
-    class Type(models.TextChoices):
-        BEST_OF_1 = "BEST_OF_1", "Best of 1"
-        BEST_OF_3 = "BEST_OF_3", "Best of 3"
-        BEST_OF_5 = "BEST_OF_5", "Best of 5"
+    class Format(models.TextChoices):
+        BEST_OF_1 = "BEST_OF_1", "Bo1"
+        BEST_OF_3 = "BEST_OF_3", "Bo3"
+        BEST_OF_5 = "BEST_OF_5", "Bo5"
 
     team_1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="scheduled_team_1_matches")
     team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="scheduled_team_2_matches")
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
 
     tournament_context = models.CharField(max_length=64)
-    type = models.CharField(max_length=16, choices=Type.choices)
+    format = models.CharField(max_length=16, choices=Format.choices)
     tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     url = models.URLField(max_length=128)
 
