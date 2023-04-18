@@ -23,7 +23,7 @@ class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, m
             return serializers.ScheduledMatchSerializer
 
     def get_queryset(self) -> QuerySet[ScheduledMatch]:
-        return ScheduledMatch.objects.all().order_by("-start_time")
+        return ScheduledMatch.objects.all().order_by("-start_datetime")
 
     @action(detail=False, methods=["POST"])
     def scrape(self, request: Request) -> Response:
@@ -31,7 +31,7 @@ class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, m
         serializer.is_valid(raise_exception=True)
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "counter-strike":
-            tasks.scrape_counter_strike_matches.delay()
+            tasks.scrape_counter_strike_matches()
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "league-of-legends":
             tasks.scrape_league_of_legends_matches.delay()

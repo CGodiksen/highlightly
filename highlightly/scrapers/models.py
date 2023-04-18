@@ -45,8 +45,8 @@ class ScheduledMatch(models.Model):
     url = models.URLField(max_length=128)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    start_time = models.DateTimeField()
-    estimated_end_time = models.DateTimeField()
+    start_datetime = models.DateTimeField()
+    estimated_end_datetime = models.DateTimeField()
 
     create_video = models.BooleanField()
     finished = models.BooleanField(default=False)
