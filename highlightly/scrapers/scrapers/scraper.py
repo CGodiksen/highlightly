@@ -1,4 +1,4 @@
-from scrapers.models import ScheduledMatch
+from scrapers.models import ScheduledMatch, Tournament, Team
 from scrapers.types import Match
 
 
@@ -15,11 +15,24 @@ class Scraper:
                                              team_2__name=match["team_2"]).exists()
 
     @staticmethod
-    def create_scheduled_match(match: Match) -> None:
+    def create_tournament(match: Match) -> Tournament:
         """
-        Based on the information in the given match, create a scheduled match object. If the teams or
-        tournament in the match does not already exist, corresponding objects are created.
+        Based on the information in the given match, create a Tournament object and return it. If an object for the
+        tournament already exists the existing object is returned.
         """
+        raise NotImplementedError
+
+    @staticmethod
+    def create_teams(match: Match) -> (Team, Team):
+        """
+        Based on the information in the given match, create Team objects and return them. If an object for the team
+        already exists the existing object is returned.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+        """Based on the information in the given match, create a ScheduledMatch object."""
         raise NotImplementedError
 
     def scrape(self) -> None:
@@ -38,4 +51,7 @@ class Scraper:
             # TODO: When a scheduled match is created a websocket message should be sent.
             # TODO: A new task to create metadata for the video related to the match should also be started.
             # TODO: A django celery beat periodic task should also be started to check for if the video is done.
-            self.create_scheduled_match(match)
+            tournament = self.create_tournament(match)
+            team_1, team_2 = self.create_teams(match)
+
+            self.create_scheduled_match(match, tournament, team_1, team_2)

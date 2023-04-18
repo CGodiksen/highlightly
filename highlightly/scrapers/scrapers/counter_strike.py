@@ -3,7 +3,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scrapers.models import ScheduledMatch
+from scrapers.models import ScheduledMatch, Tournament, Team
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import Match
 
@@ -50,7 +50,9 @@ class CounterStrikeScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def create_scheduled_match(match: Match) -> None:
+    def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+        # TODO: Open the match url to find the tournament context.
+        # TODO: Estimate the end datetime based on the start datetime and format.
         pass
 
 
