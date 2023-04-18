@@ -55,8 +55,8 @@ class CounterStrikeScraper(Scraper):
     def create_tournament(match: Match) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
-            # TODO: Retrieve the tournament logo.
-            logo_filename = None
+            # Retrieve the tournament logo if possible.
+            logo_filename = get_tournament_logo_filepath(match["tournament_name"])
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    logo_filename=logo_filename, url=match["tournament_url"])
@@ -77,8 +77,8 @@ class CounterStrikeScraper(Scraper):
             nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
             ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
 
-            # TODO: Retrieve the team logo.
-            logo_filename = None
+            # Retrieve the team logo if possible.
+            logo_filename = get_team_logo_filepath(team_url)
 
             team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
                                        nationality=nationality, ranking=ranking, url=team_url)
@@ -147,3 +147,24 @@ def get_hltv_team_url(team_name: str) -> str | None:
 
     # Return the url in the first row of the team table.
     return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None
+
+
+def get_tournament_logo_filepath(tournament_name: str) -> str | None:
+    """
+    Attempt to retrieve the logo from the liquipedia wiki. If the logo is retrieved, return the path to the file,
+    otherwise return None.
+    """
+    # TODO: Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
+    query = f"{tournament_name} site:liquipedia.net"
+    return None
+
+
+def get_team_logo_filepath(team_url: str) -> str | None:
+    """
+    Attempt to retrieve the logo from the HLTV team page, if not possible, attempt to retrieve the team logo from
+    the liquipedia wiki. If the logo is retrieved, return the path to the file. If neither method works, return None.
+    """
+    # TODO: Retrieve the team logo from the HLTV team page.
+    # TODO: If the logo is too small or could not be retrieved at all, attempt to retrieve it from liquipedia.
+
+    return None
