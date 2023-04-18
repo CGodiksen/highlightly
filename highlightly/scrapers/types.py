@@ -5,7 +5,7 @@ from scrapers.models import ScheduledMatch
 
 
 class Match(TypedDict):
-    match_url: str
+    url: str
     start_datetime: datetime
     tier: int
     format: ScheduledMatch.Format
