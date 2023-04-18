@@ -1,3 +1,6 @@
+import requests
+from bs4 import BeautifulSoup
+
 from scrapers.scrapers.scraper import Scraper
 
 
@@ -6,6 +9,12 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def list_upcoming_matches() -> list:
+        matches_url = "https://www.hltv.org/matches"
+        html = requests.get(url=matches_url).text
+
+        soup = BeautifulSoup(html, "html.parser")
+        print(soup.prettify())
+
         return []
 
     @staticmethod

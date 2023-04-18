@@ -1,7 +1,11 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework import routers
 
 from scrapers import views
 
+router = routers.SimpleRouter()
+router.register(r"scheduled_matches", views.ScheduledMatchViewSet, basename="scheduled-match")
+
 urlpatterns = [
-    path('scheduled_match/', views.ScheduledMatchRetrieveUpdateDestroyView.as_view(), name='scheduled_matches'),
+    path('', include(router.urls)),
 ]
