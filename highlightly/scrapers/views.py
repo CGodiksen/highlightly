@@ -31,7 +31,7 @@ class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, m
         serializer.is_valid(raise_exception=True)
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "counter-strike":
-            tasks.scrape_counter_strike_matches()
+            tasks.scrape_counter_strike_matches.delay()
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "league-of-legends":
             tasks.scrape_league_of_legends_matches.delay()

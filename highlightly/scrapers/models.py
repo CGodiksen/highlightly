@@ -15,6 +15,9 @@ class Tournament(models.Model):
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
     url = models.URLField(max_length=128, blank=True, null=True)
 
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_game_display()})"
+
 
 class Team(models.Model):
     game = models.CharField(max_length=32, choices=Game.choices)
@@ -24,6 +27,9 @@ class Team(models.Model):
     nationality = models.CharField(max_length=256, blank=True, null=True)
     ranking = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
     url = models.URLField(max_length=128, blank=True, null=True)
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_game_display()})"
 
 
 # TODO: When a scheduled match is created a websocket message should be sent.
@@ -53,3 +59,6 @@ class ScheduledMatch(models.Model):
 
     create_video = models.BooleanField()
     finished = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return f"{self.team_1} VS. {self.team_2}"

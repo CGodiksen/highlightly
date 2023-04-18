@@ -33,19 +33,21 @@ class CounterStrikeScraper(Scraper):
             team_1_name = team_divs[0].text
             team_2_name = team_divs[1].text
 
-            match_url_postfix = cell_anchor["href"].replace("/prematch", "")
-            match_url = f"{base_url}{match_url_postfix}"
+            # Ignore the match if it currently still contains a "TBD" team.
+            if team_1_name != "TBD" and team_2_name != "TBD":
+                match_url_postfix = cell_anchor["href"].replace("/prematch", "")
+                match_url = f"{base_url}{match_url_postfix}"
 
-            start_datetime = datetime.strptime(table_cell["date"][:-10], "%Y-%m-%dT%H:%M:%S")
-            tier = convert_letter_tier_to_number_tier(table_cell["tier"])
-            match_format = convert_number_to_format(int(table_cell["format"]))
+                start_datetime = datetime.strptime(table_cell["date"][:-10], "%Y-%m-%dT%H:%M:%S")
+                tier = convert_letter_tier_to_number_tier(table_cell["tier"])
+                match_format = convert_number_to_format(int(table_cell["format"]))
 
-            tournament_name: str = table_cell["tournament-name"]
-            tournament_url = f"{base_url}{tournament_anchor['href']}"
+                tournament_name: str = table_cell["tournament-name"]
+                tournament_url = f"{base_url}{tournament_anchor['href']}"
 
-            upcoming_matches.append({"url": match_url, "team_1": team_1_name, "team_2": team_2_name,
-                                     "start_datetime": start_datetime, "tier": tier, "format": match_format,
-                                     "tournament_name": tournament_name, "tournament_url": tournament_url})
+                upcoming_matches.append({"url": match_url, "team_1": team_1_name, "team_2": team_2_name,
+                                         "start_datetime": start_datetime, "tier": tier, "format": match_format,
+                                         "tournament_name": tournament_name, "tournament_url": tournament_url})
 
         return upcoming_matches
 
