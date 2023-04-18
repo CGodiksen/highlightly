@@ -13,7 +13,7 @@ class Tournament(models.Model):
     name = models.CharField(max_length=128)
 
     logo_filename = models.CharField(max_length=256)
-    url = models.URLField(max_length=128)
+    url = models.URLField(max_length=128, blank=True, null=True)
 
 
 class Team(models.Model):
