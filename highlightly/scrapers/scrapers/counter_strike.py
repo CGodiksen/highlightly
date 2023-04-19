@@ -1,9 +1,11 @@
 import os
 import shutil
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup, Tag
+from cairosvg import svg2png
 from serpapi import GoogleSearch
 
 from scrapers.models import ScheduledMatch, Tournament, Team, Game
@@ -48,7 +50,8 @@ class CounterStrikeScraper(Scraper):
             data = extract_tournament_data(soup)
 
             # Download the image from the logo url and save the name of the image file.
-            logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
+            Path("media/tournaments").mkdir(parents=True, exist_ok=True)
+            logo_filename = f"tournaments/{match['tournament_name'].replace(' ', '_')}.png"
             download_image_from_url(data["logo_url"], logo_filename)
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
@@ -75,7 +78,7 @@ class CounterStrikeScraper(Scraper):
             ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
 
             # Retrieve the team logo if possible.
-            logo_filename = get_team_logo_filepath(team_url)
+            logo_filename = get_team_logo_filepath(team_url, team_name)
 
             team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
                                        nationality=nationality, ranking=ranking, url=team_url)
@@ -174,7 +177,7 @@ def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
     return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
 
 
-def get_team_logo_filepath(team_url: str) -> str | None:
+def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
     """
     Attempt to retrieve the logo from the HLTV team page, if not possible, attempt to retrieve the team logo from
     the liquipedia wiki. If the logo is retrieved, return the path to the file. If neither method works, return None.
@@ -182,11 +185,18 @@ def get_team_logo_filepath(team_url: str) -> str | None:
     html = requests.get(url=team_url).text
     soup = BeautifulSoup(html, "html.parser")
 
-    # TODO: Retrieve the team logo from the HLTV team page.
+    # Attempt to retrieve the svg team logo from the HLTV team page.
     logo_url = soup.find("img", class_="teamlogo", src=True)["src"]
+    logo_filename = f"teams/{team_name.replace(' ', '_')}.png"
 
+    if ".svg?" in logo_url:
+        svg = requests.get(logo_url).text
 
-    # TODO: If the logo is too small or could not be retrieved at all, attempt to retrieve it from liquipedia.
+        Path("media/teams").mkdir(parents=True, exist_ok=True)
+        svg2png(bytestring=svg, write_to=f"media/{logo_filename}")
+    else:
+        # If the logo is too small or could not be retrieved from HLTV, attempt to retrieve it from liquipedia.
+        pass
 
     return None
 

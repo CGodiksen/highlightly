@@ -2,6 +2,8 @@ amqp==5.1.1
 asgiref==3.6.0
 beautifulsoup4==4.12.2
 billiard==3.6.4.0
+cairocffi==1.5.1
+CairoSVG==2.7.0
 celery==5.2.7
 certifi==2022.12.7
 cffi==1.15.1
@@ -12,7 +14,9 @@ click-plugins==1.1.1
 click-repl==0.2.0
 colorama==0.4.6
 cryptography==40.0.2
+cssselect2==0.7.0
 decorator==5.1.1
+defusedxml==0.7.1
 Django==4.2
 django-cors-headers==3.14.0
 django-extensions==3.2.1
@@ -25,6 +29,7 @@ idna==3.4
 knox==0.1.14
 kombu==5.2.4
 loguru==0.7.0
+Pillow==9.5.0
 prompt-toolkit==3.0.38
 pycparser==2.21
 pyhcl==0.4.4
@@ -34,9 +39,11 @@ shortuuid==1.0.11
 six==1.16.0
 soupsieve==2.4.1
 sqlparse==0.4.3
+tinycss2==1.2.1
 tzdata==2023.3
 urllib3==1.26.15
 validators==0.20.0
 vine==5.0.0
 wcwidth==0.2.6
+webencodings==0.5.1
 win32-setctime==1.1.0
