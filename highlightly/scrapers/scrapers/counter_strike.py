@@ -144,6 +144,52 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
     return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
             "tier": tier, "type": type, "first_place_prize": first_place_prize, "logo_url": logo_url}
 
+def get_hltv_team_url(team_name: str) -> str | None:
+    """Search HLTV for the team name and find the url for the HLTV team page."""
+    html = requests.get(url=f"https://www.hltv.org/search?query={team_name}").text
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Find the table with the "Team" header.
+    team_table_header = soup.find(class_="table-header", string="Team")
+    team_row = team_table_header.find_parent().find_next_sibling() if team_table_header else None
+
+    # Return the url in the first row of the team table.
+    return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None
+
+
+def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
+    """
+    Attempt to retrieve the url for the tournaments liquipedia wiki page. Since the liquipedia wiki search is faulty,
+    use Google Search to find the corresponding liquipedia page.
+    """
+    # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
+    search = GoogleSearch({
+        "engine": "google",
+        "api_key": os.environ["SERP_API_KEY"],
+        "q": f"{tournament_name} site:https://liquipedia.net/counterstrike",
+        "as_qdr": "w2"
+    })
+    result = search.get_dict()
+
+    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
+
+
+def get_team_logo_filepath(team_url: str) -> str | None:
+    """
+    Attempt to retrieve the logo from the HLTV team page, if not possible, attempt to retrieve the team logo from
+    the liquipedia wiki. If the logo is retrieved, return the path to the file. If neither method works, return None.
+    """
+    html = requests.get(url=team_url).text
+    soup = BeautifulSoup(html, "html.parser")
+
+    # TODO: Retrieve the team logo from the HLTV team page.
+    logo_url = soup.find("img", class_="teamlogo", src=True)["src"]
+
+
+    # TODO: If the logo is too small or could not be retrieved at all, attempt to retrieve it from liquipedia.
+
+    return None
+
 
 def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
     """Return the data of the row with the given text in the tournament information table."""
@@ -186,44 +232,3 @@ def convert_format_to_minimum_time(match_format: ScheduledMatch.Format) -> int:
         return (2 * 30) + 5
     else:
         return (3 * 30) + 10
-
-
-def get_hltv_team_url(team_name: str) -> str | None:
-    """Search HLTV for the team name and find the url for the HLTV team page."""
-    html = requests.get(url=f"https://www.hltv.org/search?query={team_name}").text
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Find the table with the "Team" header.
-    team_table_header = soup.find(class_="table-header", string="Team")
-    team_row = team_table_header.find_parent().find_next_sibling() if team_table_header else None
-
-    # Return the url in the first row of the team table.
-    return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None
-
-
-def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
-    """
-    Attempt to retrieve the url for the tournaments liquipedia wiki page. Since the liquipedia wiki search is faulty,
-    use Google Search to find the corresponding liquipedia page.
-    """
-    # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
-    search = GoogleSearch({
-        "engine": "google",
-        "api_key": os.environ["SERP_API_KEY"],
-        "q": f"{tournament_name} site:https://liquipedia.net/counterstrike",
-        "as_qdr": "w2"
-    })
-    result = search.get_dict()
-
-    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
-
-
-def get_team_logo_filepath(team_url: str) -> str | None:
-    """
-    Attempt to retrieve the logo from the HLTV team page, if not possible, attempt to retrieve the team logo from
-    the liquipedia wiki. If the logo is retrieved, return the path to the file. If neither method works, return None.
-    """
-    # TODO: Retrieve the team logo from the HLTV team page.
-    # TODO: If the logo is too small or could not be retrieved at all, attempt to retrieve it from liquipedia.
-
-    return None
