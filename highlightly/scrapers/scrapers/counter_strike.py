@@ -1,7 +1,9 @@
+import os
 from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup, Tag
+from serpapi import GoogleSearch
 
 from scrapers.models import ScheduledMatch, Tournament, Team, Game
 from scrapers.scrapers.scraper import Scraper
@@ -43,11 +45,10 @@ class CounterStrikeScraper(Scraper):
                 match_format = convert_number_to_format(int(table_cell["format"]))
 
                 tournament_name: str = table_cell["tournament-name"]
-                tournament_url = f"{base_url}{tournament_anchor['href']}"
 
                 upcoming_matches.append({"url": match_url, "team_1": team_1_name, "team_2": team_2_name,
                                          "start_datetime": start_datetime, "tier": tier, "format": match_format,
-                                         "tournament_name": tournament_name, "tournament_url": tournament_url})
+                                         "tournament_name": tournament_name})
 
         return upcoming_matches
 
@@ -55,11 +56,12 @@ class CounterStrikeScraper(Scraper):
     def create_tournament(match: Match) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
-            # Retrieve the tournament logo if possible.
-            logo_filename = get_tournament_logo_filepath(match["tournament_name"])
+            # Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
+            url = get_liquipedia_tournament_url(match["tournament_name"])
+            logo_filename = None
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
-                                                   logo_filename=logo_filename, url=match["tournament_url"])
+                                                   logo_filename=logo_filename, url=url)
 
         return tournament
 
@@ -149,14 +151,19 @@ def get_hltv_team_url(team_name: str) -> str | None:
     return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None
 
 
-def get_tournament_logo_filepath(tournament_name: str) -> str | None:
+def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
     """
-    Attempt to retrieve the logo from the liquipedia wiki. If the logo is retrieved, return the path to the file,
-    otherwise return None.
+    Attempt to retrieve the url for the tournaments liquipedia wiki page. Since the liquipedia wiki search is faulty,
+    use Google Search to find the corresponding liquipedia page.
     """
-    # TODO: Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
-    query = f"{tournament_name} site:liquipedia.net"
-    return None
+    # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
+    search = GoogleSearch({
+        "q": f"{tournament_name} site:https://liquipedia.net/counterstrike",
+        "api_key": os.environ["SERP_API_KEY"]
+    })
+    result = search.get_dict()
+
+    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
 
 
 def get_team_logo_filepath(team_url: str) -> str | None:

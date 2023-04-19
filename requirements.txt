@@ -19,6 +19,7 @@ django-extensions==3.2.1
 django-rest-knox==4.2.0
 djangorestframework==3.14.0
 dynaconf==3.1.12
+google-search-results==2.4.2
 hvac==1.1.0
 idna==3.4
 knox==0.1.14
