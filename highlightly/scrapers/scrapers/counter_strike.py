@@ -56,8 +56,9 @@ class CounterStrikeScraper(Scraper):
     def create_tournament(match: Match) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
-            # Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
             url = get_liquipedia_tournament_url(match["tournament_name"])
+
+            # Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
             logo_filename = None
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
@@ -158,8 +159,10 @@ def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
     """
     # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
     search = GoogleSearch({
+        "engine": "google",
+        "api_key": os.environ["SERP_API_KEY"],
         "q": f"{tournament_name} site:https://liquipedia.net/counterstrike",
-        "api_key": os.environ["SERP_API_KEY"]
+        "as_qdr": "w2"
     })
     result = search.get_dict()
 

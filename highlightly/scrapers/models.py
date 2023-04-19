@@ -9,11 +9,25 @@ class Game(models.TextChoices):
 
 
 class Tournament(models.Model):
+    class Type(models.TextChoices):
+        OFFLINE = "OFFLINE", "Offline"
+        ONLINE = "ONLINE", "Online"
+
     game = models.CharField(max_length=32, choices=Game.choices)
     name = models.CharField(max_length=128)
 
-    logo_filename = models.CharField(max_length=256, blank=True, null=True)
     url = models.URLField(max_length=128, blank=True, null=True)
+
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+
+    prize_pool_us_dollars = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    first_place_prize_us_dollars = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+
+    location = models.CharField(max_length=128, blank=True, null=True)
+    tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], blank=True, null=True)
+    type = models.CharField(max_length=16, choices=Type.choices, blank=True, null=True)
+    logo_filename = models.CharField(max_length=256, blank=True, null=True)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_game_display()})"
