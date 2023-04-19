@@ -27,28 +27,11 @@ class CounterStrikeScraper(Scraper):
 
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
-            cell_anchor = row.find(class_="c-global-match-link")
-            team_divs = cell_anchor.find_all(class_="team-name")
-            table_cell = row.find(class_="table-cell tournament")
-            tournament_anchor = row.find(class_="o-link", href=True)
-
-            team_1_name = team_divs[0].text
-            team_2_name = team_divs[1].text
+            match = extract_match_data(row, base_url)
 
             # Ignore the match if it currently still contains a "TBD" team.
-            if team_1_name != "TBD" and team_2_name != "TBD":
-                match_url_postfix = cell_anchor["href"].replace("/prematch", "")
-                match_url = f"{base_url}{match_url_postfix}"
-
-                start_datetime = datetime.strptime(table_cell["date"][:-10], "%Y-%m-%dT%H:%M:%S")
-                tier = convert_letter_tier_to_number_tier(table_cell["tier"])
-                match_format = convert_number_to_format(int(table_cell["format"]))
-
-                tournament_name: str = table_cell["tournament-name"]
-
-                upcoming_matches.append({"url": match_url, "team_1": team_1_name, "team_2": team_2_name,
-                                         "start_datetime": start_datetime, "tier": tier, "format": match_format,
-                                         "tournament_name": tournament_name})
+            if match["team_1"] != "TBD" and match["team_2"] != "TBD":
+                upcoming_matches.append(match)
 
         return upcoming_matches
 
@@ -58,7 +41,7 @@ class CounterStrikeScraper(Scraper):
         if tournament is None:
             url = get_liquipedia_tournament_url(match["tournament_name"])
 
-            # Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
+            # TODO: Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
             logo_filename = None
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
@@ -107,6 +90,28 @@ class CounterStrikeScraper(Scraper):
                                       tournament_context=tournament_context, tier=match["tier"], url=match["url"],
                                       start_datetime=match["start_datetime"], create_video=create_video,
                                       estimated_end_datetime=estimated_end_datetime)
+
+
+def extract_match_data(html: Tag, base_url: str) -> Match:
+    """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
+    cell_anchor = html.find(class_="c-global-match-link")
+    team_divs = cell_anchor.find_all(class_="team-name")
+    table_cell = html.find(class_="table-cell tournament")
+
+    team_1_name = team_divs[0].text
+    team_2_name = team_divs[1].text
+
+    match_url_postfix = cell_anchor["href"].replace("/prematch", "")
+    match_url = f"{base_url}{match_url_postfix}"
+
+    start_datetime = datetime.strptime(table_cell["date"][:-10], "%Y-%m-%dT%H:%M:%S")
+    tier = convert_letter_tier_to_number_tier(table_cell["tier"])
+    match_format = convert_number_to_format(int(table_cell["format"]))
+
+    tournament_name: str = table_cell["tournament-name"]
+
+    return {"url": match_url, "team_1": team_1_name, "team_2": team_2_name, "start_datetime": start_datetime,
+            "tier": tier, "format": match_format, "tournament_name": tournament_name}
 
 
 def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
