@@ -1,21 +1,21 @@
 from scrapers.models import ScheduledMatch, Tournament, Team
-from scrapers.types import Match
+from scrapers.types import MatchData
 
 
 class Scraper:
     @staticmethod
-    def list_upcoming_matches() -> list[Match]:
+    def list_upcoming_matches() -> list[MatchData]:
         """Scrape for upcoming matches and return the list of found matches."""
         raise NotImplementedError
 
     @staticmethod
-    def scheduled_match_already_exists(match: Match) -> bool:
+    def scheduled_match_already_exists(match: MatchData) -> bool:
         """Return True if a ScheduledMatch object already exists for the given match."""
         return ScheduledMatch.objects.filter(start_datetime=match["start_datetime"], team_1__name=match["team_1"],
                                              team_2__name=match["team_2"]).exists()
 
     @staticmethod
-    def create_tournament(match: Match) -> Tournament:
+    def create_tournament(match: MatchData) -> Tournament:
         """
         Based on the information in the given match, create a Tournament object and return it. If an object for the
         tournament already exists, the existing object is returned.
@@ -23,7 +23,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def create_team(match: Match, team_name: str) -> Team:
+    def create_team(match: MatchData, team_name: str) -> Team:
         """
         Based on the information in the given match, create a Team object and return it. If an object for the team
         already exists, the existing object is returned.
@@ -31,7 +31,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         """Based on the information in the given match, create a ScheduledMatch object."""
         raise NotImplementedError
 

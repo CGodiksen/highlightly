@@ -7,15 +7,15 @@ from serpapi import GoogleSearch
 
 from scrapers.models import ScheduledMatch, Tournament, Team, Game
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import Match
+from scrapers.types import MatchData, TournamentData
 
 
 class CounterStrikeScraper(Scraper):
     """Webscraper that scrapes hltv.org for upcoming Counter-Strike matches."""
 
     @staticmethod
-    def list_upcoming_matches() -> list[Match]:
-        upcoming_matches: list[Match] = []
+    def list_upcoming_matches() -> list[MatchData]:
+        upcoming_matches: list[MatchData] = []
 
         base_url = "https://cover.gg"
         html = requests.get(url=f"{base_url}/matches/current?tiers=s").text
@@ -36,21 +36,30 @@ class CounterStrikeScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def create_tournament(match: Match) -> Tournament:
+    def create_tournament(match: MatchData) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
-            url = get_liquipedia_tournament_url(match["tournament_name"])
+            tournament_url = get_liquipedia_tournament_url(match["tournament_name"])
+            html = requests.get(url=tournament_url).text
+            soup = BeautifulSoup(html, "html.parser")
 
-            # TODO: Retrieve the tournament start date, end date, prize pool, first_place_prize, location, tier, type, and logo.
+            # Extract the tournament data from the HTML.
+            data = extract_tournament_data(soup)
+
+            # TODO: Download the image from the logo url and save the name of the image file.
             logo_filename = None
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
-                                                   logo_filename=logo_filename, url=url)
+                                                   url=tournament_url, start_date=data["start_date"],
+                                                   end_date=data["end_date"], prize_pool_us_dollars=data["prize_pool"],
+                                                   first_place_prize_us_dollars=data["first_place_prize"],
+                                                   location=data["location"], tier=data["tier"], type=data["type"],
+                                                   logo_filename=logo_filename)
 
         return tournament
 
     @staticmethod
-    def create_team(match: Match, team_name) -> Team:
+    def create_team(match: MatchData, team_name) -> Team:
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
         if team is None:
             # Find the HLTV team url using the name of the team.
@@ -72,7 +81,7 @@ class CounterStrikeScraper(Scraper):
         return team
 
     @staticmethod
-    def create_scheduled_match(match: Match, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         # Open the match url to find the tournament context.
         html = requests.get(url=match["url"]).text
         soup = BeautifulSoup(html, "html.parser")
@@ -92,7 +101,7 @@ class CounterStrikeScraper(Scraper):
                                       estimated_end_datetime=estimated_end_datetime)
 
 
-def extract_match_data(html: Tag, base_url: str) -> Match:
+def extract_match_data(html: Tag, base_url: str) -> MatchData:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
     cell_anchor = html.find(class_="c-global-match-link")
     team_divs = cell_anchor.find_all(class_="team-name")
@@ -112,6 +121,11 @@ def extract_match_data(html: Tag, base_url: str) -> Match:
 
     return {"url": match_url, "team_1": team_1_name, "team_2": team_2_name, "start_datetime": start_datetime,
             "tier": tier, "format": match_format, "tournament_name": tournament_name}
+
+
+def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
+    """Given the HTML for the tournaments liquipedia wiki page, extract the data for the tournament."""
+    pass
 
 
 def convert_letter_tier_to_number_tier(letter_tier: str) -> int:

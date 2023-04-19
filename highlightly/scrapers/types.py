@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import TypedDict
 
-from scrapers.models import ScheduledMatch
+from scrapers.models import ScheduledMatch, Tournament
 
 
-class Match(TypedDict):
+class MatchData(TypedDict):
     url: str
     team_1: str
     team_2: str
@@ -12,3 +12,14 @@ class Match(TypedDict):
     tier: int
     format: ScheduledMatch.Format
     tournament_name: str
+
+
+class TournamentData(TypedDict):
+    start_date: date
+    end_date: date
+    prize_pool: int
+    first_place_prize: int
+    location: str
+    tier: int
+    type: Tournament.Type
+    logo_url: str
