@@ -21,8 +21,8 @@ class Tournament(models.Model):
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
 
-    prize_pool_us_dollars = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
-    first_place_prize_us_dollars = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    prize_pool_us_dollars = models.CharField(max_length=32, blank=True, null=True)
+    first_place_prize_us_dollars = models.CharField(max_length=32, blank=True, null=True)
 
     location = models.CharField(max_length=128, blank=True, null=True)
     tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)], blank=True, null=True)

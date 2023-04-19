@@ -17,8 +17,8 @@ class MatchData(TypedDict):
 class TournamentData(TypedDict):
     start_date: date
     end_date: date
-    prize_pool: int
-    first_place_prize: int
+    prize_pool: str
+    first_place_prize: str
     location: str
     tier: int
     type: Tournament.Type
