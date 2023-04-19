@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime, timedelta
 
 import requests
@@ -46,8 +47,9 @@ class CounterStrikeScraper(Scraper):
             # Extract the tournament data from the HTML.
             data = extract_tournament_data(soup)
 
-            # TODO: Download the image from the logo url and save the name of the image file.
-            logo_filename = None
+            # Download the image from the logo url and save the name of the image file.
+            logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
+            download_image_from_url(data["logo_url"], logo_filename)
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
@@ -136,7 +138,7 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
     first_place_row = html.find("div", class_="csstable-widget-row background-color-first-place")
     first_place_prize = first_place_row.find_next().find_next_sibling().text
 
-    image_src = html.find("div", class_="infobox-image").find("a", href=True)["href"]
+    image_src = html.find("div", class_="infobox-image").find("img", src=True)["src"]
     logo_url = f"https://liquipedia.net{image_src}"
 
     return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
@@ -154,6 +156,13 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
 
     return conversion[letter_tier]
+
+
+def download_image_from_url(url: str, filename: str) -> None:
+    """Download the image in the given url to the given filename."""
+    with requests.get(url, stream=True) as response:
+        with open(f"media/{filename}", "wb") as file:
+            shutil.copyfileobj(response.raw, file)
 
 
 def convert_number_to_format(number: int) -> ScheduledMatch.Format:
