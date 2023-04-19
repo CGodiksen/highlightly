@@ -194,11 +194,23 @@ def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
 
         Path("media/teams").mkdir(parents=True, exist_ok=True)
         svg2png(bytestring=svg, write_to=f"media/{logo_filename}")
+
+        return logo_filename
     else:
         # If the logo is too small or could not be retrieved from HLTV, attempt to retrieve it from liquipedia.
-        pass
+        liquipedia_team_url = f"https://liquipedia.net/counterstrike/{team_name.replace(' ', '_')}"
+        html = requests.get(url=liquipedia_team_url).text
+        soup = BeautifulSoup(html, "html.parser")
 
-    return None
+        infobox = soup.find("div", class_="infobox-image")
+        image_tag = infobox.find("img", src=True) if infobox else None
+
+        if image_tag is not None:
+            logo_url = f"https://liquipedia.net{image_tag['src']}"
+            download_image_from_url(logo_url, logo_filename)
+            return logo_filename
+        else:
+            return None
 
 
 def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
