@@ -33,7 +33,8 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
                    f"Catch the best moments from all your favorite {game} teams. Watch the best players in the world" \
                    f"compete at the highest levels of {game}.\n"
 
-    match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name}\n" \
+    match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
+                 f"({scheduled_match.get_format_display()})\n" \
                  f"{scheduled_match.tournament_context.title()} of {tournament.prize_pool_us_dollars} prize pool " \
                  f"{game} tournament ({tournament.name})\n" \
                  f"Match: {scheduled_match.url}\n" \
@@ -51,7 +52,10 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
 
 def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
-    pass
+    return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
+            scheduled_match.team_1.get_game_display(),  scheduled_match.tournament.location,
+            scheduled_match.team_1.nationality, scheduled_match.team_2.nationality, scheduled_match.tournament_context,
+            scheduled_match.get_format_display()]
 
 
 def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
