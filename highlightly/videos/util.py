@@ -9,7 +9,7 @@ def create_video_metadata(scheduled_match: ScheduledMatch):
 
     thumbnail_filename = create_video_thumbnail(scheduled_match)
 
-    pass
+    print(title, description, tags, thumbnail_filename)
 
 def create_video_title(scheduled_match: ScheduledMatch) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
