@@ -42,9 +42,11 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
     channels_part = "Highlightly channels:\n" \
                     "Counter-Strike: https://www.youtube.com/channel/UCaLgPz7aH58L4nDku2rYl1Q\n" \
                     "Valorant: https://www.youtube.com/channel/UCR40P8gajrDJcaP3Y5pQVxQ\n" \
-                    "League of Legends: https://www.youtube.com/channel/UCH97dRgcN7vvhzpfAZRiUlg"
+                    "League of Legends: https://www.youtube.com/channel/UCH97dRgcN7vvhzpfAZRiUlg\n"
 
-    return f"{channel_part}\n{match_part}\n{channels_part}"
+    tags_part = f"#{scheduled_match.team_1.name.lower()} #{scheduled_match.team_2.name.lower()} #{game.replace(' ', '').lower()}"
+
+    return f"{channel_part}\n{match_part}\n{channels_part}\n{tags_part}"
 
 
 def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
