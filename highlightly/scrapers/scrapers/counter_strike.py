@@ -51,8 +51,8 @@ class CounterStrikeScraper(Scraper):
 
             # Download the image from the logo url and save the name of the image file.
             Path("media/tournaments").mkdir(parents=True, exist_ok=True)
-            logo_filename = f"tournaments/{match['tournament_name'].replace(' ', '_')}.png"
-            download_image_from_url(data["logo_url"], logo_filename)
+            logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
+            download_image_from_url(data["logo_url"], f"tournaments/{logo_filename}")
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
@@ -187,13 +187,12 @@ def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
 
     # Attempt to retrieve the svg team logo from the HLTV team page.
     logo_url = soup.find("img", class_="teamlogo", src=True)["src"]
-    logo_filename = f"teams/{team_name.replace(' ', '_')}.png"
+    logo_filename = f"{team_name.replace(' ', '_')}.png"
+    Path("media/teams").mkdir(parents=True, exist_ok=True)
 
     if ".svg?" in logo_url:
         svg = requests.get(logo_url).text
-
-        Path("media/teams").mkdir(parents=True, exist_ok=True)
-        svg2png(bytestring=svg, write_to=f"media/{logo_filename}")
+        svg2png(bytestring=svg, write_to=f"media/teams/{logo_filename}")
 
         return logo_filename
     else:
@@ -207,7 +206,7 @@ def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
 
         if image_tag is not None:
             logo_url = f"https://liquipedia.net{image_tag['src']}"
-            download_image_from_url(logo_url, logo_filename)
+            download_image_from_url(logo_url, f"teams/{logo_filename}")
             return logo_filename
         else:
             return None
@@ -226,10 +225,10 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     return conversion[letter_tier]
 
 
-def download_image_from_url(url: str, filename: str) -> None:
+def download_image_from_url(url: str, filepath: str) -> None:
     """Download the image in the given url to the given filename."""
     with requests.get(url, stream=True) as response:
-        with open(f"media/{filename}", "wb") as file:
+        with open(f"media/{filepath}", "wb") as file:
             shutil.copyfileobj(response.raw, file)
 
 
