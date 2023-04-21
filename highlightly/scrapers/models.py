@@ -50,7 +50,6 @@ class Team(models.Model):
 
 
 # TODO: When a scheduled match is created a websocket message should be sent.
-# TODO: A new task to create metadata for the video related to the match should also be started.
 # TODO: A django celery beat periodic task should also be started to check for if the video is done.
 class ScheduledMatch(models.Model):
     class Meta:
