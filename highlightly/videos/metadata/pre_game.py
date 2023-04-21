@@ -76,7 +76,7 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     thumbnail for the video. The name of the created thumbnail file is returned.
     """
     # To best fit a YouTube thumbnail, the image should be 1280 x 720.
-    thumbnail = Image.new("RGB", (1280, 720), (0, 0, 0))
+    thumbnail = Image.new("RGB", (1280, 720), (255, 255, 255))
 
     # For both teams, generate a thumbnail team logo if it does not already exist.
     team_1_part = create_team_logo_thumbnail_part(scheduled_match.team_1)
@@ -90,8 +90,11 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     draw = ImageDraw.Draw(thumbnail)
     draw.line((0, team_1_part.height, team_1_part.width - 1, team_1_part.height), fill=(255, 255, 255), width=3)
 
-    # TODO: Put the tournament logo in the bottom right of the thumbnail.
-    
+    # Put the tournament logo in the bottom right of the thumbnail.
+    tournament_logo = Image.open(f"media/tournaments/{scheduled_match.tournament.logo_filename}")
+    tournament_logo.thumbnail((250, 250))
+    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 690 - tournament_logo.height), tournament_logo)
+
     thumbnail.save("thumbnail-test.png")
     # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
     #  says "'GAME' HIGHLIGHTS".
