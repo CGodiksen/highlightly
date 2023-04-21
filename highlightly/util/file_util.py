@@ -1,4 +1,7 @@
 import base64
+import shutil
+
+import requests
 
 
 def get_base64(filename: str) -> str:
@@ -9,3 +12,10 @@ def get_base64(filename: str) -> str:
             return base64.b64encode(icon_data).decode()
     else:
         return ""
+
+
+def download_file_from_url(url: str, filepath: str) -> None:
+    """Download the file in the given url to the given filename."""
+    with requests.get(url, stream=True) as response:
+        with open(f"media/{filepath}", "wb") as file:
+            shutil.copyfileobj(response.raw, file)

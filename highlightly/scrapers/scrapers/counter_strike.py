@@ -1,5 +1,4 @@
 import os
-import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from serpapi import GoogleSearch
 from scrapers.models import ScheduledMatch, Tournament, Team, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData, TournamentData
+from util.file_util import download_file_from_url
 
 
 class CounterStrikeScraper(Scraper):
@@ -52,7 +52,7 @@ class CounterStrikeScraper(Scraper):
             # Download the image from the logo url and save the name of the image file.
             Path("media/tournaments").mkdir(parents=True, exist_ok=True)
             logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
-            download_image_from_url(data["logo_url"], f"tournaments/{logo_filename}")
+            download_file_from_url(data["logo_url"], f"tournaments/{logo_filename}")
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
@@ -206,7 +206,7 @@ def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
 
         if image_tag is not None:
             logo_url = f"https://liquipedia.net{image_tag['src']}"
-            download_image_from_url(logo_url, f"teams/{logo_filename}")
+            download_file_from_url(logo_url, f"teams/{logo_filename}")
             return logo_filename
         else:
             return None
@@ -223,13 +223,6 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
 
     return conversion[letter_tier]
-
-
-def download_image_from_url(url: str, filepath: str) -> None:
-    """Download the image in the given url to the given filename."""
-    with requests.get(url, stream=True) as response:
-        with open(f"media/{filepath}", "wb") as file:
-            shutil.copyfileobj(response.raw, file)
 
 
 def convert_number_to_format(number: int) -> ScheduledMatch.Format:
