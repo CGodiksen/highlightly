@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "corsheaders",
     'django_extensions',
     'colorfield',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
