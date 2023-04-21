@@ -70,6 +70,7 @@ def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
 
 
 # TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
+# TODO: Try to get a frame that has a light top right corner for the tournament logo if it is light and vice versa.
 # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
 #  says "'GAME' HIGHLIGHTS".
 def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
@@ -112,12 +113,14 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     color_thief = ColorThief(logo_filepath)
     dominant_color = color_thief.get_color(quality=1)
 
-    # TODO: Handle the case where the logo is a single color without a border.
+    # Handle the case where the logo is a single color without a border.
+    palette = list(set(color_thief.get_palette()))
+    if is_single_colored(palette):
+        dominant_color = (51, 69, 110)
+
     # TODO: Handle the case where the logo is white since white is not a good background color.
-    # TODO: Maybe only darken the background color.
-    # Lighting or darken the color to make it a better background color.
-    color_change = -25 if is_light(dominant_color) else 25
-    background_color = tuple(channel + color_change for channel in dominant_color)
+    # Darken the color to make it a better background color.
+    background_color = tuple(channel - 25 for channel in dominant_color)
 
     # To best fit a YouTube thumbnail, the background image should be 360 x 360
     background = Image.new("RGB", (360, 360), background_color)
@@ -131,14 +134,6 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     background.paste(logo, offset, logo)
 
     return background
-
-
-def is_light(rgb):
-    """Return True if the given RGB color is light according to the HSP equation."""
-    [r, g, b] = rgb
-
-    hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
-    return hsp > 127.5
 
 
 def create_match_frame_part(match_frame_filepath: str, team_part_width) -> Image.Image:
