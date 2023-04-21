@@ -23,7 +23,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def create_team(match: MatchData, team_name: str) -> Team:
+    def create_team(team_name: str) -> Team:
         """
         Based on the information in the given match, create a Team object and return it. If an object for the team
         already exists, the existing object is returned.
@@ -49,7 +49,7 @@ class Scraper:
         # For each remaining match in the list, create a ScheduledMatch object.
         for match in new_matches:
             tournament = self.create_tournament(match)
-            team_1 = self.create_team(match, match["team_1"])
-            team_2 = self.create_team(match, match["team_2"])
+            team_1 = self.create_team(match["team_1"])
+            team_2 = self.create_team(match["team_2"])
 
             self.create_scheduled_match(match, tournament, team_1, team_2)

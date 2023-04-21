@@ -64,7 +64,7 @@ class CounterStrikeScraper(Scraper):
         return tournament
 
     @staticmethod
-    def create_team(match: MatchData, team_name) -> Team:
+    def create_team(team_name) -> Team:
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
         if team is None:
             # Find the HLTV team url using the name of the team.
