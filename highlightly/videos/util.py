@@ -1,16 +1,22 @@
+import json
+
 from scrapers.models import ScheduledMatch
+from videos.models import VideoMetadata
 
 
-def create_video_metadata(scheduled_match: ScheduledMatch):
-    """Create all metadata required for a YouTube video including a title, description, tags, and a thumbnail."""
+def create_pre_match_video_metadata(scheduled_match: ScheduledMatch):
+    """
+    Create all metadata required for a YouTube video including a title, description, tags, and a thumbnail based on
+    pre-match information.
+    """
     title = create_video_title(scheduled_match)
     description = create_video_description(scheduled_match)
     tags = create_video_tags(scheduled_match)
 
     thumbnail_filename = create_video_thumbnail(scheduled_match)
 
-    print(title, tags, thumbnail_filename)
-    print(description)
+    VideoMetadata.objects.create(title=title, description=description, tags=json.dumps(tags),
+                                 thumbnail_filename=thumbnail_filename)
 
 
 def create_video_title(scheduled_match: ScheduledMatch) -> str:
@@ -50,17 +56,27 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
     return f"{channel_part}\n{match_part}\n{channels_part}\n{tags_part}"
 
 
+# TODO: Maybe add the players from each team when doing post game metadata.
 def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
     return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
-            scheduled_match.team_1.get_game_display(),  scheduled_match.tournament.location,
+            scheduled_match.team_1.get_game_display(), scheduled_match.tournament.location,
             scheduled_match.team_1.nationality, scheduled_match.team_2.nationality, scheduled_match.tournament_context,
             scheduled_match.get_format_display()]
 
 
+# TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
 def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     """
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
     thumbnail for the video. The name of the created thumbnail file is returned.
     """
-    pass
+    # For both teams, generate a thumbnail team logo if it does not already exist.
+
+    # TODO: Generate a background color for the logo and center the logo in the square image.
+    # TODO: Put the thumbnail team logos in the left 1/4 of the thumbnail.
+    # TODO: Put the tournament logo in the bottom right of the thumbnail.
+    # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
+    #  says "'GAME' HIGHLIGHTS".
+
+    return ""
