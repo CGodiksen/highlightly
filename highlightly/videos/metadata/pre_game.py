@@ -132,14 +132,16 @@ def get_logo_background_color(team: Team, logo_filepath: str) -> str:
         color_thief = ColorThief(logo_filepath)
         dominant_color = color_thief.get_color(quality=1)
 
+        # TODO: Handle the case where the logo is white since white is not a good background color.
+
         # Handle the case where the logo is a single color without a border.
         palette = list(set(color_thief.get_palette()))
         if is_single_colored(palette):
-            dominant_color = (51, 69, 110)
+            (r, g, b) = (26, 44, 85)
+        else:
+            # Darken the color to make it a better background color.
+            (r, g, b) = tuple(channel - 25 for channel in dominant_color)
 
-        # TODO: Handle the case where the logo is white since white is not a good background color.
-        # Darken the color to make it a better background color.
-        (r, g, b) = tuple(channel - 25 for channel in dominant_color)
         team.background_color = "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
         team.save()
 
