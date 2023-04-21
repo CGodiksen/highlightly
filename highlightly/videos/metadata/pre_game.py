@@ -1,6 +1,10 @@
 import json
+import math
 
-from scrapers.models import ScheduledMatch
+from PIL import Image
+from colorthief import ColorThief
+
+from scrapers.models import ScheduledMatch, Team
 from videos.models import VideoMetadata
 
 
@@ -72,11 +76,34 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     thumbnail for the video. The name of the created thumbnail file is returned.
     """
     # For both teams, generate a thumbnail team logo if it does not already exist.
+    team_1_part = create_team_logo_thumbnail_part(scheduled_match.team_1)
+    team_2_part = create_team_logo_thumbnail_part(scheduled_match.team_2)
 
-    # TODO: Generate a background color for the logo and center the logo in the square image.
     # TODO: Put the thumbnail team logos in the left 1/4 of the thumbnail.
     # TODO: Put the tournament logo in the bottom right of the thumbnail.
     # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
     #  says "'GAME' HIGHLIGHTS".
 
     return ""
+
+
+def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
+    """Generate a background color based on the dominant color in the logo and center the logo in a square image."""
+    color_thief = ColorThief(f"media/teams/{team.logo_filename}")
+    dominant_color = color_thief.get_color(quality=1)
+
+    # Lighting or darken the color to make it a better background color.
+    color_change = -30 if is_light(dominant_color) else 30
+    background_color = tuple(channel + color_change for channel in dominant_color)
+
+    # To best fit a YouTube thumbnail, the image should be 360 x 360
+    image = Image.new("RGB", (360, 360), background_color)
+    image.save(f"{team.name}-test2.png")
+
+
+def is_light(rgb):
+    """Return True if the given RGB color is light according to the HSP equation."""
+    [r, g, b] = rgb
+
+    hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
+    return hsp > 127.5
