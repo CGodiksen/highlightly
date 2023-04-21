@@ -19,6 +19,7 @@ cryptography==40.0.2
 cssselect2==0.7.0
 decorator==5.1.1
 defusedxml==0.7.1
+demoparser==0.3.3
 Django==4.2
 django-celery-beat==2.5.0
 django-colorfield==0.8.0
@@ -34,8 +35,12 @@ idna==3.4
 knox==0.1.14
 kombu==5.2.4
 loguru==0.7.0
+numpy==1.24.2
+pandas==2.0.0
 Pillow==9.5.0
+polars==0.17.6
 prompt-toolkit==3.0.38
+pyarrow==11.0.0
 pycparser==2.21
 pyhcl==0.4.4
 python-crontab==2.7.1
@@ -47,6 +52,8 @@ six==1.16.0
 soupsieve==2.4.1
 sqlparse==0.4.3
 tinycss2==1.2.1
+tqdm==4.65.0
+typing_extensions==4.5.0
 tzdata==2023.3
 urllib3==1.26.15
 validators==0.20.0
