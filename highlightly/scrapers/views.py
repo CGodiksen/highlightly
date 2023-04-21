@@ -10,7 +10,6 @@ from rest_framework.serializers import ModelSerializer
 from scrapers import serializers
 from scrapers import tasks
 from scrapers.models import ScheduledMatch
-from videos.metadata.pre_game import create_video_thumbnail
 
 T = TypeVar("T", bound=ModelSerializer)
 
@@ -32,8 +31,7 @@ class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, m
         serializer.is_valid(raise_exception=True)
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "counter-strike":
-            match = ScheduledMatch.objects.get(team_1__name="Vitality")
-            create_video_thumbnail(match)
+            tasks.scrape_counter_strike_matches.delay()
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "league-of-legends":
             tasks.scrape_league_of_legends_matches.delay()

@@ -1,5 +1,6 @@
 import json
 import math
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 from colorthief import ColorThief
@@ -19,8 +20,8 @@ def create_pre_match_video_metadata(scheduled_match: ScheduledMatch):
 
     thumbnail_filename = create_video_thumbnail(scheduled_match)
 
-    VideoMetadata.objects.create(title=title, description=description, tags=json.dumps(tags),
-                                 thumbnail_filename=thumbnail_filename)
+    VideoMetadata.objects.create(scheduled_match=scheduled_match, title=title, description=description,
+                                 tags=json.dumps(tags), thumbnail_filename=thumbnail_filename)
 
 
 def create_video_title(scheduled_match: ScheduledMatch) -> str:
@@ -102,9 +103,14 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     tournament_logo.thumbnail((250, 250))
     thumbnail.paste(tournament_logo, (1240 - tournament_logo.width, 40), tournament_logo)
 
-    thumbnail.save("thumbnail-test.png")
+    # Save the thumbnail to a file and return the filename of the saved thumbnail.
+    folder_path = f"media/thumbnails/{scheduled_match.tournament.name.replace(' ', '_')}"
+    Path(folder_path).mkdir(parents=True, exist_ok=True)
 
-    return ""
+    thumbnail_filename = f"{scheduled_match.team_1.name}-{scheduled_match.team_2.name}.png".replace(' ', '_')
+    thumbnail.save(f"{folder_path}/{thumbnail_filename}")
+
+    return thumbnail_filename
 
 
 def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
@@ -131,17 +137,19 @@ def get_logo_background_color(team: Team, logo_filepath: str) -> str:
     if team.background_color is None:
         color_thief = ColorThief(logo_filepath)
         dominant_color = color_thief.get_color(quality=1)
-
-        # TODO: Handle the case where the logo is white since white is not a good background color.
-
-        # Handle the case where the logo is a single color without a border.
         palette = list(set(color_thief.get_palette()))
-        if is_single_colored(palette):
+
+        # Handle the case where the logo is white since white is not a good background color.
+        if get_color_distance(dominant_color, (255, 255, 255)) < 300:
+            (r, g, b) = (0, 0, 0)
+        # Handle the case where the logo is a single color without a border.
+        elif is_single_colored(palette):
             (r, g, b) = (26, 44, 85)
         else:
             # Darken the color to make it a better background color.
             (r, g, b) = tuple(channel - 25 for channel in dominant_color)
 
+        # Convert RGB to hex and save it on the team model to avoid calculating the background color each time.
         team.background_color = "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
         team.save()
 
@@ -171,7 +179,7 @@ def is_single_colored(palette: list[tuple[int, int, int]]) -> bool:
         for color in palette:
             max_color_distance = max(max_color_distance, get_color_distance(current_color, color))
 
-    return max_color_distance < 20
+    return max_color_distance < 50
 
 
 def get_color_distance(rgb_1: tuple[int, int, int], rgb_2: tuple[int, int, int]) -> float:
@@ -185,4 +193,4 @@ def get_color_distance(rgb_1: tuple[int, int, int], rgb_2: tuple[int, int, int])
 
 
 def clamp(x):
-  return max(0, min(x, 255))
+    return max(0, min(x, 255))
