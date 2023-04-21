@@ -41,7 +41,7 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
     game = scheduled_match.team_1.get_game_display()
 
     channel_part = f"Highlightly brings you accurate highlights quickly, condensing all the best {game} has to offer. " \
-                   f"Catch the best moments from all your favorite {game} teams. Watch the best players in the world" \
+                   f"Catch the best moments from all your favorite {game} teams. Watch the best players in the world " \
                    f"compete at the highest levels of {game}.\n"
 
     match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
