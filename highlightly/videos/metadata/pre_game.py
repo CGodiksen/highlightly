@@ -89,16 +89,28 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
 
 def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     """Generate a background color based on the dominant color in the logo and center the logo in a square image."""
-    color_thief = ColorThief(f"media/teams/{team.logo_filename}")
+    logo_filepath = f"media/teams/{team.logo_filename}"
+    color_thief = ColorThief(logo_filepath)
     dominant_color = color_thief.get_color(quality=1)
 
+    # TODO: Handle the case where the logo is a single color without a border.
+    # TODO: Handle the case where the logo is white since white is not a good background color.
     # Lighting or darken the color to make it a better background color.
-    color_change = -30 if is_light(dominant_color) else 30
+    color_change = -20 if is_light(dominant_color) else 20
     background_color = tuple(channel + color_change for channel in dominant_color)
 
-    # To best fit a YouTube thumbnail, the image should be 360 x 360
-    image = Image.new("RGB", (360, 360), background_color)
-    image.save(f"{team.name}-test2.png")
+    # To best fit a YouTube thumbnail, the background image should be 360 x 360
+    background = Image.new("RGB", (360, 360), background_color)
+
+    # Resize the logo, so it fits within the background image.
+    logo = Image.open(logo_filepath)
+    logo.thumbnail((250, 250))
+
+    # Put the logo on top of the background image.
+    offset = ((360 - logo.width) // 2, (360 - logo.height) // 2)
+    background.paste(logo, offset, logo)
+
+    return background
 
 
 def is_light(rgb):
