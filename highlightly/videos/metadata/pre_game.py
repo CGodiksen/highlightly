@@ -70,6 +70,8 @@ def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
 
 
 # TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
+# TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
+#  says "'GAME' HIGHLIGHTS".
 def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     """
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
@@ -88,16 +90,18 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
 
     # Draw a border between the team logo parts.
     draw = ImageDraw.Draw(thumbnail)
-    draw.line((0, team_1_part.height, team_1_part.width - 1, team_1_part.height), fill=(255, 255, 255), width=3)
+    draw.line((0, team_1_part.height - 1, team_1_part.width - 1, team_1_part.height - 1), fill=(255, 255, 255), width=3)
 
-    # Put the tournament logo in the bottom right of the thumbnail.
+    # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
+    match_frame_part = create_match_frame_part("media/test/match-frame.png", team_1_part.width)
+    thumbnail.paste(match_frame_part, (team_1_part.width, 0))
+
+    # Put the tournament logo in the top right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{scheduled_match.tournament.logo_filename}")
     tournament_logo.thumbnail((250, 250))
-    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 690 - tournament_logo.height), tournament_logo)
+    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
 
     thumbnail.save("thumbnail-test.png")
-    # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
-    #  says "'GAME' HIGHLIGHTS".
 
     return ""
 
@@ -135,3 +139,18 @@ def is_light(rgb):
 
     hsp = math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
     return hsp > 127.5
+
+
+def create_match_frame_part(match_frame_filepath: str, team_part_width) -> Image.Image:
+    """
+    Given a filepath to a full size frame from a match, resize and crop the image to make it the correct size for the
+    match frame part of the thumbnail.
+    """
+    match_frame = Image.open(match_frame_filepath)
+    match_frame.thumbnail((1450, 820))
+
+    cropped_width = match_frame.width - (1280 - team_part_width)
+    cropped_height = match_frame.height - 720
+    box = (cropped_width // 2, cropped_height, match_frame.width - (cropped_width // 2), match_frame.height)
+
+    return match_frame.crop(box)
