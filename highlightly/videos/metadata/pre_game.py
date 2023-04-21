@@ -1,6 +1,5 @@
 import json
 import math
-from typing import Tuple, Any
 
 from PIL import Image, ImageDraw
 from colorthief import ColorThief
@@ -111,9 +110,9 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
 def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     """Create an image with a single background color and the logo of the team centered on the image."""
     logo_filepath = f"media/teams/{team.logo_filename}"
-    background_color = get_logo_background_color(team, logo_filepath)
 
     # To best fit a YouTube thumbnail, the background image should be 360 x 360
+    background_color = get_logo_background_color(team, logo_filepath)
     background = Image.new("RGB", (360, 360), background_color)
 
     # Resize the logo, so it fits within the background image.
@@ -127,19 +126,24 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     return background
 
 
-def get_logo_background_color(team: Team, logo_filepath: str) -> tuple[int | Any, ...]:
+def get_logo_background_color(team: Team, logo_filepath: str) -> str:
     """Generate a background color based on the dominant color in the logo."""
-    color_thief = ColorThief(logo_filepath)
-    dominant_color = color_thief.get_color(quality=1)
+    if team.background_color is None:
+        color_thief = ColorThief(logo_filepath)
+        dominant_color = color_thief.get_color(quality=1)
 
-    # Handle the case where the logo is a single color without a border.
-    palette = list(set(color_thief.get_palette()))
-    if is_single_colored(palette):
-        dominant_color = (51, 69, 110)
+        # Handle the case where the logo is a single color without a border.
+        palette = list(set(color_thief.get_palette()))
+        if is_single_colored(palette):
+            dominant_color = (51, 69, 110)
 
-    # TODO: Handle the case where the logo is white since white is not a good background color.
-    # Darken the color to make it a better background color.
-    return tuple(channel - 25 for channel in dominant_color)
+        # TODO: Handle the case where the logo is white since white is not a good background color.
+        # Darken the color to make it a better background color.
+        (r, g, b) = tuple(channel - 25 for channel in dominant_color)
+        team.background_color = "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
+        team.save()
+
+    return team.background_color
 
 
 def create_match_frame_part(match_frame_filepath: str, team_part_width) -> Image.Image:
@@ -176,3 +180,7 @@ def get_color_distance(rgb_1: tuple[int, int, int], rgb_2: tuple[int, int, int])
     b = rgb_1[2] - rgb_2[2]
 
     return math.sqrt((int(((512 + red_mean) * r * r)) >> 8) + 4 * g * g + (int(((767 - red_mean) * b * b)) >> 8))
+
+
+def clamp(x):
+  return max(0, min(x, 255))
