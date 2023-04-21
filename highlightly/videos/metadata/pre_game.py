@@ -99,7 +99,7 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     # Put the tournament logo in the top right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{scheduled_match.tournament.logo_filename}")
     tournament_logo.thumbnail((250, 250))
-    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
+    thumbnail.paste(tournament_logo, (1240 - tournament_logo.width, 40), tournament_logo)
 
     thumbnail.save("thumbnail-test.png")
 
@@ -154,3 +154,24 @@ def create_match_frame_part(match_frame_filepath: str, team_part_width) -> Image
     box = (cropped_width // 2, cropped_height, match_frame.width - (cropped_width // 2), match_frame.height)
 
     return match_frame.crop(box)
+
+
+def is_single_colored(palette: list[tuple[int, int, int]]) -> bool:
+    """Return True if the given palette can be interpreted as being of a single color."""
+    max_color_distance = 0
+
+    for current_color in palette:
+        for color in palette:
+            max_color_distance = max(max_color_distance, get_color_distance(current_color, color))
+
+    return max_color_distance < 20
+
+
+def get_color_distance(rgb_1: tuple[int, int, int], rgb_2: tuple[int, int, int]) -> float:
+    """Return the "distance" between the two given colors."""
+    red_mean = (rgb_1[0] + rgb_2[0]) / 2
+    r = rgb_1[0] - rgb_2[0]
+    g = rgb_1[1] - rgb_2[1]
+    b = rgb_1[2] - rgb_2[2]
+
+    return math.sqrt((int(((512 + red_mean) * r * r)) >> 8) + 4 * g * g + (int(((767 - red_mean) * b * b)) >> 8))
