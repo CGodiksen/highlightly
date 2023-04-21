@@ -1,7 +1,7 @@
 import json
 import math
 
-from PIL import Image
+from PIL import Image, ImageDraw
 from colorthief import ColorThief
 
 from scrapers.models import ScheduledMatch, Team
@@ -75,12 +75,24 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
     thumbnail for the video. The name of the created thumbnail file is returned.
     """
+    # To best fit a YouTube thumbnail, the image should be 1280 x 720.
+    thumbnail = Image.new("RGB", (1280, 720), (0, 0, 0))
+
     # For both teams, generate a thumbnail team logo if it does not already exist.
     team_1_part = create_team_logo_thumbnail_part(scheduled_match.team_1)
     team_2_part = create_team_logo_thumbnail_part(scheduled_match.team_2)
 
-    # TODO: Put the thumbnail team logos in the left 1/4 of the thumbnail.
+    # Put the thumbnail team logos in the left 1/4 of the thumbnail.
+    thumbnail.paste(team_1_part, (0, 0))
+    thumbnail.paste(team_2_part, (0, team_1_part.height))
+
+    # Draw a border between the team logo parts.
+    draw = ImageDraw.Draw(thumbnail)
+    draw.line((0, team_1_part.height, team_1_part.width - 1, team_1_part.height), fill=(255, 255, 255), width=3)
+
     # TODO: Put the tournament logo in the bottom right of the thumbnail.
+    
+    thumbnail.save("thumbnail-test.png")
     # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
     #  says "'GAME' HIGHLIGHTS".
 
@@ -95,8 +107,9 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
 
     # TODO: Handle the case where the logo is a single color without a border.
     # TODO: Handle the case where the logo is white since white is not a good background color.
+    # TODO: Maybe only darken the background color.
     # Lighting or darken the color to make it a better background color.
-    color_change = -20 if is_light(dominant_color) else 20
+    color_change = -25 if is_light(dominant_color) else 25
     background_color = tuple(channel + color_change for channel in dominant_color)
 
     # To best fit a YouTube thumbnail, the background image should be 360 x 360
