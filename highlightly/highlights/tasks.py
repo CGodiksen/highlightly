@@ -1,14 +1,35 @@
+from django_celery_beat.models import PeriodicTask
+
 from highlightly.celery import app
-from scrapers.models import ScheduledMatch
+from highlights.highlighters.counter_strike import CounterStrikeHighlighter
+from highlights.highlighters.league_of_legends import LeagueOfLegendsHighlighter
+from highlights.highlighters.valorant import ValorantHighlighter
+from scrapers.models import ScheduledMatch, Game
+from videos.metadata.post_match import add_post_match_video_metadata
 
 
 @app.task
-def check_if_match_is_finished(scheduled_match: ScheduledMatch) -> None:
+def check_if_match_finished(scheduled_match_id: int) -> None:
     """
     Check if the scheduled match is finished. If finished, mark the scheduled match as finished, create highlights
-    for the match, and create post-game metadata for the match.
+    for the match, and extract post-match metadata for the match.
     """
-    scheduled_match.finished = True
-    scheduled_match.save()
+    scheduled_match = ScheduledMatch.objects.get(id=scheduled_match_id)
+    finished = True
 
-    
+    if finished:
+        periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
+        periodic_task.delete()
+
+        scheduled_match.finished = True
+        scheduled_match.save()
+
+        if scheduled_match.team_1.game == Game.COUNTER_STRIKE:
+            highlighter = CounterStrikeHighlighter()
+        elif scheduled_match.team_1.game == Game.VALORANT:
+            highlighter = ValorantHighlighter()
+        else:
+            highlighter = LeagueOfLegendsHighlighter()
+
+        highlighter.highlight(scheduled_match)
+        add_post_match_video_metadata(scheduled_match)
