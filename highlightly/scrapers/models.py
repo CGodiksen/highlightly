@@ -1,3 +1,4 @@
+from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
@@ -38,7 +39,7 @@ class Team(models.Model):
     name = models.CharField(max_length=128)
 
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
-    background_color = models.CharField(max_length=7, blank=True, null=True)
+    background_color = ColorField(blank=True, null=True)
 
     nationality = models.CharField(max_length=256, blank=True, null=True)
     ranking = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)

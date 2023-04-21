@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'knox',
     "corsheaders",
     'django_extensions',
+    'colorfield',
 ]
 
 MIDDLEWARE = [
