@@ -6,8 +6,10 @@ from scrapers.models import ScheduledMatch, Tournament
 
 class MatchData(TypedDict):
     url: str
-    team_1: str
-    team_2: str
+    team_1_id: int
+    team_1_name: str
+    team_2_id: int
+    team_2_name: str
     start_datetime: datetime
     tier: int
     format: ScheduledMatch.Format

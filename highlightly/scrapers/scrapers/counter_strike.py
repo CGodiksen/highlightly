@@ -33,7 +33,7 @@ class CounterStrikeScraper(Scraper):
             match = extract_match_data(row, base_url)
 
             # Ignore the match if it currently still contains a "TBD" team.
-            if match["team_1"] != "TBD" and match["team_2"] != "TBD":
+            if match["team_1_name"] != "TBD" and match["team_2_name"] != "TBD":
                 upcoming_matches.append(match)
 
         return upcoming_matches
@@ -64,11 +64,10 @@ class CounterStrikeScraper(Scraper):
         return tournament
 
     @staticmethod
-    def create_team(team_name) -> Team:
+    def create_team(team_name, team_id) -> Team:
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
         if team is None:
-            # Find the HLTV team url using the name of the team.
-            team_url = get_hltv_team_url(team_name)
+            team_url = f"https://www.hltv.org/team/{team_id}/{team_name.replace(' ', '-').lower()}"
 
             # Extract the nationality and world ranking of the team.
             html = requests.get(url=team_url).text
@@ -125,7 +124,10 @@ def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
 
 def extract_match_data(html: Tag, base_url: str) -> MatchData:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
+    team_1_id = int(html["team1"])
     team_1_name = extract_team_name(html, 1)
+
+    team_2_id = int(html["team2"])
     team_2_name = extract_team_name(html, 2)
 
     match_url_postfix = html.find("a", class_="match a-reset")["href"]
@@ -135,14 +137,13 @@ def extract_match_data(html: Tag, base_url: str) -> MatchData:
     start_datetime = datetime.utcfromtimestamp(unix_timestamp / 1000)
     match_format = convert_label_to_format(html.find("div", class_="matchMeta").text)
 
-    tier = 5 - len(html.find("div", class_="matchRating").find_all("i", class_="fa fa-star faded"))
-
+    tier = int(html["stars"])
     tournament_name: str = html.find("div", class_="matchEventName").text
     tournament_logo_url: str = html.find("img", class_="matchEventLogo")["src"]
 
-    return {"url": match_url, "team_1": team_1_name, "team_2": team_2_name, "start_datetime": start_datetime,
-            "tier": tier, "format": match_format, "tournament_name": tournament_name,
-            "tournament_logo_url": tournament_logo_url}
+    return {"url": match_url, "team_1_id": team_1_id, "team_1_name": team_1_name, "team_2_id": team_2_id,
+            "team_2_name": team_2_name, "start_datetime": start_datetime, "tier": tier, "format": match_format,
+            "tournament_name": tournament_name, "tournament_logo_url": tournament_logo_url}
 
 
 def extract_team_name(html: Tag, team_number: int) -> str:
@@ -168,19 +169,6 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
 
     return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
             "tier": tier, "type": type, "first_place_prize": first_place_prize}
-
-
-def get_hltv_team_url(team_name: str) -> str | None:
-    """Search HLTV for the team name and find the url for the HLTV team page."""
-    html = requests.get(url=f"https://www.hltv.org/search?query={team_name}").text
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Find the table with the "Team" header.
-    team_table_header = soup.find(class_="table-header", string="Team")
-    team_row = team_table_header.find_parent().find_next_sibling() if team_table_header else None
-
-    # Return the url in the first row of the team table.
-    return f"https://www.hltv.org{team_row.find('a', href=True)['href']}" if team_row else None
 
 
 def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
