@@ -21,13 +21,12 @@ class CounterStrikeScraper(Scraper):
     def list_upcoming_matches() -> list[MatchData]:
         upcoming_matches: list[MatchData] = []
 
-        base_url = "https://cover.gg"
-        html = requests.get(url=f"{base_url}/matches/current?tiers=s").text
-        soup = BeautifulSoup(html, "html.parser")
+        base_url = "https://www.hltv.org"
+        soup = get_protected_page_html(f"{base_url}/matches", "matches_page.txt")
 
         # Find the table with matches from today.
-        today_table = soup.find(class_="table-body")
-        rows: list[Tag] = today_table.find_all(class_="table-row table-row--upcoming")
+        upcoming_matches_tables = soup.find_all("div", class_="upcomingMatchesSection")
+        rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch")
 
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
@@ -108,38 +107,50 @@ class CounterStrikeScraper(Scraper):
                                       estimated_end_datetime=estimated_end_datetime)
 
 
-def get_protected_page_html(protected_url: str) -> BeautifulSoup:
+# TODO: Change this function back when done with testing.
+def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
     """Return the HTML for the given URL. This bypasses cloudflare protections."""
-    base_url = " https://api.scrapingant.com"
-    safe_protected_url = urllib.parse.quote_plus(protected_url)
-    url = f"{base_url}/v2/general?url={safe_protected_url}&x-api-key={os.environ['SCRAPING_API_KEY']}"
+    if test:
+        with open(f"media/test/{test}", "r") as f:
+            html = f.read()
+    else:
+        base_url = " https://api.scrapingant.com"
+        safe_protected_url = urllib.parse.quote_plus(protected_url)
+        url = f"{base_url}/v2/general?url={safe_protected_url}&x-api-key={os.environ['SCRAPING_API_KEY']}"
 
-    html = requests.get(url=url).text
-    soup = BeautifulSoup(html, "html.parser")
+        html = requests.get(url=url).text
 
-    return soup
+    return BeautifulSoup(html, "html.parser")
 
 
 def extract_match_data(html: Tag, base_url: str) -> MatchData:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
-    cell_anchor = html.find(class_="c-global-match-link")
-    team_divs = cell_anchor.find_all(class_="team-name")
-    table_cell = html.find(class_="table-cell tournament")
+    team_1_name = extract_team_name(html, 1)
+    team_2_name = extract_team_name(html, 2)
 
-    team_1_name = team_divs[0].text
-    team_2_name = team_divs[1].text
-
-    match_url_postfix = cell_anchor["href"].replace("/prematch", "")
+    match_url_postfix = html.find("a", class_="match a-reset")["href"]
     match_url = f"{base_url}{match_url_postfix}"
 
-    start_datetime = datetime.strptime(table_cell["date"][:-10], "%Y-%m-%dT%H:%M:%S")
-    tier = convert_letter_tier_to_number_tier(table_cell["tier"])
-    match_format = convert_number_to_format(int(table_cell["format"]))
+    unix_timestamp = int(html.find("div", class_="matchTime")["data-unix"])
+    start_datetime = datetime.utcfromtimestamp(unix_timestamp / 1000)
+    match_format = convert_label_to_format(html.find("div", class_="matchMeta").text)
 
-    tournament_name: str = table_cell["tournament-name"]
+    tier = 5 - len(html.find("div", class_="matchRating").find_all("i", class_="fa fa-star faded"))
+
+    tournament_name: str = html.find("div", class_="matchEventName").text
+    tournament_logo_url: str = html.find("img", class_="matchEventLogo")["src"]
 
     return {"url": match_url, "team_1": team_1_name, "team_2": team_2_name, "start_datetime": start_datetime,
-            "tier": tier, "format": match_format, "tournament_name": tournament_name}
+            "tier": tier, "format": match_format, "tournament_name": tournament_name,
+            "tournament_logo_url": tournament_logo_url}
+
+
+def extract_team_name(html: Tag, team_number: int) -> str:
+    """Return the formatted name of either team 1 or team 2."""
+    team_div = html.find("div", class_=f"matchTeam team{team_number}")
+    team_name = team_div.text if team_div.find("div", class_="matchTeamLogoContainer") is not None else "TBD"
+
+    return team_name.replace("\n", "")
 
 
 def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
@@ -239,11 +250,11 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     return conversion[letter_tier]
 
 
-def convert_number_to_format(number: int) -> ScheduledMatch.Format:
+def convert_label_to_format(label: str) -> ScheduledMatch.Format:
     """Convert the given number to the corresponding match format."""
-    if number == 1:
+    if label == "bo1":
         return ScheduledMatch.Format.BEST_OF_1
-    elif number == 3:
+    elif label == "bo3":
         return ScheduledMatch.Format.BEST_OF_3
     else:
         return ScheduledMatch.Format.BEST_OF_5
