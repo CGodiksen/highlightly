@@ -15,9 +15,8 @@ def check_if_match_finished(scheduled_match_id: int) -> None:
     for the match, and extract post-match metadata for the match.
     """
     scheduled_match = ScheduledMatch.objects.get(id=scheduled_match_id)
-    finished = True
 
-    if finished:
+    if is_match_finished(scheduled_match):
         periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
         periodic_task.delete()
 
@@ -33,3 +32,8 @@ def check_if_match_finished(scheduled_match_id: int) -> None:
 
         highlighter.highlight(scheduled_match)
         add_post_match_video_metadata(scheduled_match)
+
+
+def is_match_finished(scheduled_match: ScheduledMatch) -> bool:
+    """Return True if the match is finished and ready for further processing."""
+    return True
