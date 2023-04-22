@@ -49,17 +49,11 @@ class CounterStrikeScraper(Scraper):
             # Extract the tournament data from the HTML.
             data = extract_tournament_data(soup)
 
-            # Download the image from the logo url and save the name of the image file.
-            Path("media/tournaments").mkdir(parents=True, exist_ok=True)
-            logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
-            download_file_from_url(match["tournament_logo_url"], f"tournaments/{logo_filename}")
-
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
                                                    end_date=data["end_date"], prize_pool_us_dollars=data["prize_pool"],
                                                    first_place_prize_us_dollars=data["first_place_prize"],
-                                                   location=data["location"], tier=data["tier"], type=data["type"],
-                                                   logo_filename=logo_filename)
+                                                   location=data["location"], tier=data["tier"], type=data["type"])
 
         return tournament
 
@@ -131,11 +125,10 @@ def extract_match_data(html: Tag, base_url: str) -> MatchData:
 
     tier = int(html["stars"])
     tournament_name: str = html.find("div", class_="matchEventName").text
-    tournament_logo_url: str = html.find("img", class_="matchEventLogo")["src"]
 
     return {"url": match_url, "team_1_id": team_1_id, "team_1_name": team_1_name, "team_2_id": team_2_id,
             "team_2_name": team_2_name, "start_datetime": start_datetime, "tier": tier, "format": match_format,
-            "tournament_name": tournament_name, "tournament_logo_url": tournament_logo_url}
+            "tournament_name": tournament_name}
 
 
 def extract_team_name(html: Tag, team_number: int) -> str:

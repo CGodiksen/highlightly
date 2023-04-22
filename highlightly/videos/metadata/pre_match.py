@@ -71,8 +71,8 @@ def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
             scheduled_match.get_format_display()]
 
 
+# TODO: When doing post game metadata, get the 100 x 100 tournament logo from the match page.
 # TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
-# TODO: Try to get a frame that has a light top right corner for the tournament logo if it is light and vice versa.
 # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
 #  says "'GAME' HIGHLIGHTS".
 def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
@@ -98,11 +98,6 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
     match_frame_part = create_match_frame_part("../data/test/match_frame.png", team_1_part.width)
     thumbnail.paste(match_frame_part, (team_1_part.width, 0))
-
-    # Put the tournament logo in the top right of the thumbnail.
-    tournament_logo = Image.open(f"media/tournaments/{scheduled_match.tournament.logo_filename}")
-    tournament_logo.thumbnail((250, 250))
-    thumbnail.paste(tournament_logo, (1240 - tournament_logo.width, 40), tournament_logo)
 
     # Save the thumbnail to a file and return the filename of the saved thumbnail.
     folder_path = f"media/thumbnails/{scheduled_match.tournament.name.replace(' ', '_')}"

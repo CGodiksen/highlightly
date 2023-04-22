@@ -14,7 +14,6 @@ class MatchData(TypedDict):
     tier: int
     format: ScheduledMatch.Format
     tournament_name: str
-    tournament_logo_url: str
 
 
 class TournamentData(TypedDict):
