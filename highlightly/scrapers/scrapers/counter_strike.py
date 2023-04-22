@@ -77,7 +77,7 @@ class CounterStrikeScraper(Scraper):
             ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
 
             # Retrieve the team logo if possible.
-            logo_filename = get_team_logo_filepath(team_url, team_name)
+            logo_filename = get_team_logo_filename(team_url, team_name)
 
             team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
                                        nationality=nationality, ranking=ranking, url=team_url)
@@ -180,39 +180,25 @@ def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
     return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
 
 
-def get_team_logo_filepath(team_url: str, team_name: str) -> str | None:
-    """
-    Attempt to retrieve the logo from the HLTV team page, if not possible, attempt to retrieve the team logo from
-    the liquipedia wiki. If the logo is retrieved, return the path to the file. If neither method works, return None.
-    """
+def get_team_logo_filename(team_url: str, team_name: str) -> str | None:
+    """Retrieve the SVG or PNG logo from the HLTV team page and return the name of the saved file."""
     html = requests.get(url=team_url).text
     soup = BeautifulSoup(html, "html.parser")
 
     # Attempt to retrieve the svg team logo from the HLTV team page.
-    logo_url = soup.find("img", class_="teamlogo", src=True)["src"]
+    logo_img = soup.find("img", class_="teamlogo", src=True)
     logo_filename = f"{team_name.replace(' ', '_')}.png"
     Path("media/teams").mkdir(parents=True, exist_ok=True)
 
-    if ".svg?" in logo_url:
-        svg = requests.get(logo_url).text
+    if ".svg?" in logo_img["src"]:
+        svg = requests.get(logo_img["src"]).text
         svg2png(bytestring=svg, write_to=f"media/teams/{logo_filename}")
-
-        return logo_filename
     else:
-        # If the logo is too small or could not be retrieved from HLTV, attempt to retrieve it from liquipedia.
-        liquipedia_team_url = f"https://liquipedia.net/counterstrike/{team_name.replace(' ', '_')}"
-        html = requests.get(url=liquipedia_team_url).text
-        soup = BeautifulSoup(html, "html.parser")
+        # If the logo is a PNG, find the largest version possible and download it.
+        large_size_url = soup.find("img", class_="team-background-logo")["srcset"].removesuffix(" 2x")
+        download_file_from_url(large_size_url, f"teams/{logo_filename}")
 
-        infobox = soup.find("div", class_="infobox-image")
-        image_tag = infobox.find("img", src=True) if infobox else None
-
-        if image_tag is not None:
-            logo_url = f"https://liquipedia.net{image_tag['src']}"
-            download_file_from_url(logo_url, f"teams/{logo_filename}")
-            return logo_filename
-        else:
-            return None
+    return logo_filename
 
 
 def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:

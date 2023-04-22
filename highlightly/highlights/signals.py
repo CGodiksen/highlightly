@@ -15,5 +15,5 @@ def create_check_if_match_finished_periodic_task(instance: ScheduledMatch, creat
 
         schedule, _ = IntervalSchedule.objects.get_or_create(every=3, period=MINUTES)
         PeriodicTask.objects.create(name=f"Check if {instance} is finished", kwargs=json.dumps(keyword_args),
-                                    crontab=schedule, task="highlights.tasks.check_if_match_finished",
+                                    interval=schedule, task="highlights.tasks.check_if_match_finished",
                                     start_time=instance.estimated_end_datetime)

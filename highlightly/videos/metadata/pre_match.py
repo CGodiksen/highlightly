@@ -35,6 +35,7 @@ def create_video_title(scheduled_match: ScheduledMatch) -> str:
 
 # TODO: Maybe add the players from each team to the description when doing post game metadata.
 # TODO: Maybe add the credits for where the vod is from.
+# TODO: Add the tournament context after doing post game metadata.
 def create_video_description(scheduled_match: ScheduledMatch) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video description."""
     tournament = scheduled_match.tournament
@@ -46,7 +47,7 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
 
     match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
                  f"({scheduled_match.get_format_display()})\n" \
-                 f"{scheduled_match.tournament_context.title()} of {tournament.prize_pool_us_dollars} prize pool " \
+                 f"TOURNAMENT_CONTEXT of {tournament.prize_pool_us_dollars} prize pool " \
                  f"{game} tournament ({tournament.name})\n" \
                  f"Match: {scheduled_match.url}\n" \
                  f"Tournament: {tournament.url}\n"
@@ -61,12 +62,12 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
     return f"{channel_part}\n{match_part}\n{channels_part}\n{tags_part}"
 
 
-# TODO: Maybe add the players from each team when doing post game metadata.
+# TODO: Maybe add the players from each team and tournament context when doing post game metadata.
 def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
     return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
             scheduled_match.team_1.get_game_display(), scheduled_match.tournament.location,
-            scheduled_match.team_1.nationality, scheduled_match.team_2.nationality, scheduled_match.tournament_context,
+            scheduled_match.team_1.nationality, scheduled_match.team_2.nationality,
             scheduled_match.get_format_display()]
 
 
