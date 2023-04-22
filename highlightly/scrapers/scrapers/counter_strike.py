@@ -52,7 +52,7 @@ class CounterStrikeScraper(Scraper):
             # Download the image from the logo url and save the name of the image file.
             Path("media/tournaments").mkdir(parents=True, exist_ok=True)
             logo_filename = f"{match['tournament_name'].replace(' ', '_')}.png"
-            download_file_from_url(data["logo_url"], f"tournaments/{logo_filename}")
+            download_file_from_url(match["tournament_logo_url"], f"tournaments/{logo_filename}")
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
@@ -111,7 +111,7 @@ class CounterStrikeScraper(Scraper):
 def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
     """Return the HTML for the given URL. This bypasses cloudflare protections."""
     if test:
-        with open(f"media/test/{test}", "r") as f:
+        with open(f"../data/test/{test}", "r") as f:
             html = f.read()
     else:
         base_url = " https://api.scrapingant.com"
@@ -166,11 +166,9 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
     first_place_row = html.find("div", class_="csstable-widget-row background-color-first-place")
     first_place_prize = first_place_row.find_next().find_next_sibling().text
 
-    image_src = html.find("div", class_="infobox-image").find("img", src=True)["src"]
-    logo_url = f"https://liquipedia.net{image_src}"
-
     return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
-            "tier": tier, "type": type, "first_place_prize": first_place_prize, "logo_url": logo_url}
+            "tier": tier, "type": type, "first_place_prize": first_place_prize}
+
 
 def get_hltv_team_url(team_name: str) -> str | None:
     """Search HLTV for the team name and find the url for the HLTV team page."""

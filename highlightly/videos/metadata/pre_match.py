@@ -95,7 +95,7 @@ def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
     draw.line((0, team_1_part.height - 1, team_1_part.width - 1, team_1_part.height - 1), fill=(255, 255, 255), width=3)
 
     # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
-    match_frame_part = create_match_frame_part("media/test/match-frame.png", team_1_part.width)
+    match_frame_part = create_match_frame_part("../data/test/match_frame.png", team_1_part.width)
     thumbnail.paste(match_frame_part, (team_1_part.width, 0))
 
     # Put the tournament logo in the top right of the thumbnail.

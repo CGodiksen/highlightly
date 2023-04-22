@@ -23,4 +23,3 @@ class TournamentData(TypedDict):
     location: str
     tier: int
     type: Tournament.Type
-    logo_url: str
