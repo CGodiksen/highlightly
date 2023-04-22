@@ -50,7 +50,6 @@ class Team(models.Model):
 
 
 # TODO: When a scheduled match is created a websocket message should be sent.
-# TODO: A django celery beat periodic task should also be started to check for if the video is done.
 class ScheduledMatch(models.Model):
     class Meta:
         verbose_name_plural = "Scheduled matches"
@@ -64,7 +63,7 @@ class ScheduledMatch(models.Model):
     team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="scheduled_team_2_matches")
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
 
-    tournament_context = models.CharField(max_length=64)
+    tournament_context = models.CharField(max_length=64, blank=True, null=True)
     format = models.CharField(max_length=16, choices=Format.choices)
     tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     url = models.URLField(max_length=128)

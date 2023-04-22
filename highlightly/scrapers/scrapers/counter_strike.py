@@ -86,24 +86,16 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
-        # Open the match url to find the tournament context.
-        html = requests.get(url=match["url"]).text
-        soup = BeautifulSoup(html, "html.parser")
-
-        # TODO: Maybe wait with this until we retrieve the post game data.
-        tournament_context = soup.find("a", class_="stage", href=True).text
-
         # Estimate the end datetime based on the start datetime and format.
         minimum_minutes = convert_format_to_minimum_time(match["format"])
         estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
 
-        # Automatically mark the scheduled game for highlight creation if it is tier 4 or higher.
-        create_video = match["tier"] >= 4
+        # Automatically mark the scheduled game for highlight creation if it is tier 1 or higher.
+        create_video = match["tier"] >= 1
 
         ScheduledMatch.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
-                                      tournament_context=tournament_context, tier=match["tier"], url=match["url"],
-                                      start_datetime=match["start_datetime"], create_video=create_video,
-                                      estimated_end_datetime=estimated_end_datetime)
+                                      tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
+                                      create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
 
 # TODO: Change this function back when done with testing.
