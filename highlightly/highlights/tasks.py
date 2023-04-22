@@ -1,3 +1,5 @@
+import requests
+from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
 from highlightly.celery import app
@@ -36,4 +38,9 @@ def check_if_match_finished(scheduled_match_id: int) -> None:
 
 def is_match_finished(scheduled_match: ScheduledMatch) -> bool:
     """Return True if the match is finished and ready for further processing."""
-    return True
+    html = requests.get(url="https://www.hltv.org/results").text
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Check if the scheduled match url can be found on the results page.
+    match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
+    return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
