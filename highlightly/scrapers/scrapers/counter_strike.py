@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -91,6 +92,7 @@ class CounterStrikeScraper(Scraper):
         html = requests.get(url=match["url"]).text
         soup = BeautifulSoup(html, "html.parser")
 
+        # TODO: Maybe wait with this until we retrieve the post game data.
         tournament_context = soup.find("a", class_="stage", href=True).text
 
         # Estimate the end datetime based on the start datetime and format.
@@ -104,6 +106,18 @@ class CounterStrikeScraper(Scraper):
                                       tournament_context=tournament_context, tier=match["tier"], url=match["url"],
                                       start_datetime=match["start_datetime"], create_video=create_video,
                                       estimated_end_datetime=estimated_end_datetime)
+
+
+def get_protected_page_html(protected_url: str) -> BeautifulSoup:
+    """Return the HTML for the given URL. This bypasses cloudflare protections."""
+    base_url = " https://api.scrapingant.com"
+    safe_protected_url = urllib.parse.quote_plus(protected_url)
+    url = f"{base_url}/v2/general?url={safe_protected_url}&x-api-key={os.environ['SCRAPING_API_KEY']}"
+
+    html = requests.get(url=url).text
+    soup = BeautifulSoup(html, "html.parser")
+
+    return soup
 
 
 def extract_match_data(html: Tag, base_url: str) -> MatchData:
