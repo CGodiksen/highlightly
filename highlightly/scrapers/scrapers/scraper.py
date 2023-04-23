@@ -63,9 +63,6 @@ class Scraper:
         """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
         raise NotImplementedError
 
-    # TODO: The information should be saved on a FinishedMatch object.
-    # TODO: The videos application should have a signal on the FinishedMatch object that adds end game metadata when the object is created.
-    # TODO: The highlighters application should have a signal on the FinishedMatch object that created highlighters when the object is created.
     # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
     def scrape_finished_match(self, scheduled_match: Match) -> None:
         """
@@ -78,10 +75,10 @@ class Scraper:
             periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
             periodic_task.delete()
 
-            scheduled_match.finished = True
-            scheduled_match.save()
-
             # TODO: Download the vods of the games.
             # TODO: Download extra information required for highlighting such as GOTV demo.
             # TODO: Extract extra information required for metadata such as tournament logo and context.
             # TODO: Extract game and player statistics.
+
+            scheduled_match.finished = True
+            scheduled_match.save(update_fields=["finished"])
