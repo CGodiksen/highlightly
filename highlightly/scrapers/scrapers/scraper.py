@@ -63,7 +63,6 @@ class Scraper:
         """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
         raise NotImplementedError
 
-    # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
     # TODO: The information should be saved on a FinishedMatch object.
     # TODO: The videos application should have a signal on the FinishedMatch object that adds end game metadata when the object is created.
     # TODO: The highlighters application should have a signal on the FinishedMatch object that created highlighters when the object is created.

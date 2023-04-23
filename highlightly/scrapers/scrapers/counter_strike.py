@@ -91,6 +91,7 @@ class CounterStrikeScraper(Scraper):
                                       tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                                       create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
+    # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
     @staticmethod
     def is_match_finished(scheduled_match: ScheduledMatch) -> BeautifulSoup | None:
         html = requests.get(url="https://www.hltv.org/results").text
