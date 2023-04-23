@@ -1,3 +1,6 @@
+import requests
+from bs4 import BeautifulSoup
+
 from scrapers.models import ScheduledMatch, Tournament, Team
 from scrapers.types import MatchData
 
@@ -53,3 +56,21 @@ class Scraper:
             team_2 = self.create_team(match["team_2_name"], match["team_2_id"])
 
             self.create_scheduled_match(match, tournament, team_1, team_2)
+
+    # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
+    # TODO: The information should be saved on a FinishedMatch object.
+    # TODO: The videos application should have a signal on the FinishedMatch object that adds end game metadata when the object is created.
+    # TODO: The highlighters application should have a signal on the FinishedMatch object that created highlighters when the object is created.
+    # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
+    @staticmethod
+    def is_match_finished(scheduled_match: ScheduledMatch) -> bool:
+        """Return True if the match is finished and ready for further processing.
+
+        30 seconds to show up on results page, 5 minutes to get GOTV demo, ~45 minutes for vods.
+        No media yet, check back later."""
+        html = requests.get(url="https://www.hltv.org/results").text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Check if the scheduled match url can be found on the results page.
+        match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
+        return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
