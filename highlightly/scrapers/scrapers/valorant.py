@@ -1,4 +1,6 @@
-from scrapers.models import Tournament, Team
+from bs4 import BeautifulSoup
+
+from scrapers.models import Tournament, Team, ScheduledMatch
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData
 
@@ -20,4 +22,8 @@ class ValorantScraper(Scraper):
 
     @staticmethod
     def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+        pass
+
+    @staticmethod
+    def is_match_finished(scheduled_match: ScheduledMatch) -> BeautifulSoup | None:
         pass

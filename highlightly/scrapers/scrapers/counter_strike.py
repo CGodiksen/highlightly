@@ -91,6 +91,15 @@ class CounterStrikeScraper(Scraper):
                                       tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                                       create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
+    @staticmethod
+    def is_match_finished(scheduled_match: ScheduledMatch) -> BeautifulSoup | None:
+        html = requests.get(url="https://www.hltv.org/results").text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Check if the scheduled match url can be found on the results page.
+        match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
+        return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
+
 
 # TODO: Change this function back when done with testing.
 def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:

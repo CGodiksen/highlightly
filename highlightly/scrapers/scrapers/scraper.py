@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import ScheduledMatch, Tournament, Team
 from scrapers.types import MatchData
@@ -57,20 +58,31 @@ class Scraper:
 
             self.create_scheduled_match(match, tournament, team_1, team_2)
 
+    @staticmethod
+    def is_match_finished(scheduled_match: ScheduledMatch) -> BeautifulSoup | None:
+        """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
+        raise NotImplementedError
+
     # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
     # TODO: The information should be saved on a FinishedMatch object.
     # TODO: The videos application should have a signal on the FinishedMatch object that adds end game metadata when the object is created.
     # TODO: The highlighters application should have a signal on the FinishedMatch object that created highlighters when the object is created.
     # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
-    @staticmethod
-    def is_match_finished(scheduled_match: ScheduledMatch) -> bool:
-        """Return True if the match is finished and ready for further processing.
+    def scrape_finished_match(self, scheduled_match: ScheduledMatch) -> None:
+        """
+        Check if the scheduled match is finished. If so, scrape all data required from the match page to create
+        highlights, create a highlight video, and complete the video metadata.
+        """
+        html = self.is_match_finished(scheduled_match)
 
-        30 seconds to show up on results page, 5 minutes to get GOTV demo, ~45 minutes for vods.
-        No media yet, check back later."""
-        html = requests.get(url="https://www.hltv.org/results").text
-        soup = BeautifulSoup(html, "html.parser")
+        if html is not None:
+            periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
+            periodic_task.delete()
 
-        # Check if the scheduled match url can be found on the results page.
-        match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
-        return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
+            scheduled_match.finished = True
+            scheduled_match.save()
+
+            # TODO: Download the vods of the games.
+            # TODO: Download extra information required for highlighting such as GOTV demo.
+            # TODO: Extract extra information required for metadata such as tournament logo and context.
+            # TODO: Extract game and player statistics.
