@@ -31,6 +31,6 @@ def create_scrape_finished_match_periodic_task(instance: Match, created: bool, *
         task = f"scrapers.tasks.scrape_finished_{instance.team_1.game.lower()}_match"
         keyword_args = {"scheduled_match_id": instance.id}
 
-        schedule, _ = IntervalSchedule.objects.get_or_create(every=5, period=MINUTES)
+        schedule, _ = IntervalSchedule.objects.get_or_create(every=10, period=MINUTES)
         PeriodicTask.objects.create(name=f"Scrape {instance} if finished", kwargs=json.dumps(keyword_args),
                                     interval=schedule, task=task, start_time=instance.estimated_end_datetime)

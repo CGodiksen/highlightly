@@ -111,11 +111,29 @@ class CounterStrikeScraper(Scraper):
         return None
 
     @staticmethod
-    def download_match_files(html: BeautifulSoup) -> None:
+    def download_match_files(match: Match, html: BeautifulSoup) -> None:
+        # Retrieve the tournament logo and tournament context of the match.
+        tournament_logo_url = html.find("img", class_="matchSidebarEventLogo", src=True)["srcset"].removesuffix(" 2x")
+
+        Path("media/tournaments").mkdir(parents=True, exist_ok=True)
+        logo_filename = f"{match.tournament.name.replace(' ', '_')}.png"
+        download_file_from_url(tournament_logo_url, f"tournaments/{logo_filename}")
+
+        match_info = html.find("div", class_="padding preformatted-text").text
+        tournament_context = match_info.split("*")[1].strip()
+
+        Match.objects.filter(id=match.id).update(tournament_context=tournament_context)
+        Tournament.objects.filter(id=match.tournament.id).update(logo_filename=logo_filename)
+
+        # TODO: Download the .rar GOTV demo file and unzip it to get the individual demo files.
+        # TODO: Download the vod for each game either from Twitch or YouTube.
         pass
 
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
+        # TODO: For both teams, find the statistics table.
+        # TODO: Convert the HTML tables into csv.
+        # TODO: Save the csv files and save the name of the file on the gave vod object.
         pass
 
 

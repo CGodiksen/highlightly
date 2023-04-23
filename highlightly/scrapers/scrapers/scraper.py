@@ -64,8 +64,11 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def download_match_files(html: BeautifulSoup) -> None:
-        """Download all required files from the match page url such as vods, missing logos, and demo files."""
+    def download_match_files(match:Match, html: BeautifulSoup) -> None:
+        """
+        Download all required files from the match page url such as vods, missing logos, and demo files. For each vod,
+        a game vod object is created.
+        """
         raise NotImplementedError
 
     @staticmethod

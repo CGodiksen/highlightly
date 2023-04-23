@@ -29,7 +29,7 @@ class LeagueOfLegendsScraper(Scraper):
         pass
 
     @staticmethod
-    def download_match_files(html: BeautifulSoup) -> None:
+    def download_match_files(match:Match, html: BeautifulSoup) -> None:
         pass
 
     @staticmethod
