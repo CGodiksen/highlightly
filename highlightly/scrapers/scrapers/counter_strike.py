@@ -3,6 +3,7 @@ import urllib.parse
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import patoolib
 import requests
 from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
@@ -116,7 +117,16 @@ class CounterStrikeScraper(Scraper):
         extract_match_page_tournament_data(match, html)
 
         # Download the .rar GOTV demo file and unzip it to get the individual demo files.
+        folder_path = f"demos/{match.tournament.name.replace(' ', '_')}"
+        Path(f"media/{folder_path}").mkdir(parents=True, exist_ok=True)
+        demo_url = f"https://www.hltv.org{html.find('a', class_='stream-box')['data-demo-link']}"
 
+        rar_filename = f"{match.team_1.name.replace(' ', '-')}_vs_{match.team_2.name.replace(' ', '-')}.rar"
+        download_file_from_url(demo_url, f"{folder_path}/{rar_filename}")
+
+        patoolib.extract_archive(f"media/{folder_path}/{rar_filename}", outdir=f"media/{folder_path}")
+
+        # TODO: Delete the rar file after unzipping.
 
         # TODO: Download the vod for each game either from Twitch or YouTube.
 

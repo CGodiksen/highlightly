@@ -37,6 +37,7 @@ kombu==5.2.4
 loguru==0.7.0
 numpy==1.24.2
 pandas==2.0.0
+patool==1.12
 Pillow==9.5.0
 polars==0.17.6
 prompt-toolkit==3.0.38
