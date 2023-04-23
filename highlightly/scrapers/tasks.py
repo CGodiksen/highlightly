@@ -10,19 +10,19 @@ from scrapers.scrapers.valorant import ValorantScraper
 @app.task
 def scrape_counter_strike_matches() -> None:
     scraper = CounterStrikeScraper()
-    scraper.scrape()
+    scraper.scrape_upcoming_matches()
 
 
 @app.task
 def scrape_valorant_matches() -> None:
     scraper = ValorantScraper()
-    scraper.scrape()
+    scraper.scrape_upcoming_matches()
 
 
 @app.task
 def scrape_league_of_legends_matches() -> None:
     scraper = LeagueOfLegendsScraper()
-    scraper.scrape()
+    scraper.scrape_upcoming_matches()
 
 
 @app.task

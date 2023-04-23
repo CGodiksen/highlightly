@@ -38,7 +38,7 @@ class Scraper:
         """Based on the information in the given match, create a ScheduledMatch object."""
         raise NotImplementedError
 
-    def scrape(self) -> None:
+    def scrape_upcoming_matches(self) -> None:
         """
         Scrape for upcoming matches. For each new match that is found, a ScheduledMatch object is created. If the match
         already exists, the match is ignored.

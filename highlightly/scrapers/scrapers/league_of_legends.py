@@ -1,13 +1,23 @@
+from scrapers.models import Tournament, Team
 from scrapers.scrapers.scraper import Scraper
+from scrapers.types import MatchData
 
 
 class LeagueOfLegendsScraper(Scraper):
     """Webscraper that scrapes op.gg for upcoming League of Legends matches."""
 
     @staticmethod
-    def list_upcoming_matches() -> list:
-        return []
+    def list_upcoming_matches() -> list[MatchData]:
+        pass
 
     @staticmethod
-    def create_scheduled_match(match) -> None:
+    def create_tournament(match: MatchData) -> Tournament:
+        pass
+
+    @staticmethod
+    def create_team(team_name, team_id) -> Team:
+        pass
+
+    @staticmethod
+    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         pass
