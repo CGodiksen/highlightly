@@ -63,6 +63,19 @@ class Scraper:
         """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
         raise NotImplementedError
 
+    @staticmethod
+    def download_match_files(html: BeautifulSoup) -> None:
+        """Download all required files from the match page url such as vods, missing logos, and demo files."""
+        raise NotImplementedError
+
+    @staticmethod
+    def extract_match_statistics(html: BeautifulSoup) -> None:
+        """
+        Extract and save per-game statistics for the entire match. Also determine the MVP based on the statistics
+        and extract the players photo and advanced statistics if possible.
+        """
+        raise NotImplementedError
+
     # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
     def scrape_finished_match(self, scheduled_match: Match) -> None:
         """
@@ -75,10 +88,8 @@ class Scraper:
             periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
             periodic_task.delete()
 
-            # TODO: Download the vods of the games.
-            # TODO: Download extra information required for highlighting such as GOTV demo.
-            # TODO: Extract extra information required for metadata such as tournament logo and context.
-            # TODO: Extract game and player statistics.
+            self.download_match_files(html)
+            self.extract_match_statistics(html)
 
             scheduled_match.finished = True
             scheduled_match.save(update_fields=["finished"])

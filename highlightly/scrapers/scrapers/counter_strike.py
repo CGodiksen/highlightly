@@ -101,6 +101,14 @@ class CounterStrikeScraper(Scraper):
         match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
         return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
 
+    @staticmethod
+    def download_match_files(html: BeautifulSoup) -> None:
+        pass
+
+    @staticmethod
+    def extract_match_statistics(html: BeautifulSoup) -> None:
+        pass
+
 
 # TODO: Change this function back when done with testing.
 def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:

@@ -27,3 +27,11 @@ class ValorantScraper(Scraper):
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         pass
+
+    @staticmethod
+    def download_match_files(html: BeautifulSoup) -> None:
+        pass
+
+    @staticmethod
+    def extract_match_statistics(html: BeautifulSoup) -> None:
+        pass
