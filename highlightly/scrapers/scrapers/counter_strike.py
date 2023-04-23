@@ -91,7 +91,6 @@ class CounterStrikeScraper(Scraper):
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                              create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
-    # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         html = requests.get(url="https://www.hltv.org/results").text
@@ -99,7 +98,17 @@ class CounterStrikeScraper(Scraper):
 
         # Check if the match url can be found on the results page.
         match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
-        return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
+
+        if soup.find("a", class_="a-reset", href=match_url_postfix) is not None:
+            # Check if the GOTV demo and vods can be found on the match page.
+            match_soup = get_protected_page_html(scheduled_match.url, "match_page.txt")
+
+            demo_found = match_soup.find("div", class_="flexbox", text="GOTV Demo sponsored by Bitskins") is not None
+            vods_found = match_soup.findAll("img", class_="stream-flag flag")
+
+            return html if demo_found and len(vods_found) > 0 else None
+
+        return None
 
     @staticmethod
     def download_match_files(html: BeautifulSoup) -> None:
