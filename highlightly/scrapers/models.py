@@ -79,20 +79,17 @@ class ScheduledMatch(models.Model):
         return f"{self.team_1} VS. {self.team_2}"
 
 
-class FinishedMatch(models.Model):
-    scheduled_match = models.OneToOneField(ScheduledMatch, on_delete=models.CASCADE)
-
-
 class GameVod(models.Model):
     class Host(models.TextChoices):
         YOUTUBE = "YOUTUBE", "YouTube"
         TWITCH = "TWITCH", "Twitch"
 
-    finished_match = models.ForeignKey(FinishedMatch, on_delete=models.CASCADE)
+    finished_match = models.ForeignKey(ScheduledMatch, on_delete=models.CASCADE)
 
+    game_count = models.IntegerField(validators=[MinValueValidator(1)])
+    map = models.CharField(max_length=64)
+
+    url = models.URLField(max_length=128)
     host = models.CharField(max_length=16, choices=Host.choices)
     language = models.CharField(max_length=64)
-    game_count = models.IntegerField(validators=[MinValueValidator(1)])
-
-    vod_url = models.URLField(max_length=128)
-    vod_filename = models.CharField(max_length=256)
+    filename = models.CharField(max_length=256)
