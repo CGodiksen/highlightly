@@ -78,6 +78,11 @@ class Match(models.Model):
     def __str__(self) -> str:
         return f"{self.team_1} VS. {self.team_2}"
 
+    def create_unique_folder_path(self) -> str:
+        """Return a path that can be used to uniquely identify files related to this match."""
+        match_part = f"{self.team_1.name.replace(' ', '_').lower()}_vs_{self.team_2.name.replace(' ', '_').lower()}"
+        return f"{self.tournament.name.replace(' ', '_').lower()}/{match_part}_{self.id}"
+
 
 class GameVod(models.Model):
     class Host(models.TextChoices):
