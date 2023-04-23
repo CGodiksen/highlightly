@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
 from serpapi import GoogleSearch
 
-from scrapers.models import ScheduledMatch, Tournament, Team, Game
+from scrapers.models import Match, Tournament, Team, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData, TournamentData
 from util.file_util import download_file_from_url
@@ -84,20 +84,20 @@ class CounterStrikeScraper(Scraper):
         minimum_minutes = convert_format_to_minimum_time(match["format"])
         estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
 
-        # Automatically mark the scheduled game for highlight creation if it is tier 1 or higher.
+        # Automatically mark the scheduled match for highlight creation if it is tier 1 or higher.
         create_video = match["tier"] >= 1
 
-        ScheduledMatch.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
-                                      tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
-                                      create_video=create_video, estimated_end_datetime=estimated_end_datetime)
+        Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
+                             tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
+                             create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
     # TODO: Add extra conditions that check for the GOTV demo and vods before actually marking the match as done.
     @staticmethod
-    def is_match_finished(scheduled_match: ScheduledMatch) -> BeautifulSoup | None:
+    def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         html = requests.get(url="https://www.hltv.org/results").text
         soup = BeautifulSoup(html, "html.parser")
 
-        # Check if the scheduled match url can be found on the results page.
+        # Check if the match url can be found on the results page.
         match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
         return soup.find("a", class_="a-reset", href=match_url_postfix) is not None
 
@@ -217,24 +217,24 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     return conversion[letter_tier]
 
 
-def convert_label_to_format(label: str) -> ScheduledMatch.Format:
+def convert_label_to_format(label: str) -> Match.Format:
     """Convert the given number to the corresponding match format."""
     if label == "bo1":
-        return ScheduledMatch.Format.BEST_OF_1
+        return Match.Format.BEST_OF_1
     elif label == "bo3":
-        return ScheduledMatch.Format.BEST_OF_3
+        return Match.Format.BEST_OF_3
     else:
-        return ScheduledMatch.Format.BEST_OF_5
+        return Match.Format.BEST_OF_5
 
 
-def convert_format_to_minimum_time(match_format: ScheduledMatch.Format) -> int:
+def convert_format_to_minimum_time(match_format: Match.Format) -> int:
     """
     Return the minimum number of minutes required to complete a match with the given format. We assume each game takes
     at least 30 minutes and that there is at least 5 minutes of break between games.
     """
-    if match_format == ScheduledMatch.Format.BEST_OF_1:
+    if match_format == Match.Format.BEST_OF_1:
         return 1 * 30
-    elif match_format == ScheduledMatch.Format.BEST_OF_3:
+    elif match_format == Match.Format.BEST_OF_3:
         return (2 * 30) + 5
     else:
         return (3 * 30) + 10

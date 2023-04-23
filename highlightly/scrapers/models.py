@@ -49,18 +49,18 @@ class Team(models.Model):
         return f"{self.name} ({self.get_game_display()})"
 
 
-# TODO: When a scheduled match is created a websocket message should be sent.
-class ScheduledMatch(models.Model):
+# TODO: When a match is created a websocket message should be sent.
+class Match(models.Model):
     class Meta:
-        verbose_name_plural = "Scheduled matches"
+        verbose_name_plural = "matches"
 
     class Format(models.TextChoices):
         BEST_OF_1 = "BEST_OF_1", "Bo1"
         BEST_OF_3 = "BEST_OF_3", "Bo3"
         BEST_OF_5 = "BEST_OF_5", "Bo5"
 
-    team_1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="scheduled_team_1_matches")
-    team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="scheduled_team_2_matches")
+    team_1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_1_matches")
+    team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_2_matches")
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
 
     tournament_context = models.CharField(max_length=64, blank=True, null=True)
@@ -84,7 +84,7 @@ class GameVod(models.Model):
         YOUTUBE = "YOUTUBE", "YouTube"
         TWITCH = "TWITCH", "Twitch"
 
-    finished_match = models.ForeignKey(ScheduledMatch, on_delete=models.CASCADE)
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
 
     game_count = models.IntegerField(validators=[MinValueValidator(1)])
     map = models.CharField(max_length=64)

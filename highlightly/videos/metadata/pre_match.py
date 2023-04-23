@@ -5,11 +5,11 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from colorthief import ColorThief
 
-from scrapers.models import ScheduledMatch, Team
+from scrapers.models import Match, Team
 from videos.models import VideoMetadata
 
 
-def create_pre_match_video_metadata(scheduled_match: ScheduledMatch):
+def create_pre_match_video_metadata(scheduled_match: Match):
     """
     Create all metadata required for a YouTube video including a title, description, tags, and a thumbnail based on
     pre-match information.
@@ -20,11 +20,11 @@ def create_pre_match_video_metadata(scheduled_match: ScheduledMatch):
 
     thumbnail_filename = create_video_thumbnail(scheduled_match)
 
-    VideoMetadata.objects.create(scheduled_match=scheduled_match, title=title, description=description,
+    VideoMetadata.objects.create(match=scheduled_match, title=title, description=description,
                                  tags=json.dumps(tags), thumbnail_filename=thumbnail_filename)
 
 
-def create_video_title(scheduled_match: ScheduledMatch) -> str:
+def create_video_title(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
     # TODO: Generate an eye catching initial part of the video title based on the context of the match.
     team_part = f"{scheduled_match.team_1.name} vs {scheduled_match.team_2.name}"
@@ -36,7 +36,7 @@ def create_video_title(scheduled_match: ScheduledMatch) -> str:
 # TODO: Maybe add the players from each team to the description when doing post game metadata.
 # TODO: Maybe add the credits for where the vod is from.
 # TODO: Add the tournament context after doing post game metadata.
-def create_video_description(scheduled_match: ScheduledMatch) -> str:
+def create_video_description(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video description."""
     tournament = scheduled_match.tournament
     game = scheduled_match.team_1.get_game_display()
@@ -63,7 +63,7 @@ def create_video_description(scheduled_match: ScheduledMatch) -> str:
 
 
 # TODO: Maybe add the players from each team and tournament context when doing post game metadata.
-def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
+def create_video_tags(scheduled_match: Match) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
     return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
             scheduled_match.team_1.get_game_display(), scheduled_match.tournament.location,
@@ -75,7 +75,7 @@ def create_video_tags(scheduled_match: ScheduledMatch) -> list[str]:
 # TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
 # TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
 #  says "'GAME' HIGHLIGHTS".
-def create_video_thumbnail(scheduled_match: ScheduledMatch) -> str:
+def create_video_thumbnail(scheduled_match: Match) -> str:
     """
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
     thumbnail for the video. The name of the created thumbnail file is returned.

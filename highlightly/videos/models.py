@@ -1,10 +1,10 @@
 from django.db import models
 
-from scrapers.models import ScheduledMatch
+from scrapers.models import Match
 
 
 class VideoMetadata(models.Model):
-    scheduled_match = models.ForeignKey(ScheduledMatch, on_delete=models.CASCADE)
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
 
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=5000)

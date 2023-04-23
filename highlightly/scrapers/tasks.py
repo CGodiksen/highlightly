@@ -1,5 +1,5 @@
 from highlightly.celery import app
-from scrapers.models import ScheduledMatch
+from scrapers.models import Match
 from scrapers.scrapers.counter_strike import CounterStrikeScraper
 from scrapers.scrapers.league_of_legends import LeagueOfLegendsScraper
 from scrapers.scrapers.valorant import ValorantScraper
@@ -25,7 +25,7 @@ def scrape_league_of_legends_matches() -> None:
 
 @app.task
 def scrape_finished_counter_strike_match(scheduled_match_id: int) -> None:
-    scheduled_match = ScheduledMatch.objects.get(id=scheduled_match_id)
+    scheduled_match = Match.objects.get(id=scheduled_match_id)
 
     scraper = CounterStrikeScraper()
     scraper.scrape_finished_match(scheduled_match)
@@ -33,7 +33,7 @@ def scrape_finished_counter_strike_match(scheduled_match_id: int) -> None:
 
 @app.task
 def scrape_finished_valorant_match(scheduled_match_id: int) -> None:
-    scheduled_match = ScheduledMatch.objects.get(id=scheduled_match_id)
+    scheduled_match = Match.objects.get(id=scheduled_match_id)
 
     scraper = ValorantScraper()
     scraper.scrape_finished_match(scheduled_match)
@@ -41,7 +41,7 @@ def scrape_finished_valorant_match(scheduled_match_id: int) -> None:
 
 @app.task
 def scrape_finished_league_of_legends_match(scheduled_match_id: int) -> None:
-    scheduled_match = ScheduledMatch.objects.get(id=scheduled_match_id)
+    scheduled_match = Match.objects.get(id=scheduled_match_id)
 
     scraper = LeagueOfLegendsScraper()
     scraper.scrape_finished_match(scheduled_match)

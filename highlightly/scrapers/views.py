@@ -9,21 +9,21 @@ from rest_framework.serializers import ModelSerializer
 
 from scrapers import serializers
 from scrapers import tasks
-from scrapers.models import ScheduledMatch
+from scrapers.models import Match
 
 T = TypeVar("T", bound=ModelSerializer)
 
 
-class ScheduledMatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin,
-                            viewsets.GenericViewSet):
+class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin,
+                   viewsets.GenericViewSet):
     def get_serializer_class(self) -> Type[T]:
         if self.action == "update":
-            return serializers.ScheduledMatchUpdateSerializer
+            return serializers.MatchUpdateSerializer
         else:
-            return serializers.ScheduledMatchSerializer
+            return serializers.MatchSerializer
 
-    def get_queryset(self) -> QuerySet[ScheduledMatch]:
-        return ScheduledMatch.objects.all().order_by("-start_datetime")
+    def get_queryset(self) -> QuerySet[Match]:
+        return Match.objects.all().order_by("-start_datetime")
 
     @action(detail=False, methods=["POST"])
     def scrape(self, request: Request) -> Response:
