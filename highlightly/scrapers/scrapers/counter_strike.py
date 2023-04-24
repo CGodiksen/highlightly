@@ -168,10 +168,12 @@ class CounterStrikeScraper(Scraper):
 
         # Convert the HTML tables into CSV and save the filename on the relevant object.
         for count, stat_table in enumerate(stat_tables):
-            html_table = stat_table.find_next()
-            filename = "all_maps.csv" if count == 0 else f"map_{count}.csv"
+            html_tables = stat_table.findAll("table", class_="table totalstats")
 
-            save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
+            for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
+                team_name = team.name.lower().replace(' ', '_')
+                filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
+                save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
 
 
 # TODO: Change this function back when done with testing.
