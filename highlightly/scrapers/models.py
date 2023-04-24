@@ -84,6 +84,7 @@ class Match(models.Model):
         return f"{self.tournament.name.replace(' ', '_').lower()}/{match_part}_{self.id}"
 
 
+# TODO: When the game vod is deleted, also delete the file.
 class GameVod(models.Model):
     class Host(models.TextChoices):
         YOUTUBE = "YOUTUBE", "YouTube"
@@ -97,4 +98,10 @@ class GameVod(models.Model):
     url = models.URLField(max_length=128)
     host = models.CharField(max_length=16, choices=Host.choices)
     language = models.CharField(max_length=64)
+    filename = models.CharField(max_length=256)
+
+
+# TODO: When the GOTV demo is deleted, also delete the file.
+class GOTVDemo(models.Model):
+    game_vod = models.OneToOneField(GameVod, on_delete=models.CASCADE)
     filename = models.CharField(max_length=256)
