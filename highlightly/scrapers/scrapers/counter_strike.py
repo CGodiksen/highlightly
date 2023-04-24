@@ -2,12 +2,14 @@ import os
 import urllib.parse
 import zipfile
 from datetime import datetime, timedelta
+from math import ceil
 from pathlib import Path
 
 import patoolib
 import requests
 from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
+from demoparser import DemoParser
 from serpapi import GoogleSearch
 
 from scrapers.models import Match, Tournament, Team, Game
@@ -128,7 +130,14 @@ class CounterStrikeScraper(Scraper):
         # Delete the rar file after unzipping.
         Path(f"media/{folder_path}/demos.rar").unlink(missing_ok=True)
 
-        # TODO: Download the vod for each game either from Twitch or YouTube.
+        # For each demo, download the vod for the corresponding game from Twitch or YouTube.
+        vod_links = html.findAll("img", class_="stream-flag flag")
+        for game_count, file in enumerate(os.listdir(f"media/{folder_path}")):
+            parser = DemoParser(f"media/{folder_path}/{file}")
+            game_length_seconds = float(parser.parse_header()["playback_time"])
+            print(file)
+            print(ceil(game_length_seconds / 60))
+            print(vod_links[game_count].parent.parent)
 
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
