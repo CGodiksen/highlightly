@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import urllib.parse
 from datetime import datetime, timedelta
 from math import ceil
@@ -116,28 +117,36 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
+        demos_folder_path = f"demos/{match.create_unique_folder_path()}"
+        Path(f"media/{demos_folder_path}").mkdir(parents=True, exist_ok=True)
+
+        vods_folder_path = f"vods/{match.create_unique_folder_path()}"
+        Path(f"media/{vods_folder_path}").mkdir(parents=True, exist_ok=True)
+
         # Retrieve the tournament logo and tournament context of the match.
         extract_match_page_tournament_data(match, html)
 
         # Download the .rar GOTV demo file and unzip it to get the individual demo files.
-        folder_path = f"demos/{match.create_unique_folder_path()}"
-        Path(f"media/{folder_path}").mkdir(parents=True, exist_ok=True)
         demo_url = f"https://www.hltv.org{html.find('a', class_='stream-box')['data-demo-link']}"
 
-        download_file_from_url(demo_url, f"{folder_path}/demos.rar")
-        patoolib.extract_archive(f"media/{folder_path}/demos.rar", outdir=f"media/{folder_path}")
+        download_file_from_url(demo_url, f"{demos_folder_path}/demos.rar")
+        patoolib.extract_archive(f"media/{demos_folder_path}/demos.rar", outdir=f"media/{demos_folder_path}")
 
         # Delete the rar file after unzipping.
-        Path(f"media/{folder_path}/demos.rar").unlink(missing_ok=True)
+        Path(f"media/{demos_folder_path}/demos.rar").unlink(missing_ok=True)
 
-        # For each demo, download the vod for the corresponding game from Twitch or YouTube.
-        vod_links = html.findAll("img", class_="stream-flag flag")
-        for game_count, file in enumerate(os.listdir(f"media/{folder_path}")):
-            parser = DemoParser(f"media/{folder_path}/{file}")
-            game_length_seconds = float(parser.parse_header()["playback_time"])
-            print(file)
-            print(ceil(game_length_seconds / 60))
-            print(vod_links[game_count].parent.parent)
+        # For each demo, download the vod for the corresponding game from Twitch.
+        vod_urls = html.findAll("img", class_="stream-flag flag")
+        for game_count, file in enumerate(os.listdir(f"media/{demos_folder_path}")):
+            vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
+            (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{file}")
+
+            # Add 10 seconds to the start and end of the video to account for small timing errors.
+            vod_start = start_time - timedelta(seconds=10)
+            vod_end = end_time + timedelta(seconds=10)
+
+            vod_filepath = f"media/{vods_folder_path}/game_{game_count + 1}.mkv"
+            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}", shell=True)
 
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
