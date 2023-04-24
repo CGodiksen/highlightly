@@ -13,7 +13,7 @@ from cairosvg import svg2png
 from demoparser import DemoParser
 from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team, Game
+from scrapers.models import Match, Tournament, Team, Game, GameVod
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData, TournamentData
 from util.file_util import download_file_from_url
@@ -145,8 +145,15 @@ class CounterStrikeScraper(Scraper):
             vod_start = start_time - timedelta(seconds=10)
             vod_end = end_time + timedelta(seconds=10)
 
-            vod_filepath = f"media/{vods_folder_path}/game_{game_count + 1}.mkv"
-            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}", shell=True)
+            vod_filename = f"game_{game_count + 1}.mkv"
+            vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
+            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}",
+                           shell=True)
+
+            # Persist the location of the files and other needed information about the vods to the database.
+            game_map = vod_urls[game_count].next_sibling.text.split(" ")[-1].removesuffix(")")
+            game_vod = GameVod.objects.create(match=match, game_count=game_count, map=game_map, url=vod_url,
+                                              host=GameVod.Host.TWITCH, language="english", filename=vod_filename)
 
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
