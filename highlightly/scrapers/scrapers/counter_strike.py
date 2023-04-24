@@ -1,6 +1,6 @@
 import os
+import re
 import urllib.parse
-import zipfile
 from datetime import datetime, timedelta
 from math import ceil
 from pathlib import Path
@@ -298,3 +298,26 @@ def convert_format_to_minimum_time(match_format: Match.Format) -> int:
         return (2 * 30) + 5
     else:
         return (3 * 30) + 10
+
+
+def parse_twitch_vod_url(twitch_vod_url: str, demo_filepath: str) -> (str, timedelta, timedelta):
+    """Parse the url to retrieve the video ID and start time/end time for the game in the full Twitch video."""
+    parser = DemoParser(demo_filepath)
+    game_length_seconds = float(parser.parse_header()["playback_time"])
+
+    split_url = twitch_vod_url.split("&")
+    video_id = split_url[0].removeprefix("https://player.twitch.tv/?video=v")
+
+    start_time = convert_twitch_timestamp_to_timedelta(split_url[2].removeprefix("t="))
+    end_time = timedelta(seconds=ceil(game_length_seconds)) + start_time
+
+    return video_id, start_time, end_time
+
+
+def convert_twitch_timestamp_to_timedelta(timestamp: str) -> timedelta:
+    """Convert the given Twitch video timestamp to a timedelta object."""
+    hours = int(timestamp.split("h")[0]) if "h" in timestamp else 0
+    minutes = int(re.sub("\D", "", timestamp.split("m")[0][-2:])) if "m" in timestamp else 0
+    seconds = int(re.sub("\D", "", timestamp.split("s")[0][-2:])) if "s" in timestamp else 0
+
+    return timedelta(hours=hours, minutes=minutes, seconds=seconds)
