@@ -33,5 +33,5 @@ class LeagueOfLegendsScraper(Scraper):
         pass
 
     @staticmethod
-    def extract_match_statistics(html: BeautifulSoup) -> None:
+    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
         pass

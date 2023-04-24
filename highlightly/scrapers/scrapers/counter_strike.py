@@ -159,11 +159,19 @@ class CounterStrikeScraper(Scraper):
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
 
     @staticmethod
-    def extract_match_statistics(html: BeautifulSoup) -> None:
-        # TODO: For both teams, find the statistics table.
-        # TODO: Convert the HTML tables into csv.
-        # TODO: Save the csv files and save the name of the file on the gave vod object.
-        pass
+    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
+        statistics_folder_path = f"media/statistics/{match.create_unique_folder_path()}"
+        Path(statistics_folder_path).mkdir(parents=True, exist_ok=True)
+
+        # For both teams, find the statistics table.
+        stat_tables = html.findAll("div", class_="stats-content")
+
+        # Convert the HTML tables into CSV and save the filename on the relevant object.
+        for count, stat_table in enumerate(stat_tables):
+            html_table = stat_table.find_next()
+            filename = "all_maps.csv" if count == 0 else f"map_{count}.csv"
+
+            save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
 
 
 # TODO: Change this function back when done with testing.

@@ -72,7 +72,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def extract_match_statistics(html: BeautifulSoup) -> None:
+    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
         """
         Extract and save per-game statistics for the entire match. Also determine the MVP based on the statistics
         and extract the players photo and advanced statistics if possible.
