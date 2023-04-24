@@ -80,19 +80,19 @@ class Scraper:
         raise NotImplementedError
 
     # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
-    def scrape_finished_match(self, scheduled_match: Match) -> None:
+    def scrape_finished_match(self, match: Match) -> None:
         """
         Check if the scheduled match is finished. If so, scrape all data required from the match page to create
         highlights, create a highlight video, and complete the video metadata.
         """
-        html = self.is_match_finished(scheduled_match)
+        html = self.is_match_finished(match)
 
         if html is not None:
-            periodic_task = PeriodicTask.objects.get(name=f"Check if {scheduled_match} is finished")
+            periodic_task = PeriodicTask.objects.get(name=f"Check if {match} is finished")
             periodic_task.delete()
 
-            self.download_match_files(html)
+            self.download_match_files(match, html)
             self.extract_match_statistics(html)
 
-            scheduled_match.finished = True
-            scheduled_match.save(update_fields=["finished"])
+            match.finished = True
+            match.save(update_fields=["finished"])

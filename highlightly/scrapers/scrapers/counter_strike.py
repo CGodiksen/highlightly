@@ -13,7 +13,7 @@ from cairosvg import svg2png
 from demoparser import DemoParser
 from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team, Game, GameVod
+from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData, TournamentData
 from util.file_util import download_file_from_url
@@ -137,9 +137,9 @@ class CounterStrikeScraper(Scraper):
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
-        for game_count, file in enumerate(os.listdir(f"media/{demos_folder_path}")):
+        for game_count, demo_file in enumerate(os.listdir(f"media/{demos_folder_path}")):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
-            (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{file}")
+            (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{demo_file}")
 
             # Add 10 seconds to the start and end of the video to account for small timing errors.
             vod_start = start_time - timedelta(seconds=10)
@@ -155,6 +155,8 @@ class CounterStrikeScraper(Scraper):
             game_vod = GameVod.objects.create(match=match, game_count=game_count, map=game_map, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename)
 
+            GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
+            
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
         # TODO: For both teams, find the statistics table.
