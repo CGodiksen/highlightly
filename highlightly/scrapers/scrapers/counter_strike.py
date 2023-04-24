@@ -173,7 +173,14 @@ class CounterStrikeScraper(Scraper):
             for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
                 team_name = team.name.lower().replace(' ', '_')
                 filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
+
                 save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
+
+                object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
+                field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
+
+                setattr(object_to_update, field_to_update, filename)
+                object_to_update.save()
 
 
 # TODO: Change this function back when done with testing.

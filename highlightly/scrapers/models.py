@@ -60,9 +60,12 @@ class Match(models.Model):
         BEST_OF_5 = "BEST_OF_5", "Bo5"
 
     team_1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_1_matches")
-    team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_2_matches")
-    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+    team_1_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
 
+    team_2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="team_2_matches")
+    team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
+
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
     tournament_context = models.CharField(max_length=64, blank=True, null=True)
     format = models.CharField(max_length=16, choices=Format.choices)
     tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
@@ -99,6 +102,9 @@ class GameVod(models.Model):
     host = models.CharField(max_length=16, choices=Host.choices)
     language = models.CharField(max_length=64)
     filename = models.CharField(max_length=256)
+
+    team_1_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
+    team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
 
 
 # TODO: When the GOTV demo is deleted, also delete the file.
