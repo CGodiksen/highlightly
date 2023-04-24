@@ -92,7 +92,7 @@ class Scraper:
             periodic_task.delete()
 
             self.download_match_files(match, html)
-            self.extract_match_statistics(html)
+            self.extract_match_statistics(match, html)
 
             match.finished = True
             match.save(update_fields=["finished"])

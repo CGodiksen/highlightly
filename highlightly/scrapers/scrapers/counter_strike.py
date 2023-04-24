@@ -112,7 +112,7 @@ class CounterStrikeScraper(Scraper):
             demo_found = match_soup.find("div", class_="flexbox", text="GOTV Demo sponsored by Bitskins") is not None
             vods_found = match_soup.findAll("img", class_="stream-flag flag")
 
-            return html if demo_found and len(vods_found) > 0 else None
+            return match_soup if demo_found and len(vods_found) > 0 else None
 
         return None
 
@@ -148,12 +148,12 @@ class CounterStrikeScraper(Scraper):
 
             vod_filename = f"game_{game_count + 1}.mkv"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
-            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}",
+            subprocess.run(f"twitch-dl download -q 360p -s {vod_start} -e {vod_end} -o {vod_filepath} -w 10 {video_id}",
                            shell=True)
 
             # Persist the location of the files and other needed information about the vods to the database.
             game_map = vod_urls[game_count].next_sibling.text.split(" ")[-1].removesuffix(")")
-            game_vod = GameVod.objects.create(match=match, game_count=game_count, map=game_map, url=vod_url,
+            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=game_map, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename)
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)

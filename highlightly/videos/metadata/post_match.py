@@ -7,4 +7,5 @@ def add_post_match_video_metadata(match: Match):
     statistics about the performance of each player during the match, the tournament context, the tournament logo,
     and a frame from the match for the thumbnail.
     """
-    pass
+    print(f"Add post game metadata for {str(match)}")
+
