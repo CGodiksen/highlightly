@@ -9,7 +9,7 @@ from scrapers.models import Match, Game
 
 @receiver(post_save, sender=Match)
 def create_highlights(instance: Match, update_fields: frozenset, **_kwargs) -> None:
-    if "finished" in update_fields and instance.finished:
+    if update_fields is not None and "finished" in update_fields and instance.finished:
         if instance.team_1.game == Game.COUNTER_STRIKE:
             highlighter = CounterStrikeHighlighter()
         elif instance.team_1.game == Game.VALORANT:

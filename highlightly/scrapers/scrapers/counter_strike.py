@@ -156,7 +156,7 @@ class CounterStrikeScraper(Scraper):
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename)
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
-            
+
     @staticmethod
     def extract_match_statistics(html: BeautifulSoup) -> None:
         # TODO: For both teams, find the statistics table.
