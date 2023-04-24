@@ -1,3 +1,4 @@
+import csv
 import os
 import re
 import subprocess
@@ -339,3 +340,15 @@ def convert_twitch_timestamp_to_timedelta(timestamp: str) -> timedelta:
     seconds = int(re.sub("\D", "", timestamp.split("s")[0][-2:])) if "s" in timestamp else 0
 
     return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
+
+def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
+    """Convert the given HTML table to CSV and save the CSV data to a file."""
+    headers = [th.text.strip() for th in html_table.select("tr.header-row td")]
+
+    with open(filepath, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+
+        rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in html_table.select("tr + tr")]
+        writer.writerows(rows)
