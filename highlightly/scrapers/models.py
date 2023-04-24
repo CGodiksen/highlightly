@@ -106,8 +106,14 @@ class GameVod(models.Model):
     team_1_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
     team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
 
+    def __str__(self) -> str:
+        return f"Map {self.game_count} VOD for {self.match}"
+
 
 # TODO: When the GOTV demo is deleted, also delete the file.
 class GOTVDemo(models.Model):
     game_vod = models.OneToOneField(GameVod, on_delete=models.CASCADE)
     filename = models.CharField(max_length=256)
+
+    def __str__(self) -> str:
+        return f"Map {self.game_vod.game_count} GOTV demo for {self.game_vod.match}"

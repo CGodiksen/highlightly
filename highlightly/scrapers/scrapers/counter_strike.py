@@ -148,6 +148,7 @@ class CounterStrikeScraper(Scraper):
 
             vod_filename = f"game_{game_count + 1}.mkv"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
+            # TODO: Use source quality in production and tune the amount workers for efficiency.
             subprocess.run(f"twitch-dl download -q 360p -s {vod_start} -e {vod_end} -o {vod_filepath} -w 10 {video_id}",
                            shell=True)
 
