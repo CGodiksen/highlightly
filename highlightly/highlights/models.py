@@ -5,7 +5,7 @@ from scrapers.models import GameVod
 
 
 class Highlight(models.Model):
-    game_vod = models.OneToOneField(GameVod, on_delete=models.CASCADE)
+    game_vod = models.ForeignKey(GameVod, on_delete=models.CASCADE)
 
     start_time_seconds = models.IntegerField(validators=[MinValueValidator(0)])
     duration_seconds = models.IntegerField(validators=[MinValueValidator(5)])
@@ -13,4 +13,4 @@ class Highlight(models.Model):
     round_number = models.IntegerField(validators=[MinValueValidator(1)])
 
     def __str__(self) -> str:
-        return self.events
+        return f"Round {self.round_number}: {self.events}"

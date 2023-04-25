@@ -1,3 +1,5 @@
 from django.contrib import admin
 
-# Register your models here.
+from highlights.models import Highlight
+
+admin.site.register(Highlight)
