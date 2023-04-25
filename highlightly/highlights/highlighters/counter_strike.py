@@ -3,6 +3,7 @@ from pathlib import Path
 from demoparser import DemoParser
 
 from highlights.highlighters.highlighter import Highlighter
+from highlights.models import Highlight
 from highlights.types import Event, Round
 from scrapers.models import GameVod
 
@@ -25,11 +26,17 @@ class CounterStrikeHighlighter(Highlighter):
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         rounds = split_events_into_rounds(events)
+        cleaned_rounds = [clean_round_events(round) for round in rounds]
 
-        # TODO: Remove player deaths that are separate from the actual highlight of the round.
-        # TODO: Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
-        # TODO: Only create a highlight for the round if there are more than two events left after cleaning.
-        pass
+        for round in cleaned_rounds:
+            # Only create a highlight for the round if there are more than two events left after cleaning.
+            if len(round["events"]) > 2:
+                start = round["events"][0]["time"] - 5
+                end = round["events"][-1]["time"] + 5
+                events_str = " - ".join([f"{event['name']} ({event['time']})" for event in round["events"]])
+
+                Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
+                                         events=events_str, round_number=round["round_number"])
 
 
 def split_events_into_rounds(events: list[Event]) -> list[Round]:
