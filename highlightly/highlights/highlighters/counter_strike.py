@@ -14,7 +14,7 @@ class CounterStrikeHighlighter(Highlighter):
         demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
         parser = DemoParser(demo_filepath)
 
-        event_types = ["round_freeze_end", "round_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
+        event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
         events = [{"name": event["event_name"], "time": event["tick"] // 128}
                   for event in parser.parse_events("") if event["event_name"] in event_types]
 
@@ -35,11 +35,11 @@ class CounterStrikeHighlighter(Highlighter):
 def split_events_into_rounds(events: list[Event]) -> list[Round]:
     """Parse through the events and separate them into rounds based on the "round_end" event."""
     rounds: list[Round] = []
-    round_counter = 1
+    round_counter = 0
     round = {"round_number": round_counter, "events": []}
 
-    for event in events:
-        if event["name"] == "round_end":
+    for count, event in enumerate(events):
+        if event["name"] == "round_freeze_end" or count == len(events) - 1:
             rounds.append(round)
 
             round_counter += 1
