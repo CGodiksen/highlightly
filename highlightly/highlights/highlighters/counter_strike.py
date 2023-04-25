@@ -61,6 +61,8 @@ def clean_round_events(round: Round) -> Round:
             if events[i]["name"] != "player_death" or cleaned_events[0]["time"] - events[i]["time"] <= 20:
                 cleaned_events.insert(0, events[i])
 
-        # TODO: Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
+        # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
+        if cleaned_events[-2]["name"] == "bomb_planted" and cleaned_events[-1]["name"] == "bomb_exploded":
+            del cleaned_events[-1]
 
     return {"round_number": round["round_number"], "events": cleaned_events}
