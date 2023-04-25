@@ -16,11 +16,17 @@ class CounterStrikeHighlighter(Highlighter):
         parser = DemoParser(demo_filepath)
 
         event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
-        events = [{"name": event["event_name"], "time": event["tick"] // 128}
+        events = [{"name": event["event_name"], "time": round(event["tick"] / 128)}
                   for event in parser.parse_events("") if event["event_name"] in event_types]
 
         # Delete the GOTV demo file since it is no longer needed.
         Path(demo_filepath).unlink(missing_ok=True)
+
+        # Calibrate the event times, so they are in relation to when the first freeze time is over.
+        first_start_time = next(event for event in events if event["name"] == "round_freeze_end")["time"]
+
+        for event in events:
+            event["time"] -= first_start_time
 
         return events
 
