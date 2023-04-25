@@ -48,3 +48,19 @@ def split_events_into_rounds(events: list[Event]) -> list[Round]:
             round["events"].append(event)
 
     return rounds
+
+
+def clean_round_events(round: Round) -> Round:
+    """Return an updated round where the events that would decrease the viewing quality of the highlight are removed."""
+    events = [event for event in round["events"] if event["name"] != "round_freeze_end"]
+    cleaned_events = events[2:]
+
+    if len(events) > 2:
+        # Remove player deaths that are separate from the actual highlight of the round.
+        for i in [1, 0]:
+            if events[i]["name"] != "player_death" or cleaned_events[0]["time"] - events[i]["time"] <= 20:
+                cleaned_events.insert(0, events[i])
+
+        # TODO: Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
+
+    return {"round_number": round["round_number"], "events": cleaned_events}
