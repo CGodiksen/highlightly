@@ -19,5 +19,8 @@ class CounterStrikeHighlighter(Highlighter):
         return events
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
-        # TODO: Split the events into rounds and clean the per round events to get highlights.
+        # TODO: Split the events into rounds.
+        # TODO: Remove player deaths that are separate from the actual highlight of the round.
+        # TODO: Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
+        # TODO: Only create a highlight for the round if there are more than two events left after cleaning.
         pass
