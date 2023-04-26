@@ -93,6 +93,6 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     # Add the tournament logo in the bottom right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}")
     tournament_logo.thumbnail((100, 100))
-    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 690 - tournament_logo.height), tournament_logo)
+    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
 
     thumbnail.save(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
