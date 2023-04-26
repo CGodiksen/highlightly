@@ -1,4 +1,5 @@
 import cv2
+from google.cloud import vision
 
 from scrapers.models import GameVod
 from videos.editors.editor import Editor
@@ -10,7 +11,7 @@ class CounterStrikeEditor(Editor):
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
         initial_offset = 40
-        max_attempts = 15
+        max_attempts = 1
 
         vod_filepath = f"media/vods/{game_vod.match.create_unique_folder_path()}/{game_vod.filename}"
         video_capture = cv2.VideoCapture(vod_filepath)
@@ -27,9 +28,20 @@ class CounterStrikeEditor(Editor):
 
             # Crop the frame, so it focuses on the scoreboard and the timer.
             cropped_frame = frame[0:200, (int(width / 2) - 125):(int(width / 2) + 125)]
-            cv2.imwrite(f"test/test-{i}.png", cropped_frame)
+            print(detect_text(cv2.imencode(".png", cropped_frame)[1].tobytes()))
 
             # TODO: Use OCR to get the characters in the image and find the timer. If not found, try again with a new frame.
 
         # TODO: Convert the time on the timer to an offset for when the game starts compared to when the video starts.
         return 0
+
+
+def detect_text(image_content: bytes):
+    """Use the Google Cloud Vision API to detect text in the given image."""
+    client = vision.ImageAnnotatorClient()
+    image = vision.Image(content=image_content)
+
+    response = client.text_detection(image=image)
+    detected_text = response.text_annotations
+
+    return [text.description for text in detected_text]

@@ -19,5 +19,6 @@ services:
       - ./.env
     environment:
       DEBUG: "True"
+      GOOGLE_APPLICATION_CREDENTIALS: ../gcp_ocr.json
     volumes:
       - ./:/usr/src/app

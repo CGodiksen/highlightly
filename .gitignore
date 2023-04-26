@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 /highlightly/media/
 /data/demos/
+/gcp_ocr.json
