@@ -16,3 +16,6 @@ class Highlighter:
         for game in match.gamevod_set.all():
             events = self.extract_events(game)
             self.combine_events(game, events)
+
+            match.highlighted = True
+            match.save(update_fields=["highlighted"])

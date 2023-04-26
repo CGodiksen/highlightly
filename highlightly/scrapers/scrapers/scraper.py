@@ -1,4 +1,3 @@
-import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
