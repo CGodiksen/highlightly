@@ -142,14 +142,13 @@ class CounterStrikeScraper(Scraper):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
             (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{demo_file}")
 
-            # Add 10 seconds to the start and end of the video to account for small timing errors.
-            vod_start = start_time - timedelta(seconds=10)
-            vod_end = end_time + timedelta(seconds=10)
+            # Add 15 seconds to the start and end of the video to account for small timing errors.
+            vod_start = start_time - timedelta(seconds=15)
+            vod_end = end_time + timedelta(seconds=15)
 
             vod_filename = f"game_{game_count + 1}.mkv"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
-            # TODO: Use source quality in production and tune the amount workers for efficiency.
-            subprocess.run(f"twitch-dl download -q 360p -s {vod_start} -e {vod_end} -o {vod_filepath} -w 10 {video_id}",
+            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 24 {video_id}",
                            shell=True)
 
             # Persist the location of the files and other needed information about the vods to the database.
