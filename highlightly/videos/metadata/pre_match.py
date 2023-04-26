@@ -150,7 +150,7 @@ def get_logo_background_color(team: Team, logo_filepath: str) -> str:
     return team.background_color
 
 
-def create_match_frame_part(match_frame_filepath: str, team_part_width) -> Image.Image:
+def create_match_frame_part(match_frame_filepath: str, team_part_width: int) -> Image.Image:
     """
     Given a filepath to a full size frame from a match, resize and crop the image to make it the correct size for the
     match frame part of the thumbnail.

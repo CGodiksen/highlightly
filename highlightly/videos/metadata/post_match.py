@@ -3,8 +3,10 @@ import re
 
 import pandas as pd
 import twitch
+from PIL import Image
 
 from scrapers.models import Match
+from videos.metadata.pre_match import create_match_frame_part
 from videos.models import VideoMetadata
 
 
@@ -40,7 +42,9 @@ def add_post_match_video_metadata(match: Match):
     channel_name = get_match_vod_channel_name(match)
     new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
 
-    # TODO: Add a frame from the match and the tournament logo to the thumbnail.
+    # Add a frame from the match and the tournament logo to the thumbnail.
+    finish_video_thumbnail(match, video_metadata)
+
     # TODO: Create an image with tables for the match statistics and the MVP of the match with player specific statistics.
 
     video_metadata.description = new_description
@@ -64,3 +68,21 @@ def get_match_vod_channel_name(match: Match) -> str:
 
     helix = twitch.Helix(os.environ["TWITCH_CLIENT_ID"], os.environ["TWITCH_CLIENT_SECRET"])
     return helix.video(int(video_id)).user_name
+
+
+def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
+    """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
+    thumbnail_path = f"media/thumbnails/{match.tournament.name.replace(' ', '_')}/{video_metadata.thumbnail_filename}"
+    thumbnail = Image.open(thumbnail_path)
+
+    # Add a frame from the match to the right 3/4 of the thumbnail.
+    # TODO: Retrieve an actual frame from the match.
+    match_frame_part = create_match_frame_part("../data/test/match_frame.png", 360)
+    thumbnail.paste(match_frame_part, (360, 0))
+
+    # Add the tournament logo in the bottom right of the thumbnail.
+    tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}")
+    tournament_logo.thumbnail((100, 100))
+    thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 690 - tournament_logo.height), tournament_logo)
+
+    thumbnail.save("test.png")
