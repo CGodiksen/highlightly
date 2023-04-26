@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import cv2
 from google.cloud import vision
 
@@ -10,17 +12,17 @@ class CounterStrikeEditor(Editor):
 
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
-        initial_offset = 40
-        max_attempts = 1
+        detected_timer = None
+        offset = 45
+        max_attempts = 10
 
         vod_filepath = f"media/vods/{game_vod.match.create_unique_folder_path()}/{game_vod.filename}"
         video_capture = cv2.VideoCapture(vod_filepath)
         width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 
         # The video is 60 FPS. Jump two seconds forward each attempt.
-        for i in range(60 * initial_offset, (60 * 40) + (max_attempts * 120), 120):
-            current_offset = i / 60
-            print(current_offset)
+        for i in range(60 * offset, (60 * 40) + (max_attempts * 120), 120):
+            offset = i / 60
 
             # Extract a single frame from the game where the round timer is potentially visible.
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, i)
@@ -28,12 +30,20 @@ class CounterStrikeEditor(Editor):
 
             # Crop the frame, so it focuses on the scoreboard and the timer.
             cropped_frame = frame[0:200, (int(width / 2) - 125):(int(width / 2) + 125)]
-            print(detect_text(cv2.imencode(".png", cropped_frame)[1].tobytes()))
 
-            # TODO: Use OCR to get the characters in the image and find the timer. If not found, try again with a new frame.
+            # Use OCR to get the characters in the image and find the timer. If not found, try again with a new frame.
+            detected_text = detect_text(cv2.imencode(".png", cropped_frame)[1].tobytes())
+            detected_timer = next((text for text in detected_text if ":" in text and len(text) == 4), None)
 
-        # TODO: Convert the time on the timer to an offset for when the game starts compared to when the video starts.
-        return 0
+            if detected_timer is not None:
+                break
+
+        # Convert the time on the timer to an offset for when the game starts compared to when the video starts.
+        split_timer = detected_timer.split(":")
+        seconds_left_in_round = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+        seconds_since_round_started = 115 - seconds_left_in_round
+
+        return int(offset - seconds_since_round_started)
 
 
 def detect_text(image_content: bytes):
