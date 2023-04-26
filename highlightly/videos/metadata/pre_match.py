@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 from colorthief import ColorThief
 
 from scrapers.models import Match, Team
+from videos.metadata.util import create_match_frame_part
 from videos.models import VideoMetadata
 
 
@@ -148,21 +149,6 @@ def get_logo_background_color(team: Team, logo_filepath: str) -> str:
         team.save()
 
     return team.background_color
-
-
-def create_match_frame_part(match_frame_filepath: str, team_part_width: int) -> Image.Image:
-    """
-    Given a filepath to a full size frame from a match, resize and crop the image to make it the correct size for the
-    match frame part of the thumbnail.
-    """
-    match_frame = Image.open(match_frame_filepath)
-    match_frame.thumbnail((1450, 820))
-
-    cropped_width = match_frame.width - (1280 - team_part_width)
-    cropped_height = match_frame.height - 720
-    box = (cropped_width // 2, cropped_height, match_frame.width - (cropped_width // 2), match_frame.height)
-
-    return match_frame.crop(box)
 
 
 def is_single_colored(palette: list[tuple[int, int, int]]) -> bool:

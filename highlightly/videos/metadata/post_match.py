@@ -6,7 +6,7 @@ import twitch
 from PIL import Image
 
 from scrapers.models import Match
-from videos.metadata.pre_match import create_match_frame_part
+from videos.metadata.util import create_match_frame_part
 from videos.models import VideoMetadata
 
 
