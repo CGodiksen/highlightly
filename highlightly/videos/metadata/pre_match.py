@@ -33,9 +33,6 @@ def create_video_title(scheduled_match: Match) -> str:
     return basic_title
 
 
-# TODO: Maybe add the players from each team to the description when doing post game metadata.
-# TODO: Maybe add the credits for where the vod is from.
-# TODO: Add the tournament context after doing post game metadata.
 def create_video_description(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video description."""
     tournament = scheduled_match.tournament
@@ -57,12 +54,13 @@ def create_video_description(scheduled_match: Match) -> str:
                     "Valorant: https://www.youtube.com/channel/UCR40P8gajrDJcaP3Y5pQVxQ\n" \
                     "League of Legends: https://www.youtube.com/channel/UCH97dRgcN7vvhzpfAZRiUlg\n"
 
-    tags_part = f"#{scheduled_match.team_1.name.lower()} #{scheduled_match.team_2.name.lower()} #{game.replace(' ', '').lower()}"
+    tags_part = f"#{scheduled_match.team_1.name.replace(' ', '').lower()} " \
+                f"#{scheduled_match.team_2.name.replace(' ', '').lower()} " \
+                f"#{game.replace(' ', '').lower()}"
 
     return f"{channel_part}\n{match_part}\n{channels_part}\n{tags_part}"
 
 
-# TODO: Maybe add the players from each team and tournament context when doing post game metadata.
 def create_video_tags(scheduled_match: Match) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
     return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
@@ -71,10 +69,7 @@ def create_video_tags(scheduled_match: Match) -> list[str]:
             scheduled_match.get_format_display()]
 
 
-# TODO: When doing post game metadata, get the 100 x 100 tournament logo from the match page.
-# TODO: When doing post game metadata, get a frame of the vod from right before a kill and use it for the game part.
-# TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and
-#  says "'GAME' HIGHLIGHTS".
+# TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and says "'GAME' HIGHLIGHTS".
 def create_video_thumbnail(scheduled_match: Match) -> str:
     """
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
