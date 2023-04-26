@@ -1,6 +1,7 @@
 import os
 import re
 
+import cv2
 import pandas as pd
 import twitch
 from PIL import Image
@@ -70,14 +71,23 @@ def get_match_vod_channel_name(match: Match) -> str:
     return helix.video(int(video_id)).user_name
 
 
+# TODO: Generate some eye catching text based on the context of the match and put it in the top of the match frame.
 def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
-    thumbnail_path = f"media/thumbnails/{match.tournament.name.replace(' ', '_')}/{video_metadata.thumbnail_filename}"
-    thumbnail = Image.open(thumbnail_path)
+    thumbnail_folder = f"media/thumbnails/{match.tournament.name.replace(' ', '_')}"
+    thumbnail = Image.open(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
 
-    # Add a frame from the match to the right 3/4 of the thumbnail.
-    # TODO: Retrieve an actual frame from the match.
-    match_frame_part = create_match_frame_part("../data/test/match_frame.png", 360)
+    # Retrieve a frame from one minute into the first game in the match.
+    vod_filepath = f"media/vods/{match.create_unique_folder_path()}/{match.gamevod_set.first().filename}"
+    video_capture = cv2.VideoCapture(vod_filepath)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * 60)
+
+    _res, frame = video_capture.read()
+    frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
+    cv2.imwrite(f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}", frame)
+
+    # Add the frame from the match to the right 3/4 of the thumbnail.
+    match_frame_part = create_match_frame_part(frame_filepath, 360)
     thumbnail.paste(match_frame_part, (360, 0))
 
     # Add the tournament logo in the bottom right of the thumbnail.
@@ -85,4 +95,4 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     tournament_logo.thumbnail((100, 100))
     thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 690 - tournament_logo.height), tournament_logo)
 
-    thumbnail.save("test.png")
+    thumbnail.save(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")

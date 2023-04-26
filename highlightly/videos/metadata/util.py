@@ -6,7 +6,7 @@ def create_match_frame_part(match_frame_filepath: str, team_part_width: int) -> 
     Given a filepath to a full size frame from a match, resize and crop the image to make it the correct size for the
     match frame part of the thumbnail.
     """
-    match_frame = Image.open(match_frame_filepath)
+    match_frame = Image.open(match_frame_filepath).resize((1920, 1080))
     match_frame.thumbnail((1450, 820))
 
     cropped_width = match_frame.width - (1280 - team_part_width)
