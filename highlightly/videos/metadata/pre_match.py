@@ -1,4 +1,3 @@
-import json
 import math
 from pathlib import Path
 
@@ -21,7 +20,7 @@ def create_pre_match_video_metadata(scheduled_match: Match):
     thumbnail_filename = create_video_thumbnail(scheduled_match)
 
     VideoMetadata.objects.create(match=scheduled_match, title=title, description=description,
-                                 tags=json.dumps(tags), thumbnail_filename=thumbnail_filename)
+                                 tags=tags, thumbnail_filename=thumbnail_filename)
 
 
 def create_video_title(scheduled_match: Match) -> str:
