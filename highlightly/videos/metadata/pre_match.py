@@ -37,16 +37,20 @@ def create_video_description(scheduled_match: Match) -> str:
     tournament = scheduled_match.tournament
     game = scheduled_match.team_1.get_game_display()
 
+    match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
+                 f"({scheduled_match.get_format_display()})\n" \
+                 f"{scheduled_match.team_1.name}: TEAM_1_PLAYERS\n" \
+                 f"{scheduled_match.team_2.name}: TEAM_2_PLAYERS\n"
+
+    link_part = f"This is the TOURNAMENT_CONTEXT of the {tournament.prize_pool_us_dollars} prize pool " \
+                f"{game} tournament {tournament.name}:\n" \
+                f"Match: {scheduled_match.url}\n" \
+                f"Tournament: {tournament.url}\n" \
+                f"Credits: CREDIT_URL\n"
+
     channel_part = f"Highlightly brings you accurate highlights quickly, condensing all the best {game} has to offer. " \
                    f"Catch the best moments from all your favorite {game} teams. Watch the best players in the world " \
                    f"compete at the highest levels of {game}.\n"
-
-    match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
-                 f"({scheduled_match.get_format_display()})\n" \
-                 f"TOURNAMENT_CONTEXT of {tournament.prize_pool_us_dollars} prize pool " \
-                 f"{game} tournament ({tournament.name})\n" \
-                 f"Match: {scheduled_match.url}\n" \
-                 f"Tournament: {tournament.url}\n"
 
     channels_part = "Highlightly channels:\n" \
                     "Counter-Strike: https://www.youtube.com/channel/UCaLgPz7aH58L4nDku2rYl1Q\n" \
@@ -57,7 +61,7 @@ def create_video_description(scheduled_match: Match) -> str:
                 f"#{scheduled_match.team_2.name.replace(' ', '').lower()} " \
                 f"#{game.replace(' ', '').lower()}"
 
-    return f"{channel_part}\n{match_part}\n{channels_part}\n{tags_part}"
+    return f"{match_part}\n{link_part}\n{channel_part}\n{channels_part}\n{tags_part}"
 
 
 def create_video_tags(scheduled_match: Match) -> list[str]:
