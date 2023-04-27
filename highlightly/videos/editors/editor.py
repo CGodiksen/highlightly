@@ -38,12 +38,18 @@ class Editor:
                 start -= 2
                 duration += 4
 
-                cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy " \
-                      f"{folder_path}/clips/clip_{count + 1}.mkv"
+                # Create the initial full length clip.
+                clip_temp_filepath = f"{folder_path}/clips/clip_{count + 1}_temp.mkv"
+                cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_temp_filepath}"
                 subprocess.run(cmd, shell=True)
 
                 # Find a silent point in the first 4 seconds and last 4 seconds to cut on.
-                # TODO: Further cut the video so it starts and ends in silence.
+                (silent_start, silent_end) = get_optimal_cut_points(clip_temp_filepath)
+
+                # Further cut the video, so it starts and ends in silence.
+                clip_filepath = clip_temp_filepath.replace("_temp.mkv", ".mkv")
+                cmd = f"ffmpeg -ss {silent_start} -i {clip_temp_filepath} -to {silent_end - silent_start} -c copy {clip_filepath}"
+                subprocess.run(cmd, shell=True)
 
                 clips_txt.write(f"file 'clip_{count + 1}.mkv'\n")
 
@@ -72,6 +78,8 @@ class Editor:
         # TODO: Upload the single combined video to YouTube using the created video metadata.
 
 
+# TODO: Maybe extend the time that is added to the start and end and extend the period we look for optimal cut points in.
+# TODO: Maybe round up and down and add a millisecond for a slightly better cut point.
 def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     """
     Extract the speech from the video and find the optimal times to cut the video to avoid cutting in the middle of a word
@@ -88,7 +96,7 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     end_silences = [silence for silence in detected_silence if silence[1] > end_limit_ms]
 
     start_time_ms = 2000
-    duration_ms = end_limit_ms + 2000
+    end_time_ms = end_limit_ms + 2000
 
     # If there is a silence in the first 4 seconds find the time to cut to get the longest silence after starting.
     if len(start_silences) > 0:
@@ -98,6 +106,6 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     # If there is a silence in the last 4 seconds find the time to cut to get the longest silence before ending.
     if len(end_silences) > 0:
         longest_end_silence = sorted(end_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
-        duration_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100
+        end_time_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100
 
-    return start_time_ms / 1000, duration_ms / 1000
+    return start_time_ms / 1000, end_time_ms / 1000
