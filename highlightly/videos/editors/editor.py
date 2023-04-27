@@ -12,9 +12,7 @@ class Editor:
         """Return how many seconds there are in the given VOD before the game starts."""
         raise NotImplementedError
 
-    # TODO: Look into methods for avoiding cutting in the middle of a word or sentence.
-    # TODO: Maybe look through audio for whole video and determine ideal places to cut.
-    # TODO: Then if the end time for a highlight is close to the ideal point, change the end time.
+    # TODO: Look into efficient ways to add smoother transitions between clips.
     @staticmethod
     def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
@@ -29,8 +27,8 @@ class Editor:
         with open(f"{folder_path}/clips/clips.txt", "a") as clips_txt:
             for count, highlight in enumerate(highlights):
                 # Add more time to the end of the last highlight.
-                duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 5)
-                start = highlight.start_time_seconds + offset - 5
+                duration = highlight.duration_seconds + (20 if count + 1 == len(highlights) else 10)
+                start = (highlight.start_time_seconds + offset) - 5
 
                 cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy " \
                       f"{folder_path}/clips/clip_{count + 1}.mkv"
@@ -57,7 +55,18 @@ class Editor:
         game_vod = match.gamevod_set.get(filename="game_2.mkv")
         offset = self.find_game_starting_point(game_vod)
 
-        self.create_highlight_video(game_vod, game_vod.filename.replace('.mkv', '_highlights.mkv'), offset)
+        self.create_highlight_video(game_vod, game_vod.filename.replace('.mkv', '_highlights.mp4'), offset)
 
         # TODO: Combine the highlight video for each game VOD into a single full highlight video.
         # TODO: Upload the single combined video to YouTube using the created video metadata.
+
+
+def get_optimal_cut_points(vod_filepath: str) -> list[int]:
+    """
+    Extract the speech from the video and find the optimal times to cut the video to avoid cutting in the middle of a word
+    or sentence. The optimal times are returned as a list of ints, specifying how many seconds into the video to cut.
+    """
+    # TODO: Extend the clips 3 seconds both directions and use this method to find the best starting pointa and ending point.
+    # TODO: Use PyDub detect_silence method to find the longest silence in the first 5 seconds or the last 5 seconds.
+    # TODO: Based on that, further cut the video so it starts and ends in silence.
+    pass
