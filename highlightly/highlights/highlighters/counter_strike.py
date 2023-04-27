@@ -63,6 +63,13 @@ def split_events_into_rounds(events: list[Event]) -> list[Round]:
     return rounds
 
 
+# TODO: Change the highlights so they do not add any time, adding time before and after should be handled in editor.
+# TODO: Remove very one sided eco rounds if it is not one of the last two rounds in the half or in the game.
+# TODO: Change it so we first set all events of a round as a potential highlight.
+# TODO: Then we split on long breaks.
+# TODO: If there is 2 or more potential highlights in a round, the first can be removed if it has 3 or less player deaths.
+# TODO: If there is 3 or more potential highlights in a round, the second can be removed if it has 2 or less player deaths.
+# TODO: Everything related to the bomb should always be included before the step where we prune CTs saving.
 def clean_round_events(round: Round) -> Round:
     """Return an updated round where the events that would decrease the viewing quality of the highlight are removed."""
     events = [event for event in round["events"] if event["name"] != "round_freeze_end"]
