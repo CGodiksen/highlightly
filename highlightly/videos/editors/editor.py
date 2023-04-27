@@ -81,23 +81,23 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     detected_silence = detect_silence(audio, min_silence_len=100, silence_thresh=-32)
 
     # Find the longest silence in the first 4 seconds and the last 4 seconds.
-    start_limit = 4 * 1000
-    end_limit = (round(audio.duration_seconds) - 4) * 1000
+    start_limit_ms = 4 * 1000
+    end_limit_ms = (round(audio.duration_seconds) - 4) * 1000
 
-    start_silences = [silence for silence in detected_silence if silence[0] < start_limit]
-    end_silences = [silence for silence in detected_silence if silence[1] > end_limit]
+    start_silences = [silence for silence in detected_silence if silence[0] < start_limit_ms]
+    end_silences = [silence for silence in detected_silence if silence[1] > end_limit_ms]
 
-    start_time_seconds = 2
-    duration_seconds = end_limit + 2
+    start_time_ms = 2000
+    duration_ms = end_limit_ms + 2000
 
     # If there is a silence in the first 4 seconds find the time to cut to get the longest silence after starting.
     if len(start_silences) > 0:
         longest_start_silence = sorted(start_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
-        start_time_seconds = int(math.ceil(longest_start_silence[0] / 100.0)) * 100
+        start_time_ms = int(math.ceil(longest_start_silence[0] / 100.0)) * 100
 
     # If there is a silence in the last 4 seconds find the time to cut to get the longest silence before ending.
     if len(end_silences) > 0:
         longest_end_silence = sorted(end_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
-        duration_seconds = int(math.floor(longest_end_silence[1] / 100.0)) * 100
+        duration_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100
 
-    return start_time_seconds / 1000, duration_seconds / 1000
+    return start_time_ms / 1000, duration_ms / 1000
