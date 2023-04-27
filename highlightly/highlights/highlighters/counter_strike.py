@@ -37,8 +37,8 @@ class CounterStrikeHighlighter(Highlighter):
         for round in cleaned_rounds:
             # Only create a highlight for the round if there are more than two events left after cleaning.
             if len(round["events"]) > 2:
-                start = round["events"][0]["time"] - 5
-                end = round["events"][-1]["time"] + 5
+                start = round["events"][0]["time"]
+                end = round["events"][-1]["time"]
                 events_str = " - ".join([f"{event['name']} ({event['time']})" for event in round["events"]])
 
                 Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,

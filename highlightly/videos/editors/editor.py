@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -14,7 +15,6 @@ class Editor:
     # TODO: Look into methods for avoiding cutting in the middle of a word or sentence.
     # TODO: Maybe look through audio for whole video and determine ideal places to cut.
     # TODO: Then if the end time for a highlight is close to the ideal point, change the end time.
-    # TODO: Add more time at the end of the last highlight.
     @staticmethod
     def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
@@ -28,8 +28,11 @@ class Editor:
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
         with open(f"{folder_path}/clips/clips.txt", "a") as clips_txt:
             for count, highlight in enumerate(highlights):
-                start = highlight.start_time_seconds + offset
-                cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {highlight.duration_seconds} -c copy " \
+                # Add more time to the end of the last highlight.
+                duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 5)
+                start = highlight.start_time_seconds + offset - 5
+
+                cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy " \
                       f"{folder_path}/clips/clip_{count + 1}.mkv"
                 subprocess.run(cmd, shell=True)
 
@@ -38,6 +41,8 @@ class Editor:
         # Combine the clips into a single highlight video file.
         cmd = f"ffmpeg -f concat -i {folder_path}/clips/clips.txt -codec copy {folder_path}/highlights/{target_filename}"
         subprocess.run(cmd, shell=True)
+
+        shutil.rmtree(f"{folder_path}/clips")
 
     @staticmethod
     def combine_highlight_videos(target_filename: str, highlight_videos: list[str]) -> None:
