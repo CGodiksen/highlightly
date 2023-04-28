@@ -18,14 +18,12 @@ class Editor:
 
     # TODO: Look into efficient ways to add smoother transitions between clips.
     @staticmethod
-    def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int) -> None:
+    def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int, folder_path: str) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
         highlights = game_vod.highlight_set.all()
 
-        folder_path = f"media/vods/{game_vod.match.create_unique_folder_path()}"
         vod_filepath = f"{folder_path}/{game_vod.filename}"
         Path(f"{folder_path}/clips").mkdir(parents=True, exist_ok=True)
-        Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
 
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
         with open(f"{folder_path}/clips/clips.txt", "a+") as clips_txt:
@@ -60,21 +58,29 @@ class Editor:
         shutil.rmtree(f"{folder_path}/clips")
 
     @staticmethod
-    def combine_highlight_videos(target_filename: str, highlight_videos: list[str]) -> None:
-        pass
-
-    @staticmethod
     def upload_highlight_video(target_filename: str, video_metadata: VideoMetadata) -> None:
         pass
 
     def edit_and_upload_video(self, match: Match):
         """Using the highlights edit the full VODs into a highlight video and upload it to YouTube."""
-        game_vod = match.gamevod_set.get(filename="game_2.mkv")
-        offset = self.find_game_starting_point(game_vod)
+        folder_path = f"media/vods/{match.create_unique_folder_path()}"
+        Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
 
-        self.create_highlight_video(game_vod, game_vod.filename.replace('.mkv', '_highlights.mp4'), offset)
+        with open(f"{folder_path}/highlights/highlights.txt", "a+") as highlights_txt:
+            for game_vod in match.gamevod_set.all():
+                offset = self.find_game_starting_point(game_vod)
 
-        # TODO: Combine the highlight video for each game VOD into a single full highlight video.
+                highlight_video_filename = game_vod.filename.replace('.mkv', '_highlights.mp4')
+                self.create_highlight_video(game_vod, highlight_video_filename, offset, folder_path)
+
+                highlights_txt.write(f"file '{highlight_video_filename}'\n")
+
+        # Combine the highlight video for each game VOD into a single full highlight video.
+        cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mp4"
+        subprocess.run(cmd, shell=True)
+
+        shutil.rmtree(f"{folder_path}/highlights")
+
         # TODO: Upload the single combined video to YouTube using the created video metadata.
 
 
