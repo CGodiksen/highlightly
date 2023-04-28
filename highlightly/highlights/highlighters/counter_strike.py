@@ -63,26 +63,39 @@ def split_events_into_rounds(events: list[Event]) -> list[Round]:
     return rounds
 
 
-# TODO: Change the highlights so they do not add any time, adding time before and after should be handled in editor.
+# TODO: Remove when 4-5 players are alive on one team and 1-2 players get hunted down at the end of the round.
 # TODO: Remove very one sided eco rounds if it is not one of the last two rounds in the half or in the game.
 # TODO: Change it so we first set all events of a round as a potential highlight.
 # TODO: Then we split on long breaks.
-# TODO: If there is 2 or more potential highlights in a round, the first can be removed if it has 3 or less player deaths.
-# TODO: If there is 3 or more potential highlights in a round, the second can be removed if it has 2 or less player deaths.
 # TODO: Everything related to the bomb should always be included before the step where we prune CTs saving.
 def clean_round_events(round: Round) -> Round:
     """Return an updated round where the events that would decrease the viewing quality of the highlight are removed."""
-    events = [event for event in round["events"] if event["name"] != "round_freeze_end"]
-    cleaned_events = events[2:]
+    cleaned_events = [event for event in round["events"] if event["name"] != "round_freeze_end"]
 
-    if len(events) > 2:
-        # Remove player deaths that are separate from the actual highlight of the round.
-        for i in [1, 0]:
-            if events[i]["name"] != "player_death" or cleaned_events[0]["time"] - events[i]["time"] <= 20:
-                cleaned_events.insert(0, events[i])
-
+    if len(cleaned_events) > 2:
         # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
         if cleaned_events[-2]["name"] == "bomb_planted" and cleaned_events[-1]["name"] == "bomb_exploded":
             del cleaned_events[-1]
 
+    grouped_events = group_round_events(cleaned_events)
+    # TODO: If there are 2 or more potential highlights in a round, the first can be removed if it has 3 or less player deaths.
+    if len(grouped_events) >= 2 and len([event for event in grouped_events[0] if event["name"] == "player_death"]) >= 3:
+        pass
+    # TODO: If there are 3 or more potential highlights in a round, the second can be removed if it has 2 or less player deaths.
+
+
     return {"round_number": round["round_number"], "events": cleaned_events}
+
+
+def group_round_events(events: list[Event]) -> list[list[Event]]:
+    """Group events within a round into smaller groups based on the time between events."""
+    grouped_events = [events[0]]
+
+    for event in events[1:]:
+        last_event = grouped_events[-1][-1]
+        if event["time"] - last_event["time"] > 30:
+            grouped_events.append([event])
+        else:
+            grouped_events[-1].append(event)
+
+    return grouped_events
