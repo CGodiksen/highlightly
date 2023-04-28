@@ -17,5 +17,5 @@ class Highlighter:
             events = self.extract_events(game)
             self.combine_events(game, events)
 
-            match.highlighted = True
-            match.save(update_fields=["highlighted"])
+        match.highlighted = True
+        match.save(update_fields=["highlighted"])

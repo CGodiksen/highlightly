@@ -32,16 +32,16 @@ class Editor:
                 duration = highlight.duration_seconds + (20 if count + 1 == len(highlights) else 10)
                 start = (highlight.start_time_seconds + offset) - 5
 
-                # Extend the clip 2 more seconds at the start and end to make it easier to find a silent point to cut on.
-                start -= 2
-                duration += 4
+                # Extend the clip 2.5 more seconds at the start and end to make it easier to find a silent point to cut on.
+                start -= 2.5
+                duration += 5
 
                 # Create the initial full length clip.
                 clip_temp_filepath = f"{folder_path}/clips/clip_{count + 1}_temp.mkv"
                 cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_temp_filepath}"
                 subprocess.run(cmd, shell=True)
 
-                # Find a silent point in the first 4 seconds and last 4 seconds to cut on.
+                # Find a silent point in the first 5 seconds and last 5 seconds to cut on.
                 (silent_start, silent_end) = get_optimal_cut_points(clip_temp_filepath)
 
                 # Further cut the video, so it starts and ends in silence.
@@ -89,27 +89,27 @@ class Editor:
 def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     """
     Extract the speech from the video and find the optimal times to cut the video to avoid cutting in the middle of a word
-    or sentence. The optimal times to cut within the first 4 seconds and last 4 seconds are returned.
+    or sentence. The optimal times to cut within the first 5 seconds and last 5 seconds are returned.
     """
     audio = AudioSegment.from_file(clip_filepath)
     detected_silence = detect_silence(audio, min_silence_len=100, silence_thresh=-32)
 
-    # Find the longest silence in the first 4 seconds and the last 4 seconds.
-    start_limit_ms = 4 * 1000
-    end_limit_ms = (round(audio.duration_seconds) - 4) * 1000
+    # Find the longest silence in the first 5 seconds and the last 5 seconds.
+    start_limit_ms = 5 * 1000
+    end_limit_ms = (round(audio.duration_seconds) - 5) * 1000
 
     start_silences = [silence for silence in detected_silence if silence[0] < start_limit_ms]
     end_silences = [silence for silence in detected_silence if silence[1] > end_limit_ms]
 
-    start_time_ms = 2000
-    end_time_ms = end_limit_ms + 2000
+    start_time_ms = 2500
+    end_time_ms = end_limit_ms + 2500
 
-    # If there is a silence in the first 4 seconds find the time to cut to get the longest silence after starting.
+    # If there is a silence in the first 5 seconds find the time to cut to get the longest silence after starting.
     if len(start_silences) > 0:
         longest_start_silence = sorted(start_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
         start_time_ms = int(math.ceil(longest_start_silence[0] / 100.0)) * 100
 
-    # If there is a silence in the last 4 seconds find the time to cut to get the longest silence before ending.
+    # If there is a silence in the last 5 seconds find the time to cut to get the longest silence before ending.
     if len(end_silences) > 0:
         longest_end_silence = sorted(end_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
         end_time_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100

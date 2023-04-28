@@ -170,7 +170,7 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
 
     for event in events[1:]:
         last_event = grouped_events[-1][-1]
-        if event["time"] - last_event["time"] > 30:
+        if event["time"] - last_event["time"] > 25:
             grouped_events.append([event])
         else:
             grouped_events[-1].append(event)
