@@ -4,7 +4,7 @@ from demoparser import DemoParser
 
 from highlights.highlighters.highlighter import Highlighter
 from highlights.models import Highlight
-from highlights.types import Event, Round
+from highlights.types import Event, Round, RoundData
 from scrapers.models import GameVod
 
 
@@ -65,8 +65,33 @@ def split_events_into_rounds(events: list[Event]) -> list[Round]:
     return rounds
 
 
+def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
+    """For each round retrieve how many were alive at the end of the round and total equipment value per team."""
+    round_data: list[RoundData] = []
+
+    # Retrieve the tick data from the demo.
+    tick_df: pd.DataFrame = demo_parser.parse_ticks(["team_num", "equipment_value", "round", "health"])
+    tick_df = tick_df.drop_duplicates(["round", "name"])
+    tick_df = tick_df[tick_df.equipment_value != 0]
+
+    teams = tick_df["team_num"].unique()
+    rounds = sorted(tick_df["round"].unique())
+
+    # For each round, calculate how many were alive at the end of the round per team and the total team equipment value.
+    for round in rounds:
+        data: RoundData = {"team_1_alive": 0, "team_1_equipment_value": 0, "team_2_alive": 0, "team_2_equipment_value": 0}
+
+        for count, team in enumerate(teams):
+            team_round_rows = tick_df.loc[(tick_df["round"] == round) & (tick_df["team_num"] == team)]
+            data[f"team_{count + 1}_alive"] = len(team_round_rows.loc[team_round_rows["health"] != 0])
+            data[f"team_{count + 1}_equipment_value"] = team_round_rows["equipment_value"].sum()
+
+        round_data.append(data)
+
+    return round_data
+
+
 # TODO: Remove when 4-5 players are alive on one team and 1-2 players get hunted down at the end of the round.
-# TODO: Remove very one sided eco rounds if it is not one of the last two rounds in the half or in the game.
 def clean_round_events(round: Round) -> list[dict]:
     """
     Return a list of highlights from the round where the events and breaks that would decrease the viewing
