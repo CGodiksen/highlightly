@@ -13,4 +13,4 @@ class Highlight(models.Model):
     round_number = models.IntegerField(validators=[MinValueValidator(1)])
 
     def __str__(self) -> str:
-        return f"Round {self.round_number}: {self.events}"
+        return f"Round {self.round_number} ({self.duration_seconds}s): {self.events}"

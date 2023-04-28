@@ -78,7 +78,6 @@ class Scraper:
         """
         raise NotImplementedError
 
-    # TODO: The videos application should have a signal on the FinishedMatch object to check when the highlights are done and should start the upload after.
     def scrape_finished_match(self, match: Match) -> None:
         """
         Check if the scheduled match is finished. If so, scrape all data required from the match page to create

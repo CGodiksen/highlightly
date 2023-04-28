@@ -28,7 +28,7 @@ class Editor:
         Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
 
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
-        with open(f"{folder_path}/clips/clips.txt", "a") as clips_txt:
+        with open(f"{folder_path}/clips/clips.txt", "a+") as clips_txt:
             for count, highlight in enumerate(highlights):
                 # Add 5 seconds at the start and end and add more time to the end of the last highlight.
                 duration = highlight.duration_seconds + (20 if count + 1 == len(highlights) else 10)
