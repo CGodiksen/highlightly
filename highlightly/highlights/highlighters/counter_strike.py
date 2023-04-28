@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd
 from demoparser import DemoParser
 
 from highlights.highlighters.highlighter import Highlighter
@@ -11,16 +12,17 @@ from scrapers.models import GameVod
 class CounterStrikeHighlighter(Highlighter):
     """Highlighter that uses GOTV demos to extract highlights from Counter-Strike matches."""
 
+    def __init__(self):
+        self.demo_filepath: str | None = None
+        self.demo_parser: DemoParser | None = None
+
     def extract_events(self, game: GameVod) -> list[Event]:
-        demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
-        parser = DemoParser(demo_filepath)
+        self.demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
+        self.demo_parser = DemoParser(self.demo_filepath)
 
         event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
         events = [{"name": event["event_name"], "time": round(event["tick"] / 128)}
-                  for event in parser.parse_events("") if event["event_name"] in event_types]
-
-        # Delete the GOTV demo file since it is no longer needed.
-        Path(demo_filepath).unlink(missing_ok=True)
+                  for event in self.demo_parser.parse_events("") if event["event_name"] in event_types]
 
         # Calibrate the event times, so they are in relation to when the first freeze time is over.
         first_start_time = next(event for event in events if event["name"] == "round_freeze_end")["time"]
@@ -32,9 +34,10 @@ class CounterStrikeHighlighter(Highlighter):
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         rounds = split_events_into_rounds(events)
+        cleaned_rounds = clean_rounds(rounds, self.demo_parser)
 
         highlights = []
-        [highlights.extend(clean_round_events(round)) for round in rounds]
+        [highlights.extend(clean_round_events(round)) for round in cleaned_rounds]
 
         for highlight in highlights:
             # Only create a highlight for the round if there are more than two events left after cleaning.
@@ -45,6 +48,9 @@ class CounterStrikeHighlighter(Highlighter):
 
                 Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
                                          events=events_str, round_number=highlight["round_number"])
+
+        # Delete the GOTV demo file since it is no longer needed.
+        Path(self.demo_filepath).unlink(missing_ok=True)
 
 
 def split_events_into_rounds(events: list[Event]) -> list[Round]:
@@ -62,7 +68,23 @@ def split_events_into_rounds(events: list[Event]) -> list[Round]:
         else:
             round["events"].append(event)
 
-    return rounds
+    return rounds[1:]
+
+
+def clean_rounds(rounds: list[Round], demo_parser: DemoParser) -> list[Round]:
+    """Return a cleaned list of rounds where the one-sided eco rounds have been removed."""
+    cleaned_rounds = []
+    round_data = extract_round_data(demo_parser)[1:]
+    eco_rounds = get_eco_rounds(round_data)
+
+    for count, round in enumerate(rounds):
+        round_number = count + 1
+
+        # If it is the last half of the round or the very last round, always keep the round.
+        if round_number == 15 or round_number == len(rounds) or round_number not in eco_rounds:
+            cleaned_rounds.append(round)
+
+    return cleaned_rounds
 
 
 def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
