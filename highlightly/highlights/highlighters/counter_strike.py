@@ -91,6 +91,26 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     return round_data
 
 
+def get_eco_rounds(round_data: list[RoundData]) -> list[int]:
+    """
+    Given a list with round data, return the round numbers of the rounds that are eco rounds where the team
+    that is expected to win, wins.
+    """
+    eco_rounds = []
+
+    for count, data in enumerate(round_data):
+        team_1_eco = (data["team_1_equipment_value"] / 5) < 2500 and (data["team_2_equipment_value"] / 5) > 2500
+        team_2_eco = (data["team_2_equipment_value"] / 5) < 2500 and (data["team_1_equipment_value"] / 5) > 2500
+
+        team_1_eco_expected_win = team_1_eco and data["team_1_alive"] == 0 and data["team_2_alive"] >= 4
+        team_2_eco_expected_win = team_2_eco and data["team_2_alive"] == 0 and data["team_1_alive"] >= 4
+
+        if team_1_eco_expected_win or team_2_eco_expected_win:
+            eco_rounds.append(count + 1)
+
+    return eco_rounds
+
+
 # TODO: Remove when 4-5 players are alive on one team and 1-2 players get hunted down at the end of the round.
 def clean_round_events(round: Round) -> list[dict]:
     """
