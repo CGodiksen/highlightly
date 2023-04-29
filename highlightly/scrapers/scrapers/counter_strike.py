@@ -78,7 +78,7 @@ class CounterStrikeScraper(Scraper):
             ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
 
             # Retrieve the team logo if possible.
-            logo_filename = get_team_logo_filename(team_url, team_name)
+            logo_filename = get_team_logo_filename(soup, team_name)
 
             team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
                                        nationality=nationality, ranking=ranking, url=team_url)
@@ -284,23 +284,23 @@ def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
     return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
 
 
-def get_team_logo_filename(team_url: str, team_name: str) -> str | None:
 def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | None:
     """Retrieve the SVG or PNG logo from the HLTV team page and return the name of the saved file."""
-    html = requests.get(url=team_url).text
-    soup = BeautifulSoup(html, "html.parser")
-
     # Attempt to retrieve the svg team logo from the HLTV team page.
-    logo_img = soup.find("img", class_="teamlogo", src=True)
+    logo_img = team_soup.find("img", class_="teamlogo", src=True)
     logo_filename = f"{team_name.replace(' ', '_')}.png"
     Path("media/teams").mkdir(parents=True, exist_ok=True)
 
     if ".svg?" in logo_img["src"]:
-        svg = requests.get(logo_img["src"]).text
-        svg2png(bytestring=svg, write_to=f"media/teams/{logo_filename}")
+        try:
+            svg = requests.get(logo_img["src"]).text
+            svg2png(bytestring=svg, write_to=f"media/teams/{logo_filename}")
+        except Exception as e:
+            print(f"Error when trying to convert SVG to PNG: {e}")
+            return "default.png"
     else:
         # If the logo is a PNG, find the largest version possible and download it.
-        large_size_url = soup.find("img", class_="team-background-logo")["srcset"].removesuffix(" 2x")
+        large_size_url = team_soup.find("img", class_="team-background-logo")["srcset"].removesuffix(" 2x")
         download_file_from_url(large_size_url, f"teams/{logo_filename}")
 
     return logo_filename
