@@ -13,7 +13,8 @@ class CounterStrikeEditor(Editor):
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
         detected_timer = None
-        offset = 45
+        current_offset = 30
+        initial_offset = 30
         max_attempts = 10
 
         vod_filepath = f"media/vods/{game_vod.match.create_unique_folder_path()}/{game_vod.filename}"
@@ -21,8 +22,8 @@ class CounterStrikeEditor(Editor):
         width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 
         # The video is 60 FPS. Jump two seconds forward each attempt.
-        for i in range(60 * offset, (60 * 40) + (max_attempts * 120), 120):
-            offset = i / 60
+        for i in range(60 * initial_offset, (60 * initial_offset) + (max_attempts * 120), 120):
+            current_offset = i / 60
 
             # Extract a single frame from the game where the round timer is potentially visible.
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, i)
@@ -43,7 +44,7 @@ class CounterStrikeEditor(Editor):
         seconds_left_in_round = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
         seconds_since_round_started = 115 - seconds_left_in_round
 
-        return int(offset - seconds_since_round_started)
+        return int(current_offset - seconds_since_round_started)
 
 
 def detect_text(image_content: bytes):

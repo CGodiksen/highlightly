@@ -108,7 +108,7 @@ class CounterStrikeScraper(Scraper):
 
         if soup.find("a", class_="a-reset", href=match_url_postfix) is not None:
             # Check if the GOTV demo and vods can be found on the match page.
-            match_soup = get_protected_page_html(scheduled_match.url, "match_page.txt")
+            match_soup = get_protected_page_html(scheduled_match.url)
 
             demo_found = match_soup.find("div", class_="flexbox", text="GOTV Demo sponsored by Bitskins") is not None
             vods_found = match_soup.findAll("img", class_="stream-flag flag")
