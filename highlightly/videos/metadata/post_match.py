@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -17,6 +18,8 @@ def add_post_match_video_metadata(match: Match):
     statistics about the performance of each player during the match, the tournament context, the tournament logo,
     and a frame from the match for the thumbnail.
     """
+    logging.info(f"Creating post-match video metadata for {match}.")
+
     video_metadata = VideoMetadata.objects.get(match=match)
     new_tags = video_metadata.tags
     new_description = video_metadata.description
@@ -96,3 +99,4 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
 
     thumbnail.save(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
+    logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")

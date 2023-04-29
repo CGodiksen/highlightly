@@ -1,3 +1,4 @@
+import logging
 import math
 from pathlib import Path
 
@@ -14,6 +15,8 @@ def create_pre_match_video_metadata(scheduled_match: Match):
     Create all metadata required for a YouTube video including a title, description, tags, and a thumbnail based on
     pre-match information.
     """
+    logging.info(f"Creating pre-match video metadata for {scheduled_match}.")
+
     title = create_video_title(scheduled_match)
     description = create_video_description(scheduled_match)
     tags = create_video_tags(scheduled_match)

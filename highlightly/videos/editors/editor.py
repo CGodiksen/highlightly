@@ -1,3 +1,4 @@
+import logging
 import math
 import shutil
 import subprocess
@@ -21,6 +22,7 @@ class Editor:
     def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int, folder_path: str) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
         highlights = game_vod.highlight_set.all()
+        logging.info(f"Using {len(highlights)} highlights to cut {game_vod} into highlight video.")
 
         vod_filepath = f"{folder_path}/{game_vod.filename}"
         Path(f"{folder_path}/clips").mkdir(parents=True, exist_ok=True)
@@ -49,11 +51,16 @@ class Editor:
                 cmd = f"ffmpeg -ss {silent_start} -i {clip_temp_filepath} -to {silent_end - silent_start} -c copy {clip_filepath}"
                 subprocess.run(cmd, shell=True)
 
+                logging.info(f"Created {silent_end - silent_start} second highlight clip for round "
+                             f"{highlight.round_number} of {game_vod}.")
+
                 clips_txt.write(f"file 'clip_{count + 1}.mkv'\n")
 
         # Combine the clips into a single highlight video file.
         cmd = f"ffmpeg -f concat -i {folder_path}/clips/clips.txt -codec copy {folder_path}/highlights/{target_filename}"
         subprocess.run(cmd, shell=True)
+
+        logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
 
         shutil.rmtree(f"{folder_path}/clips")
 
@@ -70,9 +77,11 @@ class Editor:
         """Using the highlights edit the full VODs into a highlight video and upload it to YouTube."""
         folder_path = f"media/vods/{match.create_unique_folder_path()}"
         Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
+        logging.info(f"Creating a highlight video for {match} at {folder_path}/highlights.")
 
         with open(f"{folder_path}/highlights/highlights.txt", "a+") as highlights_txt:
             for game_vod in match.gamevod_set.all():
+                logging.info(f"Creating a highlight video for {game_vod}.")
                 offset = self.find_game_starting_point(game_vod)
 
                 highlight_video_filename = game_vod.filename.replace('.mkv', '_highlights.mp4')
@@ -84,6 +93,9 @@ class Editor:
         cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mp4"
         subprocess.run(cmd, shell=True)
 
+        logging.info(f"Combined {len(match.gamevod_set.count())} highlight videos into a single full "
+                     f"highlight video for {match}.")
+        
         shutil.rmtree(f"{folder_path}/highlights")
 
         self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata_set.first())

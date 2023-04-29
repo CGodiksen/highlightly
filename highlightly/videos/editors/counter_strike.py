@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 import cv2
@@ -24,6 +25,7 @@ class CounterStrikeEditor(Editor):
         # The video is 60 FPS. Jump two seconds forward each attempt.
         for i in range(60 * initial_offset, (60 * initial_offset) + (max_attempts * 120), 120):
             current_offset = i / 60
+            logging.info(f"Checking for game starting point of {game_vod}, {current_offset} seconds into the VOD.")
 
             # Extract a single frame from the game where the round timer is potentially visible.
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, i)
@@ -38,6 +40,8 @@ class CounterStrikeEditor(Editor):
 
             if detected_timer is not None:
                 break
+
+        logging.info(f"Detected {detected_timer} timer {current_offset} seconds into {game_vod}.")
 
         # Convert the time on the timer to an offset for when the game starts compared to when the video starts.
         split_timer = detected_timer.split(":")
