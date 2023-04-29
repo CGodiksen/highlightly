@@ -162,10 +162,15 @@ def clean_round_events(round: Round) -> list[dict]:
 def group_round_events(events: list[Event]) -> list[list[Event]]:
     """Group events within a round into smaller groups based on the time between events."""
     grouped_events = [[events[0]]]
+    bomb_planted = events[0]["name"] == "bomb_planted"
 
     for event in events[1:]:
+        # If the bomb has been planted, add all future events in the round to the last group.
+        if event["name"] == "bomb_planted":
+            bomb_planted = True
+
         last_event = grouped_events[-1][-1]
-        if event["time"] - last_event["time"] > 23:
+        if not bomb_planted and event["time"] - last_event["time"] > 20:
             grouped_events.append([event])
         else:
             grouped_events[-1].append(event)
