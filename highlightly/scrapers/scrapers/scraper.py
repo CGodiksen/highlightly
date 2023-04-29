@@ -86,8 +86,7 @@ class Scraper:
         html = self.is_match_finished(match)
 
         if html is not None:
-            periodic_task = PeriodicTask.objects.get(name=f"Check if {match} is finished")
-            periodic_task.delete()
+            PeriodicTask.objects.filter(name=f"Check if {match} is finished").delete()
 
             self.download_match_files(match, html)
             self.extract_match_statistics(match, html)
