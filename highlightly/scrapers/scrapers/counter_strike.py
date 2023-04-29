@@ -28,22 +28,23 @@ class CounterStrikeScraper(Scraper):
         upcoming_matches: list[MatchData] = []
 
         base_url = "https://www.hltv.org"
-        soup = get_protected_page_html(f"{base_url}/matches", "matches_page.txt")
+        soup = get_protected_page_html(f"{base_url}/matches")
 
         # Find the table with matches from today.
         upcoming_matches_tables = soup.find_all("div", class_="upcomingMatchesSection")
-        rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch")
+        rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch", stars=lambda x: x != "0")
 
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
             match = extract_match_data(row, base_url)
 
             # Ignore the match if it currently still contains a "TBD" team.
-            if match["team_1_name"] != "TBD" and match["team_2_name"] != "TBD":
+            if match is not None and match["team_1_name"] != "TBD" and match["team_2_name"] != "TBD":
                 upcoming_matches.append(match)
 
         return upcoming_matches
 
+    # TODO: Look into using HLTV for the tournament page as well.
     @staticmethod
     def create_tournament(match: MatchData) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
@@ -201,10 +202,14 @@ def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
 
 def extract_match_data(html: Tag, base_url: str) -> MatchData:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
-    team_1_id = int(html["team1"])
-    team_1_name = extract_team_name(html, 1)
+    team_1_id = html.get("team1")
+    team_2_id = html.get("team2")
 
-    team_2_id = int(html["team2"])
+    # If one of the teams is still TDB, return None and do not schedule the match.
+    if team_1_id is None or team_2_id is None:
+        return None
+
+    team_1_name = extract_team_name(html, 1)
     team_2_name = extract_team_name(html, 2)
 
     match_url_postfix = html.find("a", class_="match a-reset")["href"]
@@ -217,7 +222,7 @@ def extract_match_data(html: Tag, base_url: str) -> MatchData:
     tier = int(html["stars"])
     tournament_name: str = html.find("div", class_="matchEventName").text
 
-    return {"url": match_url, "team_1_id": team_1_id, "team_1_name": team_1_name, "team_2_id": team_2_id,
+    return {"url": match_url, "team_1_id": int(team_1_id), "team_1_name": team_1_name, "team_2_id": int(team_2_id),
             "team_2_name": team_2_name, "start_datetime": start_datetime, "tier": tier, "format": match_format,
             "tournament_name": tournament_name}
 
@@ -280,6 +285,7 @@ def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
 
 
 def get_team_logo_filename(team_url: str, team_name: str) -> str | None:
+def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | None:
     """Retrieve the SVG or PNG logo from the HLTV team page and return the name of the saved file."""
     html = requests.get(url=team_url).text
     soup = BeautifulSoup(html, "html.parser")
