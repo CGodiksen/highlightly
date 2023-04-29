@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 from demoparser import DemoParser
 
@@ -16,6 +18,7 @@ class CounterStrikeHighlighter(Highlighter):
 
     def extract_events(self, game: GameVod) -> list[Event]:
         self.demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
+        logging.info(f"Parsing demo file at {self.demo_filepath} to extract events.")
         self.demo_parser = DemoParser(self.demo_filepath)
 
         event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
@@ -32,7 +35,10 @@ class CounterStrikeHighlighter(Highlighter):
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         rounds = split_events_into_rounds(events)
+        logging.info(f"Split events for {game} into {len(rounds)} rounds.")
+
         cleaned_rounds = clean_rounds(rounds, self.demo_parser)
+        logging.info(f"Removed {len(rounds) - len(cleaned_rounds)} rounds from {game} highlights.")
 
         highlights = []
         [highlights.extend(clean_round_events(round)) for round in cleaned_rounds]
