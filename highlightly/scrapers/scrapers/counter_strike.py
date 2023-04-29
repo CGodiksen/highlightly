@@ -119,11 +119,17 @@ class CounterStrikeScraper(Scraper):
         match_url_postfix = scheduled_match.url.removeprefix("https://www.hltv.org")
 
         if soup.find("a", class_="a-reset", href=match_url_postfix) is not None:
+            logging.info(f"{scheduled_match} is finished. Checking if GOTV demo and VODs are ready to be downloaded.")
+
             # Check if the GOTV demo and vods can be found on the match page.
             match_soup = get_protected_page_html(scheduled_match.url)
 
             demo_found = match_soup.find("div", class_="flexbox", text="GOTV Demo sponsored by Bitskins") is not None
             vods_found = match_soup.findAll("img", class_="stream-flag flag")
+
+            logging.info(f"Found GOTV demo for {scheduled_match}.") if demo_found else logging.info(
+                f"Could not find GOTV demo for {scheduled_match}.")
+            logging.info(f"Found {len(vods_found)} VODs for {scheduled_match}.")
 
             return match_soup if demo_found and len(vods_found) > 0 else None
 
@@ -148,11 +154,13 @@ class CounterStrikeScraper(Scraper):
 
         # Delete the rar file after unzipping.
         Path(f"media/{demos_folder_path}/demos.rar").unlink(missing_ok=True)
+        logging.info(f"Deleted media/{demos_folder_path}/demos.rar after unzipping.")
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
         for game_count, demo_file in enumerate(os.listdir(f"media/{demos_folder_path}")):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
+            logging.info(f"Downloading VOD for game {game_count + 1} of {match} from {vod_url}.")
             (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{demo_file}")
 
             # Add 15 seconds to the start and end of the video to account for small timing errors.
@@ -161,8 +169,9 @@ class CounterStrikeScraper(Scraper):
 
             vod_filename = f"game_{game_count + 1}.mkv"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
-            subprocess.run(f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 24 {video_id}",
-                           shell=True)
+
+            download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 10 {video_id}"
+            subprocess.run(download_cmd, shell=True)
 
             # Persist the location of the files and other needed information about the vods to the database.
             game_map = vod_urls[game_count].next_sibling.text.split(" ")[-1].removesuffix(")")
@@ -173,6 +182,8 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
+        logging.info(f"Extracting per-game and total match statistics for {match}.")
+
         statistics_folder_path = f"media/statistics/{match.create_unique_folder_path()}"
         Path(statistics_folder_path).mkdir(parents=True, exist_ok=True)
 

@@ -86,13 +86,17 @@ class Scraper:
         Check if the scheduled match is finished. If so, scrape all data required from the match page to create
         highlights, create a highlight video, and complete the video metadata.
         """
+        logging.info(f"Checking if {match} is finished and ready for post-match scraping.")
         html = self.is_match_finished(match)
 
         if html is not None:
+            logging.info(f"{match} is ready for post-match scraping.")
             PeriodicTask.objects.filter(name=f"Check if {match} is finished").delete()
 
             self.download_match_files(match, html)
             self.extract_match_statistics(match, html)
+
+            logging.info(f"All data required for processing {match} has been scraped.")
 
             match.finished = True
             match.save(update_fields=["finished"])
