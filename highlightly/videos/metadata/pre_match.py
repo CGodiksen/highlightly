@@ -117,7 +117,7 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     background = Image.new("RGB", (360, 360), background_color)
 
     # Resize the logo, so it fits within the background image.
-    logo = Image.open(logo_filepath)
+    logo = Image.open(logo_filepath).convert("RGBA")
     logo.thumbnail((250, 250))
 
     # Put the logo on top of the background image.

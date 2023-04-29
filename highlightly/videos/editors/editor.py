@@ -58,7 +58,12 @@ class Editor:
         shutil.rmtree(f"{folder_path}/clips")
 
     @staticmethod
-    def upload_highlight_video(target_filename: str, video_metadata: VideoMetadata) -> None:
+    def upload_highlight_video(filepath: str, video_metadata: VideoMetadata) -> None:
+        """Upload the single combined video to YouTube using the created video metadata."""
+        # TODO: Set up OAuth authentication flow that uses the token and refresh token to avoid further login flows.
+        # TODO: Set up use of the videos.insert endpoint. Look into if the video can be made public automatically or manually.
+        # TODO: Request an audit of the client to make it possible to upload public videos in the future.
+        # TODO: Maybe also look into if it will be necessary to request for more quota for uploading (currently only 6 videos a day).
         pass
 
     def edit_and_upload_video(self, match: Match):
@@ -81,7 +86,7 @@ class Editor:
 
         shutil.rmtree(f"{folder_path}/highlights")
 
-        # TODO: Upload the single combined video to YouTube using the created video metadata.
+        self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata_set.first())
 
 
 # TODO: Maybe extend the time that is added to the start and end and extend the period we look for optimal cut points in.
