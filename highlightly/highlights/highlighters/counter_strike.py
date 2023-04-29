@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 from demoparser import DemoParser
 
@@ -48,9 +46,6 @@ class CounterStrikeHighlighter(Highlighter):
 
                 Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
                                          events=events_str, round_number=highlight["round_number"])
-
-        # Delete the GOTV demo file since it is no longer needed.
-        Path(self.demo_filepath).unlink(missing_ok=True)
 
 
 def split_events_into_rounds(events: list[Event]) -> list[Round]:
