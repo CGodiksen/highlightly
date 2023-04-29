@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 import re
 import subprocess
@@ -25,6 +26,8 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def list_upcoming_matches() -> list[MatchData]:
+        logging.info("Scraping upcoming Counter-Strike matches from hltv.org.")
+
         upcoming_matches: list[MatchData] = []
 
         base_url = "https://www.hltv.org"
@@ -33,6 +36,7 @@ class CounterStrikeScraper(Scraper):
         # Find the table with matches from today.
         upcoming_matches_tables = soup.find_all("div", class_="upcomingMatchesSection")
         rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch", stars=lambda x: x != "0")
+        logging.info(f"Found {len(rows)} potential upcoming matches.")
 
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
@@ -40,6 +44,7 @@ class CounterStrikeScraper(Scraper):
 
             # Ignore the match if it currently still contains a "TBD" team.
             if match is not None and match["team_1_name"] != "TBD" and match["team_2_name"] != "TBD":
+                logging.info(f"Extracted initial data for {match['team_1_name']} VS. {match['team_2_name']}.")
                 upcoming_matches.append(match)
 
         return upcoming_matches
@@ -49,12 +54,15 @@ class CounterStrikeScraper(Scraper):
     def create_tournament(match: MatchData) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
+            logging.info(f"{match['tournament_name']} does not already exist. Creating new tournament.")
+
             tournament_url = get_liquipedia_tournament_url(match["tournament_name"])
             html = requests.get(url=tournament_url).text
             soup = BeautifulSoup(html, "html.parser")
 
             # Extract the tournament data from the HTML.
             data = extract_tournament_data(soup)
+            logging.info(f"Extracted data from {tournament_url} to create tournament for {match['tournament_name']}.")
 
             tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
                                                    url=tournament_url, start_date=data["start_date"],
@@ -68,6 +76,8 @@ class CounterStrikeScraper(Scraper):
     def create_team(team_name, team_id) -> Team:
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
         if team is None:
+            logging.info(f"{team_name} does not already exist. Creating new team.")
+
             team_url = f"https://www.hltv.org/team/{team_id}/{team_name.replace(' ', '-').lower()}"
 
             # Extract the nationality and world ranking of the team.
@@ -80,6 +90,7 @@ class CounterStrikeScraper(Scraper):
             # Retrieve the team logo if possible.
             logo_filename = get_team_logo_filename(soup, team_name)
 
+            logging.info(f"Extracted data from {team_url} to create team for {team_name}.")
             team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
                                        nationality=nationality, ranking=ranking, url=team_url)
 
@@ -94,6 +105,7 @@ class CounterStrikeScraper(Scraper):
         # Automatically mark the scheduled match for highlight creation if it is tier 1 or higher.
         create_video = match["tier"] >= 1
 
+        logging.info(f"Creating scheduled match for {team_1.name} VS. {team_2.name}.")
         Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                              create_video=create_video, estimated_end_datetime=estimated_end_datetime)

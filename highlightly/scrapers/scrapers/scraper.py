@@ -1,3 +1,5 @@
+import logging
+
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
@@ -48,6 +50,7 @@ class Scraper:
 
         # Remove the matches from the given list of matches that already have a corresponding Match object.
         new_matches = [match for match in matches if not self.scheduled_match_already_exists(match)]
+        logging.info(f"Found {len(matches)} upcoming matches and {len(new_matches)} new upcoming matches.")
 
         # For each remaining match in the list, create a Match object.
         for match in new_matches:
