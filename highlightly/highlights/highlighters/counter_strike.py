@@ -119,8 +119,8 @@ def get_eco_rounds(round_data: list[RoundData]) -> list[int]:
         team_1_eco = (data["team_1_equipment_value"] / 5) < 2500 and (data["team_2_equipment_value"] / 5) > 2500
         team_2_eco = (data["team_2_equipment_value"] / 5) < 2500 and (data["team_1_equipment_value"] / 5) > 2500
 
-        team_1_eco_expected_win = team_1_eco and data["team_1_alive"] == 0 and data["team_2_alive"] >= 4
-        team_2_eco_expected_win = team_2_eco and data["team_2_alive"] == 0 and data["team_1_alive"] >= 4
+        team_1_eco_expected_win = team_1_eco and data["team_1_alive"] == 0 and data["team_2_alive"] >= 3
+        team_2_eco_expected_win = team_2_eco and data["team_2_alive"] == 0 and data["team_1_alive"] >= 3
 
         if team_1_eco_expected_win or team_2_eco_expected_win:
             eco_rounds.append(count + 1)
@@ -150,10 +150,10 @@ def clean_round_events(round: Round) -> list[dict]:
             if second_group_kills <= 2 and second_group_bombs == 0:
                 del grouped_events[1]
 
-        # If there are 2 or more potential highlights in a round, the first can be removed if it has 3 or less player deaths.
+        # If there are 2 or more potential highlights in a round, the first can be removed if it has 4 or less player deaths.
         if len(grouped_events) >= 2:
             first_group_kills, first_group_bombs = get_event_counts(grouped_events[0])
-            if first_group_kills <= 3 and first_group_bombs == 0:
+            if first_group_kills <= 4 and first_group_bombs == 0:
                 del grouped_events[0]
 
     return [{"round_number": round["round_number"], "events": events} for events in grouped_events]
@@ -165,7 +165,7 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
 
     for event in events[1:]:
         last_event = grouped_events[-1][-1]
-        if event["time"] - last_event["time"] > 25:
+        if event["time"] - last_event["time"] > 23:
             grouped_events.append([event])
         else:
             grouped_events[-1].append(event)

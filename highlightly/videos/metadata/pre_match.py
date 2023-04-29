@@ -60,7 +60,7 @@ def create_video_description(scheduled_match: Match) -> str:
 
     tags_part = f"#{scheduled_match.team_1.name.replace(' ', '').lower()} " \
                 f"#{scheduled_match.team_2.name.replace(' ', '').lower()} " \
-                f"#{game.replace(' ', '').lower()}"
+                f"#{game.replace(' ', '').replace('-','').lower()}"
 
     return f"{match_part}\n{link_part}\n{channel_part}\n{channels_part}\n{tags_part}"
 
