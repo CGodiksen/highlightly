@@ -281,13 +281,18 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
 
     Path("media/tournaments").mkdir(parents=True, exist_ok=True)
     logo_filename = f"{match.tournament.name.replace(' ', '_')}.png"
-    download_file_from_url(tournament_logo_url, f"tournaments/{logo_filename}")
+
+    # Only download the tournament logo if it does not already exist.
+    if Path(f"media/tournaments/{logo_filename}").is_file():
+        download_file_from_url(tournament_logo_url, f"tournaments/{logo_filename}")
+        match.tournament.logo_filename = logo_filename
+        match.tournament.save()
 
     match_info = html.find("div", class_="padding preformatted-text").text
     tournament_context = match_info.split("*")[1].strip()
 
-    Match.objects.filter(id=match.id).update(tournament_context=tournament_context)
-    Tournament.objects.filter(id=match.tournament.id).update(logo_filename=logo_filename)
+    match.tournament_context = tournament_context
+    match.save()
 
 
 def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
