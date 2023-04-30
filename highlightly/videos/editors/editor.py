@@ -35,7 +35,7 @@ class Editor:
                 start = (highlight.start_time_seconds + offset) - 3
 
                 # Create the initial full length clip.
-                clip_temp_filepath = f"{folder_path}/clips/clip_{count + 1}_temp.mkv"
+                clip_temp_filepath = f"{folder_path}/clips/clip_{count + 1}_temp.mp4"
                 cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_temp_filepath}"
                 subprocess.run(cmd, shell=True)
 
@@ -43,14 +43,14 @@ class Editor:
                 (silent_start, silent_end) = get_optimal_cut_points(clip_temp_filepath)
 
                 # Further cut the video, so it starts and ends in silence.
-                clip_filepath = clip_temp_filepath.replace("_temp.mkv", ".mkv")
+                clip_filepath = clip_temp_filepath.replace("_temp.mp4", ".mp4")
                 cmd = f"ffmpeg -ss {silent_start} -i {clip_temp_filepath} -to {silent_end - silent_start} -c copy {clip_filepath}"
                 subprocess.run(cmd, shell=True)
 
                 logging.info(f"Created {silent_end - silent_start} second highlight clip for round "
                              f"{highlight.round_number} of {game_vod}.")
 
-                clips_txt.write(f"file 'clip_{count + 1}.mkv'\n")
+                clips_txt.write(f"file 'clip_{count + 1}.mp4'\n")
 
         # Combine the clips into a single highlight video file.
         cmd = f"ffmpeg -f concat -i {folder_path}/clips/clips.txt -codec copy {folder_path}/highlights/{target_filename}"
@@ -80,7 +80,7 @@ class Editor:
                 logging.info(f"Creating a highlight video for {game_vod}.")
                 offset = self.find_game_starting_point(game_vod)
 
-                highlight_video_filename = game_vod.filename.replace('.mkv', '_highlights.mp4')
+                highlight_video_filename = game_vod.filename.replace('.mp4', '_highlights.mp4')
                 self.create_highlight_video(game_vod, highlight_video_filename, offset, folder_path)
 
                 highlights_txt.write(f"file '{highlight_video_filename}'\n")
@@ -104,7 +104,7 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
     Extract the speech from the video and find the optimal times to cut the video to avoid cutting in the middle of a word
     or sentence. The optimal times to cut within the first 2 seconds and last 3 seconds are returned.
     """
-    audio = AudioSegment.from_file(clip_filepath)
+    audio = AudioSegment.from_file(clip_filepath, "mp4")
     detected_silence = detect_silence(audio, min_silence_len=100, silence_thresh=-32)
 
     # Find the longest silence in the first 2 seconds and the last 3 seconds.

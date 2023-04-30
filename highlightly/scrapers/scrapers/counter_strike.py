@@ -167,10 +167,10 @@ class CounterStrikeScraper(Scraper):
             vod_start = start_time - timedelta(seconds=15)
             vod_end = end_time + timedelta(seconds=15)
 
-            vod_filename = f"game_{game_count + 1}.mkv"
+            vod_filename = f"game_{game_count + 1}.mp4"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
 
-            download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 50 {video_id}"
+            download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 50 -f mp4 {video_id}"
             subprocess.run(download_cmd, shell=True)
 
             # Persist the location of the files and other needed information about the vods to the database.
