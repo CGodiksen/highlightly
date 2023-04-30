@@ -76,7 +76,6 @@ def create_video_tags(scheduled_match: Match) -> list[str]:
             scheduled_match.get_format_display()]
 
 
-# TODO: Maybe add a consistent part in the left 1/10 of the thumbnail with a gradient that matches the game and says "'GAME' HIGHLIGHTS".
 def create_video_thumbnail(scheduled_match: Match) -> str:
     """
     Use the team logos, tournament logo, tournament context, and if necessary, extra match information to create a
@@ -85,21 +84,26 @@ def create_video_thumbnail(scheduled_match: Match) -> str:
     # To best fit a YouTube thumbnail, the image should be 1280 x 720.
     thumbnail = Image.new("RGB", (1280, 720), (255, 255, 255))
 
+    # Add the "Game highlights" consistent text part to the left of the thumbnail.
+    text_part = Image.open("media/thumbnails/text_part.png")
+    thumbnail.paste(text_part, (0, 0))
+
     # For both teams, generate a thumbnail team logo if it does not already exist.
     team_1_part = create_team_logo_thumbnail_part(scheduled_match.team_1)
     team_2_part = create_team_logo_thumbnail_part(scheduled_match.team_2)
 
     # Put the thumbnail team logos in the left 1/4 of the thumbnail.
-    thumbnail.paste(team_1_part, (0, 0))
-    thumbnail.paste(team_2_part, (0, team_1_part.height))
+    thumbnail.paste(team_1_part, (text_part.width, 0))
+    thumbnail.paste(team_2_part, (text_part.width, team_1_part.height))
 
     # Draw a border between the team logo parts.
     draw = ImageDraw.Draw(thumbnail)
-    draw.line((0, team_1_part.height - 1, team_1_part.width - 1, team_1_part.height - 1), fill=(255, 255, 255), width=3)
+    xy = (text_part.width, team_1_part.height - 1, text_part.width + team_1_part.width - 1, team_1_part.height - 1)
+    draw.line(xy, fill=(255, 255, 255), width=3)
 
     # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
-    match_frame_part = create_match_frame_part("../data/test/match_frame.png", team_1_part.width)
-    thumbnail.paste(match_frame_part, (team_1_part.width, 0))
+    match_frame_part = create_match_frame_part("../data/test/match_frame.png", team_1_part.width + text_part.width)
+    thumbnail.paste(match_frame_part, (team_1_part.width + text_part.width, 0))
 
     # Save the thumbnail to a file and return the filename of the saved thumbnail.
     folder_path = f"media/thumbnails/{scheduled_match.tournament.name.replace(' ', '_')}"

@@ -89,9 +89,9 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
     cv2.imwrite(f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}", frame)
 
-    # Add the frame from the match to the right 3/4 of the thumbnail.
-    match_frame_part = create_match_frame_part(frame_filepath, 360)
-    thumbnail.paste(match_frame_part, (360, 0))
+    # Add the frame from the match to the right 3/5 of the thumbnail.
+    match_frame_part = create_match_frame_part(frame_filepath, 360 + 160)
+    thumbnail.paste(match_frame_part, (360 + 160, 0))
 
     # Add the tournament logo in the bottom right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}")
