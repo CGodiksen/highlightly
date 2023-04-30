@@ -50,3 +50,7 @@ class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.List
 
     def get_queryset(self) -> QuerySet[Team]:
         return Team.objects.all().order_by("-ranking")
+
+    @action(detail=True, methods=["POST"])
+    def refresh_from_url(self, request: Request) -> Response:
+        return Response({}, status=status.HTTP_200_OK)
