@@ -43,9 +43,9 @@ class CounterStrikeHighlighter(Highlighter):
         highlights = []
         [highlights.extend(clean_round_events(round)) for round in cleaned_rounds]
 
-        for highlight in highlights:
-            # Only create a highlight for the round if there are more than two events left after cleaning.
-            if len(highlight["events"]) > 2:
+        for count, highlight in enumerate(highlights):
+            # Only create a highlight for the round if there are more than two events left after cleaning, or it is the last highlight.
+            if len(highlight["events"]) > 2 or count + 1 == len(highlights):
                 start = highlight["events"][0]["time"]
                 end = highlight["events"][-1]["time"]
                 events_str = " - ".join([f"{event['name']} ({event['time']})" for event in highlight["events"]])
@@ -102,7 +102,8 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
 
     # For each round, calculate how many were alive at the end of the round per team and the total team equipment value.
     for round in rounds:
-        data: RoundData = {"team_1_alive": 0, "team_1_equipment_value": 0, "team_2_alive": 0, "team_2_equipment_value": 0}
+        data: RoundData = {"team_1_alive": 0, "team_1_equipment_value": 0, "team_2_alive": 0,
+                           "team_2_equipment_value": 0}
 
         for count, team in enumerate(teams):
             team_round_rows = tick_df.loc[(tick_df["round"] == round) & (tick_df["team_num"] == team)]

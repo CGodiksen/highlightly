@@ -5,10 +5,10 @@ import shutil
 import requests
 
 
-def get_base64(filename: str) -> str:
-    """Return the base64 string representing the image with the given filename."""
-    if filename:
-        with open(f"media/{filename}", "rb") as icon:
+def get_base64(filepath: str) -> str:
+    """Return the base64 string representing the image with the given filepath."""
+    if filepath:
+        with open(f"media/{filepath}", "rb") as icon:
             icon_data = icon.read()
             return base64.b64encode(icon_data).decode()
     else:

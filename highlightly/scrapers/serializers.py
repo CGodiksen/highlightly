@@ -24,8 +24,8 @@ class TeamSerializer(serializers.ModelSerializer):
         fields = ["id", "game", "name", "logo", "nationality", "ranking", "url", "background_color"]
 
     @staticmethod
-    def get_logo(tournament: Tournament) -> str:
-        return get_base64(tournament.logo_filename)
+    def get_logo(team: Team) -> str:
+        return get_base64(f"teams/{team.logo_filename}")
 
 
 class TeamUpdateSerializer(serializers.ModelSerializer):
