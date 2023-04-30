@@ -21,11 +21,17 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ["id", "game", "name", "logo", "nationality", "ranking", "url"]
+        fields = ["id", "game", "name", "logo", "nationality", "ranking", "url", "background_color"]
 
     @staticmethod
     def get_logo(tournament: Tournament) -> str:
         return get_base64(tournament.logo_filename)
+
+
+class TeamUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team
+        fields = ["name", "nationality", "ranking", "url", "background_color"]
 
 
 class MatchSerializer(serializers.ModelSerializer):

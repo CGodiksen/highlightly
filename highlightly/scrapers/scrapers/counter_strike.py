@@ -110,6 +110,7 @@ class CounterStrikeScraper(Scraper):
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                              create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
+    # TODO: Use https://www.hltv.org/results?content=demo&content=vod to check instead of checking the match page.
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         html = requests.get(url="https://www.hltv.org/results").text
@@ -170,7 +171,7 @@ class CounterStrikeScraper(Scraper):
             vod_filename = f"game_{game_count + 1}.mkv"
             vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
 
-            download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} -w 50 {video_id}"
+            download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}"
             subprocess.run(download_cmd, shell=True)
 
             # Persist the location of the files and other needed information about the vods to the database.

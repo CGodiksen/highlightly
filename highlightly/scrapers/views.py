@@ -9,13 +9,12 @@ from rest_framework.serializers import ModelSerializer
 
 from scrapers import serializers
 from scrapers import tasks
-from scrapers.models import Match
+from scrapers.models import Match, Team
 
 T = TypeVar("T", bound=ModelSerializer)
 
 
-class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin,
-                   viewsets.GenericViewSet):
+class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_serializer_class(self) -> Type[T]:
         if self.action == "update":
             return serializers.MatchUpdateSerializer
@@ -40,3 +39,14 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             tasks.scrape_valorant_matches()
 
         return Response({}, status=status.HTTP_200_OK)
+
+
+class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    def get_serializer_class(self) -> Type[T]:
+        if self.action == "update":
+            return serializers.TeamUpdateSerializer
+        else:
+            return serializers.TeamSerializer
+
+    def get_queryset(self) -> QuerySet[Team]:
+        return Team.objects.all().order_by("-ranking")
