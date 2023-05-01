@@ -284,7 +284,7 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
     logo_filename = f"{match.tournament.name.replace(' ', '_')}.png"
 
     # Only download the tournament logo if it does not already exist.
-    if Path(f"media/tournaments/{logo_filename}").is_file():
+    if not Path(f"media/tournaments/{logo_filename}").is_file():
         download_file_from_url(tournament_logo_url, f"tournaments/{logo_filename}")
         match.tournament.logo_filename = logo_filename
         match.tournament.save()
