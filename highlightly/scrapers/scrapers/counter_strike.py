@@ -138,11 +138,8 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
-        demos_folder_path = f"demos/{match.create_unique_folder_path()}"
-        Path(f"media/{demos_folder_path}").mkdir(parents=True, exist_ok=True)
-
-        vods_folder_path = f"vods/{match.create_unique_folder_path()}"
-        Path(f"media/{vods_folder_path}").mkdir(parents=True, exist_ok=True)
+        demos_folder_path = match.create_unique_folder_path("demos")
+        vods_folder_path = match.create_unique_folder_path("vods")
 
         # Retrieve the tournament logo and tournament context of the match.
         extract_match_page_tournament_data(match, html)
@@ -151,25 +148,25 @@ class CounterStrikeScraper(Scraper):
         demo_url = f"https://www.hltv.org{html.find('a', class_='stream-box')['data-demo-link']}"
 
         download_file_from_url(demo_url, f"{demos_folder_path}/demos.rar")
-        patoolib.extract_archive(f"media/{demos_folder_path}/demos.rar", outdir=f"media/{demos_folder_path}")
+        patoolib.extract_archive(f"{demos_folder_path}/demos.rar", outdir=demos_folder_path)
 
         # Delete the rar file after unzipping.
-        Path(f"media/{demos_folder_path}/demos.rar").unlink(missing_ok=True)
-        logging.info(f"Deleted media/{demos_folder_path}/demos.rar after unzipping.")
+        Path(f"{demos_folder_path}/demos.rar").unlink(missing_ok=True)
+        logging.info(f"Deleted {demos_folder_path}/demos.rar after unzipping.")
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
-        for game_count, demo_file in enumerate(os.listdir(f"media/{demos_folder_path}")):
+        for game_count, demo_file in enumerate(os.listdir(demos_folder_path)):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
             logging.info(f"Downloading VOD for game {game_count + 1} of {match} from {vod_url}.")
-            (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"media/{demos_folder_path}/{demo_file}")
+            (video_id, start_time, end_time) = parse_twitch_vod_url(vod_url, f"{demos_folder_path}/{demo_file}")
 
             # Add 15 seconds to the start and end of the video to account for small timing errors.
             vod_start = start_time - timedelta(seconds=15)
             vod_end = end_time + timedelta(seconds=15)
 
             vod_filename = f"game_{game_count + 1}.mkv"
-            vod_filepath = f"media/{vods_folder_path}/{vod_filename}"
+            vod_filepath = f"{vods_folder_path}/{vod_filename}"
 
             download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}"
             subprocess.run(download_cmd, shell=True)
@@ -184,9 +181,7 @@ class CounterStrikeScraper(Scraper):
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
         logging.info(f"Extracting per-game and total match statistics for {match}.")
-
-        statistics_folder_path = f"media/statistics/{match.create_unique_folder_path()}"
-        Path(statistics_folder_path).mkdir(parents=True, exist_ok=True)
+        statistics_folder_path = match.create_unique_folder_path("statistics")
 
         # For both teams, find the statistics table.
         stat_tables = html.findAll("div", class_="stats-content")
@@ -285,7 +280,7 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
 
     # Only download the tournament logo if it does not already exist.
     if not Path(f"media/tournaments/{logo_filename}").is_file():
-        download_file_from_url(tournament_logo_url, f"tournaments/{logo_filename}")
+        download_file_from_url(tournament_logo_url, f"media/tournaments/{logo_filename}")
         match.tournament.logo_filename = logo_filename
         match.tournament.save()
 
@@ -330,7 +325,7 @@ def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | No
     else:
         # If the logo is a PNG, find the largest version possible and download it.
         large_size_url = team_soup.find("img", class_="team-background-logo")["srcset"].removesuffix(" 2x")
-        download_file_from_url(large_size_url, f"teams/{logo_filename}")
+        download_file_from_url(large_size_url, f"media/teams/{logo_filename}")
 
     return logo_filename
 

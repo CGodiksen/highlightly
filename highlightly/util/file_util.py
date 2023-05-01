@@ -18,6 +18,6 @@ def get_base64(filepath: str) -> str:
 def download_file_from_url(url: str, filepath: str) -> None:
     """Download the file in the given url to the given filepath."""
     with requests.get(url, stream=True) as response:
-        with open(f"media/{filepath}", "wb") as file:
+        with open(filepath, "wb") as file:
             shutil.copyfileobj(response.raw, file)
-            logging.info(f"Downloaded file from {url} to media/{filepath}.")
+            logging.info(f"Downloaded file from {url} to {filepath}.")
