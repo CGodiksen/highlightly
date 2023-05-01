@@ -32,7 +32,7 @@ def delete_team_logo(instance: Team, **_kwargs) -> None:
 def delete_gotv_demo(instance: GOTVDemo, **_kwargs) -> None:
     try:
         logging.info(f"{instance} deleted. Also deleting the related GOTV demo at {instance.filename}.")
-        os.remove(f"media/demos/{instance.game_vod.match.create_unique_folder_path()}/{instance.filename}")
+        os.remove(f"{instance.game_vod.match.create_unique_folder_path('demos')}/{instance.filename}")
     except OSError:
         pass
 
@@ -41,7 +41,7 @@ def delete_gotv_demo(instance: GOTVDemo, **_kwargs) -> None:
 def delete_vod(instance: GameVod, **_kwargs) -> None:
     try:
         logging.info(f"{instance} deleted. Also deleting the related VOD at {instance.filename}.")
-        os.remove(f"media/vods/{instance.match.create_unique_folder_path()}/{instance.filename}")
+        os.remove(f"{instance.match.create_unique_folder_path('vods')}/{instance.filename}")
     except OSError:
         pass
 
@@ -51,7 +51,7 @@ def delete_statistics(instance: GameVod, **_kwargs) -> None:
     try:
         logging.info(f"{instance} deleted. Also deleting the related team statistics.")
 
-        folder_path = f"media/statistics/{instance.match.create_unique_folder_path()}"
+        folder_path = f"{instance.match.create_unique_folder_path('statistics')}"
         os.remove(f"{folder_path}/{instance.team_1_statistics_filename}")
         os.remove(f"{folder_path}/{instance.team_2_statistics_filename}")
     except OSError:

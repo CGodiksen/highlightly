@@ -18,7 +18,7 @@ class CounterStrikeEditor(Editor):
         initial_offset = 30
         max_attempts = 10
 
-        vod_filepath = f"media/vods/{game_vod.match.create_unique_folder_path()}/{game_vod.filename}"
+        vod_filepath = f"{game_vod.match.create_unique_folder_path('vods')}/{game_vod.filename}"
         video_capture = cv2.VideoCapture(vod_filepath)
         width = video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)
 

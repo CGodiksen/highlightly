@@ -24,7 +24,7 @@ class Editor:
         highlights = game_vod.highlight_set.all()
         logging.info(f"Using {len(highlights)} highlights to cut {game_vod} into highlight video.")
 
-        vod_filepath = f"{folder_path}/{game_vod.filename}"
+        vod_filepath = f"{folder_path}/vods/{game_vod.filename}"
         Path(f"{folder_path}/clips").mkdir(parents=True, exist_ok=True)
 
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
@@ -71,7 +71,7 @@ class Editor:
 
     def edit_and_upload_video(self, match: Match):
         """Using the highlights edit the full VODs into a highlight video and upload it to YouTube."""
-        folder_path = f"media/vods/{match.create_unique_folder_path()}"
+        folder_path = match.create_unique_folder_path()
         Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
         logging.info(f"Creating a highlight video for {match} at {folder_path}/highlights.")
 

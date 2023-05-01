@@ -8,7 +8,7 @@ import requests
 def get_base64(filepath: str) -> str:
     """Return the base64 string representing the image with the given filepath."""
     if filepath:
-        with open(f"media/{filepath}", "rb") as icon:
+        with open(filepath, "rb") as icon:
             icon_data = icon.read()
             return base64.b64encode(icon_data).decode()
     else:

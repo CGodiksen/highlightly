@@ -84,7 +84,7 @@ class Match(models.Model):
     def __str__(self) -> str:
         return f"{self.team_1} VS. {self.team_2}"
 
-    def create_unique_folder_path(self, folder: str | None) -> str:
+    def create_unique_folder_path(self, folder: str | None = None) -> str:
         """Return a path that can be used to uniquely identify files related to this match."""
         match_part = f"{self.team_1.name.replace(' ', '-').lower()}-vs-{self.team_2.name.replace(' ', '-').lower()}"
         datetime_part = self.start_datetime.strftime("%Y-%m-%d")

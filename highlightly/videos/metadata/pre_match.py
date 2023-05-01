@@ -1,6 +1,5 @@
 import logging
 import math
-from pathlib import Path
 
 from PIL import Image, ImageDraw
 from colorthief import ColorThief
@@ -85,7 +84,7 @@ def create_video_thumbnail(scheduled_match: Match) -> str:
     thumbnail = Image.new("RGB", (1280, 720), (255, 255, 255))
 
     # Add the "Game highlights" consistent text part to the left of the thumbnail.
-    text_part = Image.open("media/thumbnails/text_part.png")
+    text_part = Image.open("media/thumbnail_text_part.png")
     thumbnail.paste(text_part, (0, 0))
 
     # For both teams, generate a thumbnail team logo if it does not already exist.
@@ -106,10 +105,8 @@ def create_video_thumbnail(scheduled_match: Match) -> str:
     thumbnail.paste(match_frame_part, (team_1_part.width + text_part.width, 0))
 
     # Save the thumbnail to a file and return the filename of the saved thumbnail.
-    folder_path = f"media/thumbnails/{scheduled_match.tournament.name.replace(' ', '_')}"
-    Path(folder_path).mkdir(parents=True, exist_ok=True)
-
-    thumbnail_filename = f"{scheduled_match.team_1.name}-{scheduled_match.team_2.name}.png".replace(' ', '_')
+    folder_path = scheduled_match.create_unique_folder_path()
+    thumbnail_filename = "thumbnail.png"
     thumbnail.save(f"{folder_path}/{thumbnail_filename}")
 
     return thumbnail_filename

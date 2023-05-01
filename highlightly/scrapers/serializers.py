@@ -13,7 +13,7 @@ class TournamentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_logo(tournament: Tournament) -> str:
-        return get_base64(tournament.logo_filename)
+        return get_base64(f"media/tournaments/{tournament.logo_filename}")
 
 
 class TeamSerializer(serializers.ModelSerializer):
@@ -25,7 +25,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_logo(team: Team) -> str:
-        return get_base64(f"teams/{team.logo_filename}")
+        return get_base64(f"media/teams/{team.logo_filename}")
 
 
 class TeamUpdateSerializer(serializers.ModelSerializer):

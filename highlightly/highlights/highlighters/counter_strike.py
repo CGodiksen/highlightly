@@ -18,7 +18,9 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_parser: DemoParser | None = None
 
     def extract_events(self, game: GameVod) -> list[Event]:
-        self.demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
+        folder_path = game.match.create_unique_folder_path("demos")
+        self.demo_filepath = f"{folder_path}/{game.gotvdemo.filename}"
+
         logging.info(f"Parsing demo file at {self.demo_filepath} to extract events.")
         self.demo_parser = DemoParser(self.demo_filepath)
 

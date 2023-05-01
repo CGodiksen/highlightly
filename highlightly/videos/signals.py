@@ -35,6 +35,6 @@ def create_match_video_metadata(instance: Match, created: bool, update_fields: f
 def delete_thumbnail(instance: VideoMetadata, **_kwargs) -> None:
     try:
         logging.info(f"{instance} deleted. Also deleting the related thumbnail at {instance.thumbnail_filename}.")
-        os.remove(f"media/thumbnails/{instance.match.tournament.name.replace(' ', '_')}/{instance.thumbnail_filename}")
+        os.remove(f"{instance.match.create_unique_folder_path()}/{instance.thumbnail_filename}")
     except OSError:
         pass

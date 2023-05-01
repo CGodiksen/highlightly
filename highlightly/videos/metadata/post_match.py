@@ -25,7 +25,7 @@ def add_post_match_video_metadata(match: Match):
     new_description = video_metadata.description
 
     # Extract the statistics for each time into a dataframe.
-    statistics_folder_path = f"media/statistics/{match.create_unique_folder_path()}"
+    statistics_folder_path = match.create_unique_folder_path("statistics")
     team_1_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_1_statistics_filename}")
     team_2_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_2_statistics_filename}")
 
@@ -77,21 +77,22 @@ def get_match_vod_channel_name(match: Match) -> str:
 # TODO: Generate some eye catching text based on the context of the match and put it in the top of the match frame.
 def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
-    thumbnail_folder = f"media/thumbnails/{match.tournament.name.replace(' ', '_')}"
+    thumbnail_folder = match.create_unique_folder_path()
     thumbnail = Image.open(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
 
     # Retrieve a frame from one minute into the first game in the match.
-    vod_filepath = f"media/vods/{match.create_unique_folder_path()}/{match.gamevod_set.first().filename}"
+    vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
     video_capture = cv2.VideoCapture(vod_filepath)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * 60)
 
     _res, frame = video_capture.read()
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
-    cv2.imwrite(f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}", frame)
+    cv2.imwrite(frame_filepath, frame)
 
     # Add the frame from the match to the right 3/5 of the thumbnail.
     match_frame_part = create_match_frame_part(frame_filepath, 360 + 160)
     thumbnail.paste(match_frame_part, (360 + 160, 0))
+    os.remove(frame_filepath)
 
     # Add the tournament logo in the bottom right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}")
