@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from colorfield.fields import ColorField
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
@@ -82,10 +84,16 @@ class Match(models.Model):
     def __str__(self) -> str:
         return f"{self.team_1} VS. {self.team_2}"
 
-    def create_unique_folder_path(self) -> str:
+    def create_unique_folder_path(self, folder: str | None) -> str:
         """Return a path that can be used to uniquely identify files related to this match."""
-        match_part = f"{self.team_1.name.replace(' ', '_').lower()}_vs_{self.team_2.name.replace(' ', '_').lower()}"
-        return f"{self.tournament.name.replace(' ', '_').lower()}/{match_part}_{self.id}"
+        match_part = f"{self.team_1.name.replace(' ', '-').lower()}-vs-{self.team_2.name.replace(' ', '-').lower()}"
+        datetime_part = self.start_datetime.strftime("%Y-%m-%d")
+        path = f"media/matches/{self.tournament.name.replace(' ', '-').lower()}/{match_part}_{datetime_part}"
+
+        full_path = f"{path}/{folder}" if folder is not None else path
+        Path(full_path).mkdir(parents=True, exist_ok=True)
+
+        return full_path
 
 
 # TODO: When the game vod is deleted, also delete the file.
