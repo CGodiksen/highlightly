@@ -1,4 +1,5 @@
 import logging
+from itertools import groupby
 
 import pandas as pd
 from demoparser import DemoParser
@@ -16,6 +17,8 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
+    # TODO: Remove 8 or more player deaths that happen in the same second since that is related to technical pauses (round 15, round 29, round 7).
+    # TODO: Look into the issue with a long pause before the bomb is planted. Maybe remove the long pause before the plant (round 19).
     def extract_events(self, game: GameVod) -> list[Event]:
         self.demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
         logging.info(f"Parsing demo file at {self.demo_filepath} to extract events.")
@@ -24,6 +27,11 @@ class CounterStrikeHighlighter(Highlighter):
         event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
         events = [{"name": event["event_name"], "time": round(event["tick"] / 128)}
                   for event in self.demo_parser.parse_events("") if event["event_name"] in event_types]
+
+        # Remove 8 or more player deaths that happen in the same second since that is related to a technical pause.
+        grouped_events = [list(v) for _, v in groupby(events, lambda event: event["time"])]
+        duplicated_events = [x[0] for x in grouped_events if len(x) >= 8]
+        events = [event for event in events if event not in duplicated_events]
 
         # Calibrate the event times, so they are in relation to when the first freeze time is over.
         first_start_time = next(event for event in events if event["name"] == "round_freeze_end")["time"]
