@@ -6,7 +6,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django_celery_beat.models import IntervalSchedule, PeriodicTask, MINUTES
 
-from scrapers.models import Tournament, Team, Match
+from scrapers.models import Tournament, Team, Match, GOTVDemo, GameVod
 
 
 @receiver(post_delete, sender=Tournament)
@@ -24,6 +24,36 @@ def delete_team_logo(instance: Team, **_kwargs) -> None:
         if instance.logo_filename != "default.png":
             logging.info(f"{instance} deleted. Also deleting the related team logo at {instance.logo_filename}.")
             os.remove(f"media/teams/{instance.logo_filename}")
+    except OSError:
+        pass
+
+
+@receiver(post_delete, sender=GOTVDemo)
+def delete_gotv_demo(instance: GOTVDemo, **_kwargs) -> None:
+    try:
+        logging.info(f"{instance} deleted. Also deleting the related GOTV demo at {instance.filename}.")
+        os.remove(f"media/demos/{instance.game_vod.match.create_unique_folder_path()}/{instance.filename}")
+    except OSError:
+        pass
+
+
+@receiver(post_delete, sender=GameVod)
+def delete_vod(instance: GameVod, **_kwargs) -> None:
+    try:
+        logging.info(f"{instance} deleted. Also deleting the related VOD at {instance.filename}.")
+        os.remove(f"media/vods/{instance.match.create_unique_folder_path()}/{instance.filename}")
+    except OSError:
+        pass
+
+
+@receiver(post_delete, sender=GameVod)
+def delete_statistics(instance: GameVod, **_kwargs) -> None:
+    try:
+        logging.info(f"{instance} deleted. Also deleting the related team statistics.")
+
+        folder_path = f"media/statistics/{instance.match.create_unique_folder_path()}"
+        os.remove(f"{folder_path}/{instance.team_1_statistics_filename}")
+        os.remove(f"{folder_path}/{instance.team_2_statistics_filename}")
     except OSError:
         pass
 

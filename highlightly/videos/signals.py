@@ -1,4 +1,7 @@
-from django.db.models.signals import post_save
+import logging
+import os
+
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from scrapers.models import Match, Game
@@ -7,6 +10,7 @@ from videos.editors.league_of_legends import LeagueOfLegendsEditor
 from videos.editors.valorant import ValorantEditor
 from videos.metadata.post_match import add_post_match_video_metadata
 from videos.metadata.pre_match import create_pre_match_video_metadata
+from videos.models import VideoMetadata
 
 
 @receiver(post_save, sender=Match)
@@ -25,3 +29,12 @@ def create_match_video_metadata(instance: Match, created: bool, update_fields: f
                 editor = LeagueOfLegendsEditor()
 
             editor.edit_and_upload_video(instance)
+
+
+@receiver(post_delete, sender=VideoMetadata)
+def delete_thumbnail(instance: VideoMetadata, **_kwargs) -> None:
+    try:
+        logging.info(f"{instance} deleted. Also deleting the related thumbnail at {instance.thumbnail_filename}.")
+        os.remove(f"media/thumbnails/{instance.match.tournament.name.replace(' ', '_')}/{instance.thumbnail_filename}")
+    except OSError:
+        pass
