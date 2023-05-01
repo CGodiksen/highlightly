@@ -17,8 +17,6 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
-    # TODO: Remove 8 or more player deaths that happen in the same second since that is related to technical pauses (round 15, round 29, round 7).
-    # TODO: Look into the issue with a long pause before the bomb is planted. Maybe remove the long pause before the plant (round 19).
     def extract_events(self, game: GameVod) -> list[Event]:
         self.demo_filepath = f"media/demos/{game.match.create_unique_folder_path()}/{game.gotvdemo.filename}"
         logging.info(f"Parsing demo file at {self.demo_filepath} to extract events.")
@@ -180,15 +178,16 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
     bomb_planted = events[0]["name"] == "bomb_planted"
 
     for event in events[1:]:
-        # If the bomb has been planted, add all future events in the round to the last group.
-        if event["name"] == "bomb_planted":
-            bomb_planted = True
-
         last_event = grouped_events[-1][-1]
+
         if not bomb_planted and event["time"] - last_event["time"] > 20:
             grouped_events.append([event])
         else:
             grouped_events[-1].append(event)
+
+        # If the bomb has been planted, add all future events in the round to the last group.
+        if event["name"] == "bomb_planted":
+            bomb_planted = True
 
     return grouped_events
 
