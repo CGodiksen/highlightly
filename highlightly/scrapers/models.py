@@ -96,7 +96,6 @@ class Match(models.Model):
         return full_path
 
 
-# TODO: When the game vod is deleted, also delete the file.
 class GameVod(models.Model):
     class Host(models.TextChoices):
         YOUTUBE = "YOUTUBE", "YouTube"
@@ -105,6 +104,7 @@ class GameVod(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE)
 
     game_count = models.IntegerField(validators=[MinValueValidator(1)])
+    round_count = models.IntegerField(validators=[MinValueValidator(16)])
     map = models.CharField(max_length=64)
 
     url = models.URLField(max_length=128)
@@ -119,7 +119,6 @@ class GameVod(models.Model):
         return f"Map {self.game_count} VOD of {self.match}"
 
 
-# TODO: When the GOTV demo is deleted, also delete the file.
 class GOTVDemo(models.Model):
     game_vod = models.OneToOneField(GameVod, on_delete=models.CASCADE)
     filename = models.CharField(max_length=256)

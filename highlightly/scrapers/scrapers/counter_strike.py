@@ -157,6 +157,8 @@ class CounterStrikeScraper(Scraper):
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
+        results = html.findAll("div", class_="results played")
+
         for game_count, demo_file in enumerate(os.listdir(demos_folder_path)):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
             logging.info(f"Downloading VOD for game {game_count + 1} of {match} from {vod_url}.")
@@ -172,10 +174,13 @@ class CounterStrikeScraper(Scraper):
             download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}"
             subprocess.run(download_cmd, shell=True)
 
-            # Persist the location of the files and other needed information about the vods to the database.
             game_map = vod_urls[game_count].next_sibling.text.split(" ")[-1].removesuffix(")")
+            round_count = [int(score.text) for score in results[game_count].findAll("div", class_="results-team-score")]
+
+            # Persist the location of the files and other needed information about the vods to the database.
             game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=game_map, url=vod_url,
-                                              host=GameVod.Host.TWITCH, language="english", filename=vod_filename)
+                                              host=GameVod.Host.TWITCH, language="english", filename=vod_filename,
+                                              round_count=sum(round_count))
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
 
