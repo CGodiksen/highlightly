@@ -85,7 +85,8 @@ class CounterStrikeScraper(Scraper):
             soup = BeautifulSoup(html, "html.parser")
 
             nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
-            ranking = int(soup.find("b", text="World ranking").find_next_sibling().text[1:])
+            ranking = soup.find("b", text="World ranking").find_next_sibling().text[1:]
+            ranking = int(ranking) if ranking.isdigit() else None
 
             # Retrieve the team logo if possible.
             logo_filename = get_team_logo_filename(soup, team_name)
@@ -315,9 +316,10 @@ def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | No
     logo_filename = f"{team_name.replace(' ', '_')}.png"
     Path("media/teams").mkdir(parents=True, exist_ok=True)
 
-    if ".svg?" in logo_img["src"]:
+    if ".svg" in logo_img["src"]:
         try:
-            svg = requests.get(logo_img["src"]).text
+            src = f"https://www.hltv.org{logo_img['src']}" if "placeholder.svg" in logo_img["src"] else logo_img["src"]
+            svg = requests.get(src).text
             svg2png(bytestring=svg, write_to=f"media/teams/{logo_filename}")
         except Exception as e:
             print(f"Error when trying to convert SVG to PNG: {e}")
