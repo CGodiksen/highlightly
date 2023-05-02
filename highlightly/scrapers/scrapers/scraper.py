@@ -91,7 +91,7 @@ class Scraper:
 
         if html is not None:
             logging.info(f"{match} is ready for post-match scraping.")
-            PeriodicTask.objects.filter(name=f"Check if {match} is finished").delete()
+            PeriodicTask.objects.filter(name=f"Scrape {match} if finished").delete()
 
             self.download_match_files(match, html)
             self.extract_match_statistics(match, html)

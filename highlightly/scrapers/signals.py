@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shutil
 
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -54,6 +55,26 @@ def delete_statistics(instance: GameVod, **_kwargs) -> None:
         folder_path = f"{instance.match.create_unique_folder_path('statistics')}"
         os.remove(f"{folder_path}/{instance.team_1_statistics_filename}")
         os.remove(f"{folder_path}/{instance.team_2_statistics_filename}")
+    except OSError:
+        pass
+
+
+@receiver(post_delete, sender=Match)
+def delete_match_data(instance: Match, **_kwargs) -> None:
+    try:
+        logging.info(f"{instance} deleted. Also deleting the match media folder.")
+
+        # Remove the match folder.
+        folder_path = instance.create_unique_folder_path()
+        shutil.rmtree(folder_path)
+
+        # If it was the last match in the tournament folder, also clean up the tournament folder.
+        tournament_folder_path = "/".join(folder_path.split("/")[:-1])
+        if len(os.listdir(tournament_folder_path)) == 0:
+            shutil.rmtree(tournament_folder_path)
+
+        # Also delete the related periodic task, if one exists.
+        PeriodicTask.objects.filter(name=f"Scrape {instance} if finished").delete()
     except OSError:
         pass
 
