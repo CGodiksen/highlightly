@@ -33,6 +33,16 @@ class CounterStrikeHighlighter(Highlighter):
         duplicated_events = [x[0] for x in grouped_events if len(x) >= 8]
         events = [event for event in events if event not in duplicated_events]
 
+        round_freeze_ends = [event for event in events if event["name"] == "round_freeze_end"]
+        # If there are more round freeze ends than actual rounds it might indicate a technical pause has changed the demo file.
+        if len(round_freeze_ends) > game.round_count:
+            logging.warning(f"{len(round_freeze_ends)} rounds found in GOTV demo. There should be {game.round_count} rounds.")
+            round_freeze_ends_to_remove = len(round_freeze_ends) - game.round_count
+
+            # Remove all events before the new start.
+            new_start = round_freeze_ends[round_freeze_ends_to_remove]
+            events = [event for event in events if event["time"] >= new_start["time"]]
+
         # Calibrate the event times, so they are in relation to when the first freeze time is over.
         first_start_time = next(event for event in events if event["name"] == "round_freeze_end")["time"]
 
