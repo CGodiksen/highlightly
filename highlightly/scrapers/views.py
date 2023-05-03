@@ -66,8 +66,7 @@ class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.List
             base64: str = serializer.validated_data["logo_base64"]
             save_base64_image(f"media/teams/{new_filename}", base64)
 
-            instance.logo_filename = new_filename
-            instance.save()
+            serializer.validated_data["logo_filename"] = new_filename
 
         self.perform_update(serializer)
         return Response(serializer.data)
