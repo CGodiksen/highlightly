@@ -341,11 +341,14 @@ def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | No
 def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
     """Return the data of the row with the given text in the tournament information table."""
     tag = html.find("div", class_="infobox-cell-2 infobox-description", text=row_text)
-    return tag.find_next_sibling().text
+    return tag.find_next_sibling().text if tag else ""
 
 
 def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     """Convert the given letter tier to the corresponding number tier."""
+    if "qualifier" in letter_tier:
+        letter_tier = letter_tier[letter_tier.find("(") + 1:letter_tier.find(")")]
+
     conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
 
     return conversion[letter_tier]
