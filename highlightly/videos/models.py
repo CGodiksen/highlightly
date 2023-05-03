@@ -4,7 +4,7 @@ from scrapers.models import Match
 
 
 class VideoMetadata(models.Model):
-    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    match = models.OneToOneField(Match, on_delete=models.CASCADE)
 
     title = models.CharField(max_length=100)
     description = models.TextField(max_length=5000)
