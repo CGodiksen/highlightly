@@ -29,9 +29,11 @@ class TeamSerializer(serializers.ModelSerializer):
 
 
 class TeamUpdateSerializer(serializers.ModelSerializer):
+    logo_base64 = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
     class Meta:
         model = Team
-        fields = ["name", "nationality", "ranking", "url", "background_color"]
+        fields = ["name", "nationality", "ranking", "url", "background_color", "logo_base64"]
 
     def to_representation(self, team: Team) -> dict:
         return TeamSerializer(team).data
