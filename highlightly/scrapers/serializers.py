@@ -33,6 +33,9 @@ class TeamUpdateSerializer(serializers.ModelSerializer):
         model = Team
         fields = ["name", "nationality", "ranking", "url", "background_color"]
 
+    def to_representation(self, team: Team) -> dict:
+        return TeamSerializer(team).data
+
 
 class MatchSerializer(serializers.ModelSerializer):
     team_1 = TeamSerializer()

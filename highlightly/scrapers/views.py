@@ -1,6 +1,6 @@
 from typing import Type, TypeVar
 
-from django.db.models import QuerySet
+from django.db.models import QuerySet, F
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -49,7 +49,7 @@ class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.List
             return serializers.TeamSerializer
 
     def get_queryset(self) -> QuerySet[Team]:
-        return Team.objects.all().order_by("-ranking")
+        return Team.objects.all().order_by(F("ranking").asc(nulls_last=True))
 
     @action(detail=True, methods=["POST"])
     def refresh_from_url(self, request: Request) -> Response:
