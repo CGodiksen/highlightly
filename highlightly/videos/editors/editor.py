@@ -128,3 +128,23 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
         end_time_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100
 
     return start_time_ms / 1000, end_time_ms / 1000
+
+
+def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: Highlight | None,
+                              highlights: QuerySet[Highlight]) -> int:
+    """Add the given highlight to the selected highlights and return the number of seconds added."""
+    added_duration = 0
+
+    if highlight is not None:
+        selected_highlights.append(highlight)
+        added_duration += highlight.duration_seconds
+
+        round_highlights = highlights.filter(round_number=highlight.round_number)
+        round_last_highlight = round_highlights.order_by("-start_time_seconds").first()
+
+        # If a highlight from a round is included, also include the last highlight to show how the round ends.
+        if highlight.id != round_last_highlight.id:
+            selected_highlights.append(round_last_highlight)
+            added_duration += round_last_highlight.duration_seconds
+
+    return added_duration
