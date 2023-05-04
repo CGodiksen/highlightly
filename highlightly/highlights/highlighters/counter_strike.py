@@ -5,8 +5,7 @@ import pandas as pd
 from demoparser import DemoParser
 
 from highlights.highlighters.highlighter import Highlighter
-from highlights.models import Highlight
-from highlights.types import Event, Round, RoundData
+from highlights.types import Event, RoundData
 from scrapers.models import GameVod
 
 
@@ -38,25 +37,13 @@ class CounterStrikeHighlighter(Highlighter):
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         rounds = split_events_into_rounds(events, self.demo_parser)
+        calibrate_event_times(rounds)
+        clean_rounds(rounds)
+
         logging.info(f"Split events for {game} into {len(rounds)} rounds.")
 
-        # TODO: For each round, remove round events, clean irrelevant non round events, and split the events in the round into highlights.
-        # TODO: Assign a value to each highlight based on the calculation. Selecting which highlights should be included should be in the video editor.
-
-        cleaned_rounds = clean_rounds(rounds, self.demo_parser)
-
-        highlights = []
-        [highlights.extend(clean_round_events(round)) for round in cleaned_rounds]
-
-        for count, highlight in enumerate(highlights):
-            # Only create a highlight for the round if there are more than two events left after cleaning, or it is the last highlight.
-            if len(highlight["events"]) > 2 or count + 1 == len(highlights):
-                start = highlight["events"][0]["time"]
-                end = highlight["events"][-1]["time"]
-                events_str = " - ".join([f"{event['name']} ({event['time']})" for event in highlight["events"]])
-
-                Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
-                                         events=events_str, round_number=highlight["round_number"])
+        split_rounds_into_highlights(rounds)
+        logging.info(f"Split {len(rounds)} into {game.highlight_set.count()} highlights.")
 
 
 def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData]:
@@ -72,7 +59,6 @@ def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData
         game_round["winner"] = round_end["info"] if round_end else None
 
     handle_round_edge_cases(round_data)
-    calibrate_event_times(round_data)
 
     return round_data
 
@@ -119,22 +105,6 @@ def calibrate_event_times(rounds: list[RoundData]):
                 event["time"] -= first_round_freeze_end
 
 
-def clean_rounds(rounds: list[Round], demo_parser: DemoParser) -> list[Round]:
-    """Return a cleaned list of rounds where the one-sided eco rounds have been removed."""
-    cleaned_rounds = []
-    round_data = extract_round_data(demo_parser)[1:]
-    eco_rounds = get_eco_rounds(round_data)
-
-    for count, round in enumerate(rounds):
-        round_number = count + 1
-
-        # If it is the last half of the round or the very last round, always keep the round.
-        if round_number == 15 or round_number == len(rounds) or round_number not in eco_rounds:
-            cleaned_rounds.append(round)
-
-    return cleaned_rounds
-
-
 def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     """For each round retrieve how many were alive at the end of the round and total equipment value per team."""
     round_data: list[RoundData] = []
@@ -169,55 +139,23 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     return round_data
 
 
-def get_eco_rounds(round_data: list[RoundData]) -> list[int]:
-    """
-    Given a list with round data, return the round numbers of the rounds that are eco rounds where the team
-    that is expected to win, wins.
-    """
-    eco_rounds = []
+def clean_rounds(rounds: list[RoundData]):
+    """For each round, remove round metadata events and irrelevant non-metadata events."""
+    for round in rounds:
+        removed_event_types = ["round_freeze_end", "round_end"]
+        round["events"] = [event for event in round["events"] if event["name"] not in removed_event_types]
 
-    for count, data in enumerate(round_data):
-        team_1_eco = (data["team_1_equipment_value"] / 5) < 2500 and (data["team_2_equipment_value"] / 5) > 2500
-        team_2_eco = (data["team_2_equipment_value"] / 5) < 2500 and (data["team_1_equipment_value"] / 5) > 2500
-
-        team_1_eco_expected_win = team_1_eco and data["team_1_alive"] == 0 and data["team_2_alive"] >= 3
-        team_2_eco_expected_win = team_2_eco and data["team_2_alive"] == 0 and data["team_1_alive"] >= 3
-
-        if team_1_eco_expected_win or team_2_eco_expected_win:
-            eco_rounds.append(count + 1)
-
-    return eco_rounds
-
-
-# TODO: Remove when 4-5 players are alive on one team and 1-2 players get hunted down at the end of the round.
-def clean_round_events(round: Round) -> list[dict]:
-    """
-    Return a list of highlights from the round where the events and breaks that would decrease the viewing
-    quality of the round are removed.
-    """
-    grouped_events = []
-    cleaned_events = [event for event in round["events"] if event["name"] != "round_freeze_end"]
-
-    if len(cleaned_events) > 2:
         # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
-        if cleaned_events[-2]["name"] == "bomb_planted" and cleaned_events[-1]["name"] == "bomb_exploded":
-            del cleaned_events[-1]
+        if round["events"][-2]["name"] == "bomb_planted" and round["events"][-1]["name"] == "bomb_exploded":
+            del round["events"][-1]
 
-        grouped_events = group_round_events(cleaned_events)
 
-        # If there are 3 or more potential highlights in a round, the second can be removed if it has 2 or less player deaths.
-        if len(grouped_events) >= 3:
-            second_group_kills, second_group_bombs = get_event_counts(grouped_events[1])
-            if second_group_kills <= 2 and second_group_bombs == 0:
-                del grouped_events[1]
-
-        # If there are 2 or more potential highlights in a round, the first can be removed if it has 4 or less player deaths.
-        if len(grouped_events) >= 2:
-            first_group_kills, first_group_bombs = get_event_counts(grouped_events[0])
-            if first_group_kills <= 4 and first_group_bombs == 0:
-                del grouped_events[0]
-
-    return [{"round_number": round["round_number"], "events": events} for events in grouped_events]
+def split_rounds_into_highlights(rounds: list[RoundData]):
+    """
+    Group events within each round to create individual highlights and assign a value to the highlight to signify
+    how "good" the highlight is.
+    """
+    pass
 
 
 def group_round_events(events: list[Event]) -> list[list[Event]]:
@@ -240,9 +178,6 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
     return grouped_events
 
 
-def get_event_counts(events: list[Event]) -> (int, int):
-    """Return how many kills and how many bomb related events there are in the given list of events."""
-    kill_events = len([event for event in events if event["name"] == "player_death"])
-    bomb_related_events = len([event for event in events if "bomb" in event["name"]])
-
-    return kill_events, bomb_related_events
+def get_highlight_value() -> int:
+    """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
+    pass
