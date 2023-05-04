@@ -195,6 +195,7 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
 def get_highlight_value(events: list[Event], round: RoundData) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
     value = 0
+    teams = round["teams"]
     event_values = {"player_death": 1, "bomb_planted": 2, "bomb_defused": 2, "bomb_exploded": 1}
 
     # Add the value of the basic events in the highlight.
@@ -211,8 +212,23 @@ def get_highlight_value(events: list[Event], round: RoundData) -> int:
     # Add context scaling based on how close the round is in terms of how many players are left alive on each team.
     player_alive_difference = abs(round[f"team_{teams[0]}_alive"] - round[f"team_{teams[1]}_alive"])
     value += original_event_value * (0.5 - (player_alive_difference * 0.1))
-    
-    # TODO: Add context scaling based on the economy of the teams in the round. The winning team having better
-    #  equipment scales the value down and the losing team having better equipment scales the value up.
+
+    # Add context scaling based on the economy of the teams in the round. The winning team having better
+    # equipment scales the value down and the losing team having better equipment scales the value up.
+    winning_team_equipment = round[f"team_{round['winner']}_equipment_value"]
+    losing_team = next([team for team in teams if team != round["winner"]])
+    losing_team_equipment = round[f"team_{losing_team}_equipment_value"]
+
+    buy_level_difference = get_buy_level(winning_team_equipment) - get_buy_level(losing_team_equipment)
+    value += original_event_value * (buy_level_difference * 0.25)
 
     return value
+
+
+def get_buy_level(equipment_value: int) -> int:
+    if equipment_value >= 20000:
+        return 0  # Full buy.
+    elif equipment_value >= 10000:
+        return 1 # Half buy.
+    else:
+        return 2 # Eco.
