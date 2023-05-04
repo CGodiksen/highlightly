@@ -7,11 +7,6 @@ class Event(TypedDict):
     info: int | str | None
 
 
-class Round(TypedDict):
-    round_number: int
-    events: list[Event]
-
-
 class RoundData(TypedDict):
     number: int
     events: list[Event]
