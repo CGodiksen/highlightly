@@ -17,6 +17,7 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
+    # TODO: Maybe remove player deaths using event information.
     def extract_events(self, game: GameVod) -> list[Event]:
         folder_path = game.match.create_unique_folder_path("demos")
         self.demo_filepath = f"{folder_path}/{game.gotvdemo.filename}"
@@ -24,35 +25,14 @@ class CounterStrikeHighlighter(Highlighter):
         logging.info(f"Parsing demo file at {self.demo_filepath} to extract events.")
         self.demo_parser = DemoParser(self.demo_filepath)
 
-        event_types = ["round_freeze_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
-        events = [{"name": event["event_name"], "time": round(event["tick"] / 128)}
+        event_types = ["round_freeze_end", "round_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
+        events = [{"name": event["event_name"], "time": round(event["tick"] / 128), "info": event.get("winner", None)}
                   for event in self.demo_parser.parse_events("") if event["event_name"] in event_types]
 
         # Remove 8 or more player deaths that happen in the same second since that is related to a technical pause.
         grouped_events = [list(v) for _, v in groupby(events, lambda event: event["time"])]
         duplicated_events = [x[0] for x in grouped_events if len(x) >= 8]
         events = [event for event in events if event not in duplicated_events]
-
-        round_freeze_ends = [event for event in events if event["name"] == "round_freeze_end"]
-
-        # If there are more round freeze ends than actual rounds it might indicate a technical pause has changed the demo file.
-        error_msg = f"{len(round_freeze_ends) - 1} rounds found in GOTV demo. There should be {game.round_count} rounds."
-        if len(round_freeze_ends) - 1 > game.round_count:
-            logging.warning(error_msg)
-            round_freeze_ends_to_remove = len(round_freeze_ends) - 1 - game.round_count
-
-            # Remove all events before the new start.
-            new_start = round_freeze_ends[round_freeze_ends_to_remove]
-            events = [event for event in events if event["time"] >= new_start["time"]]
-        elif len(round_freeze_ends) - 1 < game.round_count:
-            logging.warning(error_msg)
-            events.insert(0, {"name": "round_freeze_end", "time": 0})
-
-        # Calibrate the event times, so they are in relation to when the first freeze time is over.
-        first_start_time = next(event for event in events if event["name"] == "round_freeze_end")["time"]
-
-        for event in events:
-            event["time"] -= first_start_time
 
         return events
 
