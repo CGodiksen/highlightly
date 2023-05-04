@@ -43,7 +43,7 @@ class CounterStrikeHighlighter(Highlighter):
 
         logging.info(f"Split events for {game} into {len(rounds)} rounds.")
 
-        split_rounds_into_highlights(rounds)
+        split_rounds_into_highlights(rounds, game)
         logging.info(f"Split {len(rounds)} into {game.highlight_set.count()} highlights.")
 
 
@@ -166,7 +166,7 @@ def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod):
             end = group[-1]["time"]
             events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
 
-            Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
+            Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=max(end - start, 1),
                                      events=events_str, round_number=round["number"], value=value)
 
 
@@ -216,7 +216,7 @@ def get_highlight_value(events: list[Event], round: RoundData) -> int:
     # Add context scaling based on the economy of the teams in the round. The winning team having better
     # equipment scales the value down and the losing team having better equipment scales the value up.
     winning_team_equipment = round[f"team_{round['winner']}_equipment_value"]
-    losing_team = next([team for team in teams if team != round["winner"]])
+    losing_team = next(team for team in teams if team != round["winner"])
     losing_team_equipment = round[f"team_{losing_team}_equipment_value"]
 
     buy_level_difference = get_buy_level(winning_team_equipment) - get_buy_level(losing_team_equipment)
