@@ -44,7 +44,7 @@ class CounterStrikeHighlighter(Highlighter):
         logging.info(f"Split events for {game} into {len(rounds)} rounds.")
 
         split_rounds_into_highlights(rounds, game)
-        logging.info(f"Split {len(rounds)} into {game.highlight_set.count()} highlights.")
+        logging.info(f"Split {len(rounds)} rounds into {game.highlight_set.count()} highlights.")
 
 
 def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData]:

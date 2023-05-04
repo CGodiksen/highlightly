@@ -2,11 +2,13 @@ import logging
 import math
 import shutil
 import subprocess
+from datetime import timedelta
 from pathlib import Path
 
 from pydub import AudioSegment
 from pydub.silence import detect_silence
 
+from highlights.models import Highlight
 from scrapers.models import Match, GameVod
 from videos.models import VideoMetadata
 
@@ -17,11 +19,46 @@ class Editor:
         """Return how many seconds there are in the given VOD before the game starts."""
         raise NotImplementedError
 
+    @staticmethod
+    def select_highlights(game_vod: GameVod) -> list[Highlight]:
+        """Based on the wanted video length, select the best highlights from the possible highlights."""
+        selected_highlights = []
+        unsorted_highlights = game_vod.highlight_set.all()
+        highlights = sorted(unsorted_highlights, key=lambda h: h.value / max(h.duration_seconds, 10), reverse=True)
+
+        current_video_length_seconds = 0
+        wanted_video_length_seconds = timedelta(minutes=game_vod.round_count * 0.45).total_seconds()
+
+        logging.info(f"Selecting the best highlights for {wanted_video_length_seconds / 60} minute "
+                     f"highlight video of {game_vod}.")
+
+        # Pistol rounds (1, 16), the last round, and, if necessary, the last round of regulation should always be included.
+        rounds_to_include = list({1, 16, game_vod.round_count})
+        if game_vod.round_count > 30:
+            rounds_to_include.append(30)
+
+        for round in rounds_to_include:
+            best_highlight = next((highlight for highlight in highlights if highlight.round_number == round), None)
+            current_video_length_seconds += add_highlight_to_selected(selected_highlights, best_highlight, highlights)
+
+        # Keep adding highlights until out of highlights or the wanted video length is reached.
+        for highlight in highlights:
+            if highlight not in selected_highlights:
+                add_highlight_to_selected(selected_highlights, highlight, highlights)
+
+            if current_video_length_seconds >= wanted_video_length_seconds:
+                break
+
+        logging.info(f"Selected {len(selected_highlights)} highlights for {current_video_length_seconds / 60} "
+                     f"minute highlight video of {game_vod}.")
+
+        return selected_highlights
+
     # TODO: Look into efficient ways to add smoother transitions between clips.
     @staticmethod
-    def create_highlight_video(game_vod: GameVod, target_filename: str, offset: int, folder_path: str) -> None:
+    def create_highlight_video(highlights: list[Highlight], game_vod: GameVod, target_filename: str, offset: int,
+                               folder_path: str) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
-        highlights = game_vod.highlight_set.all()
         logging.info(f"Using {len(highlights)} highlights to cut {game_vod} into highlight video.")
 
         vod_filepath = f"{folder_path}/vods/{game_vod.filename}"
@@ -80,8 +117,9 @@ class Editor:
                 logging.info(f"Creating a highlight video for {game_vod}.")
                 offset = self.find_game_starting_point(game_vod)
 
+                highlights = self.select_highlights(game_vod)
                 highlight_video_filename = game_vod.filename.replace('.mkv', '_highlights.mp4')
-                self.create_highlight_video(game_vod, highlight_video_filename, offset, folder_path)
+                self.create_highlight_video(highlights, game_vod, highlight_video_filename, offset, folder_path)
 
                 highlights_txt.write(f"file '{highlight_video_filename}'\n")
 
@@ -131,7 +169,7 @@ def get_optimal_cut_points(clip_filepath: str) -> (float, float):
 
 
 def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: Highlight | None,
-                              highlights: QuerySet[Highlight]) -> int:
+                              highlights: list[Highlight]) -> int:
     """Add the given highlight to the selected highlights and return the number of seconds added."""
     added_duration = 0
 
@@ -139,8 +177,8 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
         selected_highlights.append(highlight)
         added_duration += highlight.duration_seconds
 
-        round_highlights = highlights.filter(round_number=highlight.round_number)
-        round_last_highlight = round_highlights.order_by("-start_time_seconds").first()
+        round_highlights = [h for h in highlights if h.round_number == highlight.round_number]
+        round_last_highlight = sorted(round_highlights, key=lambda h: h.start_time_seconds, reverse=True)[0]
 
         # If a highlight from a round is included, also include the last highlight to show how the round ends.
         if highlight.id != round_last_highlight.id:
