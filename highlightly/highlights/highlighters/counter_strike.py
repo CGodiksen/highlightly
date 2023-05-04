@@ -77,22 +77,17 @@ class CounterStrikeHighlighter(Highlighter):
                                          events=events_str, round_number=highlight["round_number"])
 
 
-def split_events_into_rounds(events: list[Event]) -> list[Round]:
+def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData]:
     """Parse through the events and separate them into rounds based on the "round_end" event."""
-    rounds: list[Round] = []
-    round_counter = 0
-    round = {"round_number": round_counter, "events": []}
+    round_data = extract_round_data(demo_parser)
+    round_data_with_events = []
 
-    for count, event in enumerate(events):
-        if event["name"] == "round_freeze_end" or count == len(events) - 1:
-            rounds.append(round)
+    for count, game_round in enumerate(round_data):
+        start_time = 0 if count == 0 else round_data[count - 1]["end_time"] + 5
+        round_events = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 5]
+        round_data_with_events.append({**game_round, "events": round_events})
 
-            round_counter += 1
-            round = {"round_number": round_counter, "events": []}
-        else:
-            round["events"].append(event)
-
-    return rounds[1:]
+    return round_data_with_events
 
 
 def clean_rounds(rounds: list[Round], demo_parser: DemoParser) -> list[Round]:
@@ -118,18 +113,25 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     # Retrieve the tick data from the demo.
     tick_df: pd.DataFrame = demo_parser.parse_ticks(["team_num", "equipment_value", "round", "health"])
     tick_df = tick_df.drop_duplicates(["round", "name"])
-    tick_df = tick_df[tick_df.equipment_value != 0]
+
+    # Remove observer rows.
+    team_counts = tick_df.drop_duplicates(["team_num", "name"]).groupby("team_num").nunique()
+    non_observer_teams = team_counts[team_counts.name >= 10].index.tolist()
+    tick_df = tick_df[tick_df.team_num.isin(non_observer_teams)]
+    tick_df = tick_df[tick_df["round"] > 0]
 
     teams = tick_df["team_num"].unique()
     rounds = sorted(tick_df["round"].unique())
 
     # For each round, calculate how many were alive at the end of the round per team and the total team equipment value.
-    for round in rounds:
-        data: RoundData = {"team_1_alive": 0, "team_1_equipment_value": 0, "team_2_alive": 0,
-                           "team_2_equipment_value": 0}
+    for game_round in rounds:
+        round_rows = tick_df.loc[tick_df["round"] == game_round]
+        round_number = round_rows["round"].iloc[0]
+        data: RoundData = {"number": round_number,"team_1_alive": 0, "team_1_equipment_value": 0,
+                           "team_2_alive": 0, "team_2_equipment_value": 0, "end_time": round(round_rows["tick"].iloc[0] / 128)}
 
         for count, team in enumerate(teams):
-            team_round_rows = tick_df.loc[(tick_df["round"] == round) & (tick_df["team_num"] == team)]
+            team_round_rows = round_rows.loc[tick_df["team_num"] == team]
             data[f"team_{count + 1}_alive"] = len(team_round_rows.loc[team_round_rows["health"] != 0])
             data[f"team_{count + 1}_equipment_value"] = team_round_rows["equipment_value"].sum()
 
