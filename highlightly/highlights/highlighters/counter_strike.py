@@ -194,4 +194,19 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
 
 def get_highlight_value(events: list[Event], round: RoundData) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
-    return 0
+    value = 0
+    event_values = {"player_death": 1, "bomb_planted": 2, "bomb_defused": 2, "bomb_exploded": 1}
+
+    # Add the value of the basic events in the highlight.
+    for event in events:
+        value += event_values[event["name"]]
+
+    # All scaling is applied based on the original event score to avoid scaling already scaled values further.
+    original_event_value = value
+
+    # TODO: Add context scaling based on how late in the game the highlight is.
+    # TODO: Add context scaling based on how close the round is in terms of how many players are left alive on each team.
+    # TODO: Add context scaling based on the economy of the teams in the round. The winning team having better
+    #  equipment scales the value down and the losing team having better equipment scales the value up.
+
+    return value
