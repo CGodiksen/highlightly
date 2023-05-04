@@ -204,8 +204,14 @@ def get_highlight_value(events: list[Event], round: RoundData) -> int:
     # All scaling is applied based on the original event score to avoid scaling already scaled values further.
     original_event_value = value
 
-    # TODO: Add context scaling based on how late in the game the highlight is.
-    # TODO: Add context scaling based on how close the round is in terms of how many players are left alive on each team.
+    # Add context scaling based on how late in the game the highlight is.
+    round_scaler = 0.01 if round["number"] <= 30 else 0.015
+    value += original_event_value * (round_scaler * round["number"])
+
+    # Add context scaling based on how close the round is in terms of how many players are left alive on each team.
+    player_alive_difference = abs(round[f"team_{teams[0]}_alive"] - round[f"team_{teams[1]}_alive"])
+    value += original_event_value * (0.5 - (player_alive_difference * 0.1))
+    
     # TODO: Add context scaling based on the economy of the teams in the round. The winning team having better
     #  equipment scales the value down and the losing team having better equipment scales the value up.
 
