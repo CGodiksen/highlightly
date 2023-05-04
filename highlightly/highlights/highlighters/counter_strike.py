@@ -5,6 +5,7 @@ import pandas as pd
 from demoparser import DemoParser
 
 from highlights.highlighters.highlighter import Highlighter
+from highlights.models import Highlight
 from highlights.types import Event, RoundData
 from scrapers.models import GameVod
 
@@ -150,14 +151,27 @@ def clean_rounds(rounds: list[RoundData]):
             del round["events"][-1]
 
 
-def split_rounds_into_highlights(rounds: list[RoundData]):
+def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod):
     """
     Group events within each round to create individual highlights and assign a value to the highlight to signify
     how "good" the highlight is.
     """
-    pass
+    for round in rounds:
+        grouped_events = group_round_events(round["events"])
+
+        for group in grouped_events:
+            value = get_highlight_value(group, round)
+
+            start = group[0]["time"]
+            end = group[-1]["time"]
+            events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
+
+            Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=end - start,
+                                     events=events_str, round_number=round["number"], value=value)
 
 
+# TODO: Maybe decrease the time between event groups and then make it possible to combine highlights later if they are both kept.
+# TODO: This would remove more individual events while avoiding issues with cutting small breaks.
 def group_round_events(events: list[Event]) -> list[list[Event]]:
     """Group events within a round into smaller groups based on the time between events."""
     grouped_events = [[events[0]]]
@@ -178,6 +192,6 @@ def group_round_events(events: list[Event]) -> list[list[Event]]:
     return grouped_events
 
 
-def get_highlight_value() -> int:
+def get_highlight_value(events: list[Event], round: RoundData) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
-    pass
+    return 0
