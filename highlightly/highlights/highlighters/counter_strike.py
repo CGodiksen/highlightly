@@ -40,6 +40,9 @@ class CounterStrikeHighlighter(Highlighter):
         rounds = split_events_into_rounds(events, self.demo_parser)
         logging.info(f"Split events for {game} into {len(rounds)} rounds.")
 
+        # TODO: For each round, remove round events, clean irrelevant non round events, and split the events in the round into highlights.
+        # TODO: Assign a value to each highlight based on the calculation. Selecting which highlights should be included should be in the video editor.
+
         cleaned_rounds = clean_rounds(rounds, self.demo_parser)
 
         highlights = []
@@ -60,9 +63,13 @@ def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData
     """Parse through the events and separate them into rounds based on the "round_end" event."""
     round_data = extract_round_data(demo_parser)
 
+    # Add the events within the round and the winner of the round to the round data.
     for count, game_round in enumerate(round_data):
         start_time = 0 if count == 0 else round_data[count - 1]["end_time"] + 5
         game_round["events"] = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 5]
+
+        round_end = next((event for event in game_round["events"][::-1] if event["name"] == "round_end"), None)
+        game_round["winner"] = round_end["info"] if round_end else None
 
     handle_round_edge_cases(round_data)
     calibrate_event_times(round_data)
@@ -149,14 +156,13 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     for game_round in rounds:
         round_rows = tick_df.loc[tick_df["round"] == game_round]
         round_number = round_rows["round"].iloc[0]
-        data: RoundData = {"number": round_number, "team_1_alive": 0, "team_1_equipment_value": 0,
-                           "team_2_alive": 0, "team_2_equipment_value": 0,
-                           "end_time": round(round_rows["tick"].iloc[0] / 128)}
+        data: RoundData = {"number": round_number, "end_time": round(round_rows["tick"].iloc[0] / 128),
+                           "teams": list(teams)}
 
-        for count, team in enumerate(teams):
+        for team in teams:
             team_round_rows = round_rows.loc[tick_df["team_num"] == team]
-            data[f"team_{count + 1}_alive"] = len(team_round_rows.loc[team_round_rows["health"] != 0])
-            data[f"team_{count + 1}_equipment_value"] = team_round_rows["equipment_value"].sum()
+            data[f"team_{team}_alive"] = len(team_round_rows.loc[team_round_rows["health"] != 0])
+            data[f"team_{team}_equipment_value"] = team_round_rows["equipment_value"].sum()
 
         round_data.append(data)
 
