@@ -37,11 +37,10 @@ class CounterStrikeHighlighter(Highlighter):
         return events
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
-        rounds = split_events_into_rounds(events)
+        rounds = split_events_into_rounds(events, self.demo_parser)
         logging.info(f"Split events for {game} into {len(rounds)} rounds.")
 
         cleaned_rounds = clean_rounds(rounds, self.demo_parser)
-        logging.info(f"Removed {len(rounds) - len(cleaned_rounds)} rounds from {game} highlights.")
 
         highlights = []
         [highlights.extend(clean_round_events(round)) for round in cleaned_rounds]
@@ -60,14 +59,57 @@ class CounterStrikeHighlighter(Highlighter):
 def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData]:
     """Parse through the events and separate them into rounds based on the "round_end" event."""
     round_data = extract_round_data(demo_parser)
-    round_data_with_events = []
 
     for count, game_round in enumerate(round_data):
         start_time = 0 if count == 0 else round_data[count - 1]["end_time"] + 5
-        round_events = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 5]
-        round_data_with_events.append({**game_round, "events": round_events})
+        game_round["events"] = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 5]
 
-    return round_data_with_events
+    handle_round_edge_cases(round_data)
+    calibrate_event_times(round_data)
+
+    return round_data
+
+
+def handle_round_edge_cases(rounds: list[RoundData]):
+    """Handle edge cases such as rounds being replayed, technical pauses, and missing events."""
+    # If there is more than one round_freeze_end -> round_end sequence. Overwrite the previous round with the first sequence.
+    for count, round in enumerate(rounds):
+        round_freeze_ends = [event for event in round["events"] if event["name"] == "round_freeze_end"]
+        round_ends = [event for event in round["events"] if event["name"] == "round_end"]
+
+        if len(round_freeze_ends) > 1 and len(round_ends) > 1:
+            first_round_freeze_end_index = round["events"].index(round_freeze_ends[0])
+
+            # Find the first round_end event after the first round_freeze_end event.
+            first_round_end_index = round["events"].index(round_ends[-1])
+            for round_end in round_ends:
+                first_round_end_index = round["events"].index(round_end)
+
+                if first_round_end_index > first_round_freeze_end_index:
+                    break
+
+            first_sequence = round["events"][first_round_freeze_end_index: first_round_end_index + 1]
+
+            rounds[count - 1]["events"] = first_sequence
+            rounds[count - 1]["end_time"] = round["events"][first_round_end_index]["time"]
+
+            del round["events"][first_round_freeze_end_index: first_round_end_index + 1]
+
+
+def calibrate_event_times(rounds: list[RoundData]):
+    """Find the first round_freeze_end event and calibrate all event times based on it."""
+    first_round_freeze_end = 0
+    for round in rounds:
+        first_round_freeze_end = next((event["time"] for event in round["events"] if event["name"] == "round_freeze_end"), None)
+        if first_round_freeze_end is not None:
+            break
+
+    if first_round_freeze_end:
+        for round in rounds:
+            round["end_time"] -= first_round_freeze_end
+
+            for event in round["events"]:
+                event["time"] -= first_round_freeze_end
 
 
 def clean_rounds(rounds: list[Round], demo_parser: DemoParser) -> list[Round]:
@@ -107,8 +149,9 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     for game_round in rounds:
         round_rows = tick_df.loc[tick_df["round"] == game_round]
         round_number = round_rows["round"].iloc[0]
-        data: RoundData = {"number": round_number,"team_1_alive": 0, "team_1_equipment_value": 0,
-                           "team_2_alive": 0, "team_2_equipment_value": 0, "end_time": round(round_rows["tick"].iloc[0] / 128)}
+        data: RoundData = {"number": round_number, "team_1_alive": 0, "team_1_equipment_value": 0,
+                           "team_2_alive": 0, "team_2_equipment_value": 0,
+                           "end_time": round(round_rows["tick"].iloc[0] / 128)}
 
         for count, team in enumerate(teams):
             team_round_rows = round_rows.loc[tick_df["team_num"] == team]
