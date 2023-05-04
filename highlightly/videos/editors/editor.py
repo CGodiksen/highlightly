@@ -44,7 +44,7 @@ class Editor:
         # Keep adding highlights until out of highlights or the wanted video length is reached.
         for highlight in highlights:
             if highlight not in selected_highlights:
-                add_highlight_to_selected(selected_highlights, highlight, highlights)
+                current_video_length_seconds += add_highlight_to_selected(selected_highlights, highlight, highlights)
 
             if current_video_length_seconds >= wanted_video_length_seconds:
                 break
@@ -52,7 +52,7 @@ class Editor:
         logging.info(f"Selected {len(selected_highlights)} highlights for {current_video_length_seconds / 60} "
                      f"minute highlight video of {game_vod}.")
 
-        return selected_highlights
+        return sorted(selected_highlights, key=lambda h: h.start_time_seconds)
 
     # TODO: Look into efficient ways to add smoother transitions between clips.
     @staticmethod
@@ -76,7 +76,7 @@ class Editor:
                 cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_temp_filepath}"
                 subprocess.run(cmd, shell=True)
 
-                # Find a silent point in the first 5 seconds and last 5 seconds to cut on.
+                # Find a silent point in the first 2 seconds and last 3 seconds to cut on.
                 (silent_start, silent_end) = get_optimal_cut_points(clip_temp_filepath)
 
                 # Further cut the video, so it starts and ends in silence.
@@ -175,14 +175,14 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
 
     if highlight is not None:
         selected_highlights.append(highlight)
-        added_duration += highlight.duration_seconds
+        added_duration += highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
 
         round_highlights = [h for h in highlights if h.round_number == highlight.round_number]
         round_last_highlight = sorted(round_highlights, key=lambda h: h.start_time_seconds, reverse=True)[0]
 
         # If a highlight from a round is included, also include the last highlight to show how the round ends.
-        if highlight.id != round_last_highlight.id:
+        if round_last_highlight not in selected_highlights:
             selected_highlights.append(round_last_highlight)
-            added_duration += round_last_highlight.duration_seconds
+            added_duration += round_last_highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
 
     return added_duration
