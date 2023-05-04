@@ -94,7 +94,7 @@ class Editor:
 
         shutil.rmtree(f"{folder_path}/highlights")
 
-        self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata_set.first())
+        self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata)
 
 
 # TODO: Maybe extend the time that is added to the start and end and extend the period we look for optimal cut points in.

@@ -37,11 +37,12 @@ def update_video_metadata(instance: Team, created: bool, **_kwargs) -> None:
     if not created:
         # For each current match that includes the updated team, update the video metadata for the match by recreating.
         for match in Match.objects.filter(Q(team_1=instance) | Q(team_2=instance)):
-            match.videometadata.delete()
-            create_pre_match_video_metadata(match)
+            if hasattr(match, "videometadata"):
+                match.videometadata.delete()
+                create_pre_match_video_metadata(match)
 
-            if match.finished:
-                add_post_match_video_metadata(match)
+                if match.finished:
+                    add_post_match_video_metadata(match)
 
 
 @receiver(post_delete, sender=VideoMetadata)
