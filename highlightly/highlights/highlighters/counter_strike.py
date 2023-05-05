@@ -48,7 +48,7 @@ class CounterStrikeHighlighter(Highlighter):
 
 
 def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData]:
-    """Parse through the events and separate them into rounds based on the "round_end" event."""
+    """Parse through the events and separate them into rounds based on the tick round data."""
     round_data = extract_round_data(demo_parser)
 
     # Add the events within the round and the winner of the round to the round data.
@@ -143,12 +143,13 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
 def clean_rounds(rounds: list[RoundData]):
     """For each round, remove round metadata events and irrelevant non-metadata events."""
     for round in rounds:
-        removed_event_types = ["round_freeze_end", "round_end"]
-        round["events"] = [event for event in round["events"] if event["name"] not in removed_event_types]
+        event_types_to_remove = ["round_freeze_end", "round_end"]
+        round["events"] = [event for event in round["events"] if event["name"] not in event_types_to_remove]
 
-        # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
-        if round["events"][-2]["name"] == "bomb_planted" and round["events"][-1]["name"] == "bomb_exploded":
-            del round["events"][-1]
+        if len(round["events"]) >= 2:
+            # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
+            if round["events"][-2]["name"] == "bomb_planted" and round["events"][-1]["name"] == "bomb_exploded":
+                del round["events"][-1]
 
 
 def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod):
@@ -157,17 +158,18 @@ def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod):
     how "good" the highlight is.
     """
     for round in rounds:
-        grouped_events = group_round_events(round["events"])
+        if len(round["events"]) > 0:
+            grouped_events = group_round_events(round["events"])
 
-        for group in grouped_events:
-            value = get_highlight_value(group, round)
+            for group in grouped_events:
+                value = get_highlight_value(group, round)
 
-            start = group[0]["time"]
-            end = group[-1]["time"]
-            events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
+                start = group[0]["time"]
+                end = group[-1]["time"]
+                events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
 
-            Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=max(end - start, 1),
-                                     events=events_str, round_number=round["number"], value=value)
+                Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=max(end - start, 1),
+                                         events=events_str, round_number=round["number"], value=value)
 
 
 # TODO: Maybe decrease the time between event groups and then make it possible to combine highlights later if they are both kept.
