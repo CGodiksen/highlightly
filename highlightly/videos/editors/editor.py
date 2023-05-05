@@ -24,7 +24,9 @@ class Editor:
         """Based on the wanted video length, select the best highlights from the possible highlights."""
         selected_highlights = []
         unsorted_highlights = game_vod.highlight_set.all()
-        highlights = sorted(unsorted_highlights, key=lambda h: h.value / max(h.duration_seconds, 10), reverse=True)
+        # TODO: Maybe weigh longer clips higher to avoid many smalls cuts.
+        # TODO: Maybe scale the highlight when setting the value based on how far away the length is from an ideal length.
+        highlights = sorted(unsorted_highlights, key=lambda h: h.value / max(h.duration_seconds, 30), reverse=True)
 
         current_video_length_seconds = 0
         wanted_video_length_seconds = timedelta(minutes=game_vod.round_count * 0.45).total_seconds()
@@ -43,8 +45,7 @@ class Editor:
 
         # Keep adding highlights until out of highlights or the wanted video length is reached.
         for highlight in highlights:
-            if highlight not in selected_highlights:
-                current_video_length_seconds += add_highlight_to_selected(selected_highlights, highlight, highlights)
+            current_video_length_seconds += add_highlight_to_selected(selected_highlights, highlight, highlights)
 
             if current_video_length_seconds >= wanted_video_length_seconds:
                 break
@@ -88,6 +89,11 @@ class Editor:
                              f"{highlight.round_number} of {game_vod}.")
 
                 clips_txt.write(f"file 'clip_{count + 1}.mkv'\n")
+
+        # TODO: Add crossfade transitions between each clip.
+        # TODO: For each pair of clips, find the exact keyframe to cut on at the end of the first and start of the second.
+        # TODO: Cut out the fade clips and add crossfade between the two cut out fade clips.
+        # TODO: Add the single crossfade clip between the two original clips.
 
         # Combine the clips into a single highlight video file.
         cmd = f"ffmpeg -f concat -i {folder_path}/clips/clips.txt -codec copy {folder_path}/highlights/{target_filename}"
@@ -173,7 +179,7 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
     """Add the given highlight to the selected highlights and return the number of seconds added."""
     added_duration = 0
 
-    if highlight is not None:
+    if highlight is not None and highlight not in selected_highlights:
         selected_highlights.append(highlight)
         added_duration += highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
 
@@ -181,7 +187,7 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
         round_last_highlight = sorted(round_highlights, key=lambda h: h.start_time_seconds, reverse=True)[0]
 
         # If a highlight from a round is included, also include the last highlight to show how the round ends.
-        if round_last_highlight not in selected_highlights:
+        if highlight.id != round_last_highlight.id and round_last_highlight not in selected_highlights:
             selected_highlights.append(round_last_highlight)
             added_duration += round_last_highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
 
