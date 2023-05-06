@@ -217,12 +217,13 @@ def get_highlight_value(events: list[Event], round: RoundData) -> int:
 
     # Add context scaling based on the economy of the teams in the round. The winning team having better
     # equipment scales the value down and the losing team having better equipment scales the value up.
-    winning_team_equipment = round[f"team_{round['winner']}_equipment_value"]
-    losing_team = next(team for team in teams if team != round["winner"])
-    losing_team_equipment = round[f"team_{losing_team}_equipment_value"]
+    if round["winner"] is not None:
+        winning_team_equipment = round[f"team_{round['winner']}_equipment_value"]
+        losing_team = next(team for team in teams if team != round["winner"])
+        losing_team_equipment = round[f"team_{losing_team}_equipment_value"]
 
-    buy_level_difference = get_buy_level(winning_team_equipment) - get_buy_level(losing_team_equipment)
-    value += original_event_value * (buy_level_difference * 0.25)
+        buy_level_difference = get_buy_level(winning_team_equipment) - get_buy_level(losing_team_equipment)
+        value += original_event_value * (buy_level_difference * 0.25)
 
     return value
 
