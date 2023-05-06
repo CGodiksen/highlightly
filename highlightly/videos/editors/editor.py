@@ -5,9 +5,6 @@ import subprocess
 from datetime import timedelta
 from pathlib import Path
 
-from pydub import AudioSegment
-from pydub.silence import detect_silence
-
 from highlights.models import Highlight
 from scrapers.models import Match, GameVod
 from videos.models import VideoMetadata
@@ -55,7 +52,6 @@ class Editor:
 
         return sorted(selected_highlights, key=lambda h: h.start_time_seconds)
 
-    # TODO: Look into efficient ways to add smoother transitions between clips.
     @staticmethod
     def create_highlight_video(highlights: list[Highlight], game_vod: GameVod, target_filename: str, offset: int,
                                folder_path: str) -> None:
@@ -66,39 +62,22 @@ class Editor:
         Path(f"{folder_path}/clips").mkdir(parents=True, exist_ok=True)
 
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
-        with open(f"{folder_path}/clips/clips.txt", "a+") as clips_txt:
-            for count, highlight in enumerate(highlights):
-                # Add 3 seconds at the start and 5 seconds at the end and add more time to the end of the last highlight.
-                duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 8)
-                start = (highlight.start_time_seconds + offset) - 3
+        exact_durations = []
+        for count, highlight in enumerate(highlights):
+            # Add 3 seconds at the start and 4 seconds at the end and add more time to the end of the last highlight.
+            duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 7)
+            start = (highlight.start_time_seconds + offset) - 3
 
-                # Create the initial full length clip.
-                clip_temp_filepath = f"{folder_path}/clips/clip_{count + 1}_temp.mkv"
-                cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_temp_filepath}"
-                subprocess.run(cmd, shell=True)
+            clip_filepath = f"{folder_path}/clips/clip_{count + 1}.mkv"
+            cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_filepath}"
+            subprocess.run(cmd, shell=True)
 
-                # Find a silent point in the first 2 seconds and last 3 seconds to cut on.
-                (silent_start, silent_end) = get_optimal_cut_points(clip_temp_filepath)
+            logging.info(f"Created {duration} second highlight clip for round "
+                         f"{highlight.round_number} of {game_vod}.")
 
-                # Further cut the video, so it starts and ends in silence.
-                clip_filepath = clip_temp_filepath.replace("_temp.mkv", ".mkv")
-                cmd = f"ffmpeg -ss {silent_start} -i {clip_temp_filepath} -to {silent_end - silent_start} -c copy {clip_filepath}"
-                subprocess.run(cmd, shell=True)
+            exact_durations.append(get_video_length(clip_filepath))
 
-                logging.info(f"Created {silent_end - silent_start} second highlight clip for round "
-                             f"{highlight.round_number} of {game_vod}.")
-
-                clips_txt.write(f"file 'clip_{count + 1}.mkv'\n")
-
-        # TODO: Add crossfade transitions between each clip.
-        # TODO: For each pair of clips, find the exact keyframe to cut on at the end of the first and start of the second.
-        # TODO: Cut out the fade clips and add crossfade between the two cut out fade clips.
-        # TODO: Add the single crossfade clip between the two original clips.
-
-        # Combine the clips into a single highlight video file.
-        cmd = f"ffmpeg -f concat -i {folder_path}/clips/clips.txt -codec copy {folder_path}/highlights/{target_filename}"
-        subprocess.run(cmd, shell=True)
-
+        combine_clips_with_crossfade(folder_path, target_filename, exact_durations)
         logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
 
         shutil.rmtree(f"{folder_path}/clips")
@@ -148,7 +127,7 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
 
     if highlight is not None and highlight not in selected_highlights:
         selected_highlights.append(highlight)
-        added_duration += highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
+        added_duration += highlight.duration_seconds + 7  # Adding 7 seconds to account for the full clip length.
 
         round_highlights = [h for h in highlights if h.round_number == highlight.round_number]
         round_last_highlight = sorted(round_highlights, key=lambda h: h.start_time_seconds, reverse=True)[0]
@@ -156,7 +135,7 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
         # If a highlight from a round is included, also include the last highlight to show how the round ends.
         if highlight.id != round_last_highlight.id and round_last_highlight not in selected_highlights:
             selected_highlights.append(round_last_highlight)
-            added_duration += round_last_highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
+            added_duration += round_last_highlight.duration_seconds + 7  # Adding 7 seconds to account for the full clip length.
 
     return added_duration
 
