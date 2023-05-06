@@ -159,3 +159,11 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
             added_duration += round_last_highlight.duration_seconds + 8  # Adding 8 seconds to account for the full clip length.
 
     return added_duration
+
+
+def get_video_length(filepath: str) -> float:
+    """Use ffprope to get the video length in seconds."""
+    cmd = f"ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {filepath}"
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+    return float(result.stdout)
