@@ -141,6 +141,7 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
 
 
 # TODO: Find a way to combine all the clips in a single command without running out of memory.
+# TODO: Maybe use the "," chain operator to avoid processing too many filters at the same time.
 def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float]):
     """Combine the given clips, adding a crossfade effect between each clip for cleaner transitions."""
     # Split the clips into groups of 10 to avoid memory issues with combining them all with a single command.
@@ -169,9 +170,9 @@ def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_du
             # Combine the clips in the group into a single highlight video file.
             clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in group_file_ids])
             group_video_filename = target_filename.replace('.mp4', f'_{group}.mp4')
-            cmd = f"ffmpeg {clips_part} -filter_complex '{'; '.join(group_video_filters)}; " \
-                  f"{'; '.join(group_audio_filters)}' -preset superfast -crf 28 -movflags +faststart " \
-                  f"{folder_path}/highlights/groups/{group_video_filename}"
+            cmd = f"ffmpeg {clips_part} -filter_complex 'afade=t=in:ss=0:d=1[0:a], {'; '.join(group_video_filters)}; " \
+                  f"{'; '.join(group_audio_filters)}, afade=t=out:st={fade_offset + clip_durations[group_file_ids[-1]] - 2}:d=2' " \
+                  f"-preset superfast -crf 28 -movflags +faststart {folder_path}/highlights/groups/{group_video_filename}"
 
             subprocess.run(cmd, shell=True)
 
