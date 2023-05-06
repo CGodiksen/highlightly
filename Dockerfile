@@ -5,15 +5,20 @@ RUN sed -i.bak 's/bullseye[^ ]* main$/& contrib non-free/g' /etc/apt/sources.lis
 RUN apt-get update
 RUN apt-get install unrar
 
+# Install ffmpeg.
+RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
+RUN tar xvf ffmpeg-git-amd64-static.tar.xz
+ENV PATH="${PATH}:/ffmpeg-git-20230313-amd64-static"
+
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
 
+RUN apt-get update && apt-get install -y python3-opencv
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install ffmpeg and twitch-dl to support downloading videos from Twitch.
+# Install twitch-dl to support downloading videos from Twitch.
 ENV PATH="${PATH}:/root/.local/bin"
-RUN apt-get install -y ffmpeg
 RUN pipx install twitch-dl
 RUN pipx ensurepath
 
