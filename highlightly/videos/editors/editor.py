@@ -141,39 +141,6 @@ class Editor:
         self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata)
 
 
-# TODO: Maybe extend the time that is added to the start and end and extend the period we look for optimal cut points in.
-# TODO: Maybe round up and down and add a millisecond for a slightly better cut point.
-def get_optimal_cut_points(clip_filepath: str) -> (float, float):
-    """
-    Extract the speech from the video and find the optimal times to cut the video to avoid cutting in the middle of a word
-    or sentence. The optimal times to cut within the first 2 seconds and last 3 seconds are returned.
-    """
-    audio = AudioSegment.from_file(clip_filepath)
-    detected_silence = detect_silence(audio, min_silence_len=100, silence_thresh=-32)
-
-    # Find the longest silence in the first 2 seconds and the last 3 seconds.
-    start_limit_ms = 2 * 1000
-    end_limit_ms = (round(audio.duration_seconds) - 3) * 1000
-
-    start_silences = [silence for silence in detected_silence if silence[0] < start_limit_ms]
-    end_silences = [silence for silence in detected_silence if silence[1] > end_limit_ms]
-
-    start_time_ms = 1500
-    end_time_ms = end_limit_ms + 1000
-
-    # If there is a silence in the first 2 seconds find the time to cut to get the longest silence after starting.
-    if len(start_silences) > 0:
-        longest_start_silence = sorted(start_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
-        start_time_ms = int(math.ceil(longest_start_silence[0] / 100.0)) * 100
-
-    # If there is a silence in the last 3 seconds find the time to cut to get the longest silence before ending.
-    if len(end_silences) > 0:
-        longest_end_silence = sorted(end_silences, key=lambda x: x[1] - x[0], reverse=True)[0]
-        end_time_ms = int(math.floor(longest_end_silence[1] / 100.0)) * 100
-
-    return start_time_ms / 1000, end_time_ms / 1000
-
-
 def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: Highlight | None,
                               highlights: list[Highlight]) -> int:
     """Add the given highlight to the selected highlights and return the number of seconds added."""
