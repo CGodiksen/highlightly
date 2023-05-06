@@ -161,39 +161,48 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
     return added_duration
 
 
+# TODO: Find a way to combine all the clips in a single command without running out of memory.
 def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float]):
     """Combine the given clips, adding a crossfade effect between each clip for cleaner transitions."""
     # Split the clips into groups of 10 to avoid memory issues with combining them all with a single command.
     groups = math.ceil(len(clip_durations) / 10)
-    for group in range(groups):
-        group_video_filters = []
-        group_audio_filters = []
-        group_file_ids = list(range(group * 10, min((group * 10) + 10, len(clip_durations))))
+    Path(f"{folder_path}/highlights/groups").mkdir(parents=True, exist_ok=True)
 
-        fade_offset = 0
-        for i in range(len(group_file_ids) - 1):
-            fade_offset += clip_durations[i + group * 10] - 1
+    with open(f"{folder_path}/highlights/groups/groups.txt", "a+") as groups_txt:
+        for group in range(groups):
+            group_video_filters = []
+            group_audio_filters = []
+            group_file_ids = list(range(group * 10, min((group * 10) + 10, len(clip_durations))))
 
-            v_filter_start = "[0]" if i == 0 else f"[vfade{i}]"
-            v_filter_end = ",format=yuv420p" if i + 1 == len(group_file_ids) - 1 else f"[vfade{i + 1}]"
-            group_video_filters.append(f"{v_filter_start}[{i + 1}:v]xfade=transition=fade:duration=1"
-                                       f":offset={fade_offset}{v_filter_end}")
+            fade_offset = 0
+            for i in range(len(group_file_ids) - 1):
+                fade_offset += clip_durations[i + group * 10] - 1
 
-            a_filter_start = "[0:a]" if i == 0 else f"[afade{i}]"
-            a_filter_end = "" if i + 1 == len(group_file_ids) - 1 else f"[afade{i + 1}]"
-            group_audio_filters.append(f"{a_filter_start}[{i + 1}:a]acrossfade=d=1{a_filter_end}")
+                v_filter_start = "[0]" if i == 0 else f"[vfade{i}]"
+                v_filter_end = ",format=yuv420p" if i + 1 == len(group_file_ids) - 1 else f"[vfade{i + 1}]"
+                group_video_filters.append(f"{v_filter_start}[{i + 1}:v]xfade=transition=fade:duration=1"
+                                           f":offset={fade_offset}{v_filter_end}")
 
-        print(group_file_ids, group_video_filters, group_audio_filters)
+                a_filter_start = "[0:a]" if i == 0 else f"[afade{i}]"
+                a_filter_end = "" if i + 1 == len(group_file_ids) - 1 else f"[afade{i + 1}]"
+                group_audio_filters.append(f"{a_filter_start}[{i + 1}:a]acrossfade=d=1{a_filter_end}")
 
-        # Combine the clips in the group into a single highlight video file.
-        clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in group_file_ids])
-        cmd = f"ffmpeg {clips_part} -filter_complex '{'; '.join(group_video_filters)}; " \
-              f"{'; '.join(group_audio_filters)}' -preset superfast -crf 28 -movflags +faststart " \
-              f"{folder_path}/highlights/{target_filename.replace('.mp4', f'_{group}.mp4')}"
-        print(cmd)
-        subprocess.run(cmd, shell=True)
+            # Combine the clips in the group into a single highlight video file.
+            clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in group_file_ids])
+            group_video_filename = target_filename.replace('.mp4', f'_{group}.mp4')
+            cmd = f"ffmpeg {clips_part} -filter_complex '{'; '.join(group_video_filters)}; " \
+                  f"{'; '.join(group_audio_filters)}' -preset superfast -crf 28 -movflags +faststart " \
+                  f"{folder_path}/highlights/groups/{group_video_filename}"
 
-    # TODO: Combine each group into a single file.
+            subprocess.run(cmd, shell=True)
+
+            groups_txt.write(f"file '{group_video_filename}'\n")
+
+    # Combine each group highlight video into a single file for the entire game.
+    cmd = f"ffmpeg -f concat -i {folder_path}/highlights/groups/groups.txt -codec copy {folder_path}/highlights/{target_filename}"
+    subprocess.run(cmd, shell=True)
+
+    shutil.rmtree(f"{folder_path}/highlights/groups")
 
 
 def get_video_length(filepath: str) -> float:
