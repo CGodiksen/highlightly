@@ -82,12 +82,27 @@ th, td {
     border-bottom: 1px solid #495867;
 }
 
+.team-name-header {
+    text-align: start;
+}
+
+.team-name-header span {
+    position: relative;
+    top: -13px;
+}
+
 th {
     height: 70px;
 }
 
 th:first-child, td:first-child {
     border-left: 0;
+    text-align: start;
+    padding-left: 20px;
+}
+
+th:first-child {
+    padding-left: 15px;
 }
 
 tr:last-child > td {
@@ -105,6 +120,12 @@ tr:last-child > td {
 .team-logo {
     width: 200px;
     height: 200px;
+}
+
+.table-team-logo {
+    position: relative;
+    height: 70%;
+    top: 5px;
 }
 
 .team-1-logo, .team-2-logo, .score, .match-info {
