@@ -3,10 +3,10 @@ import os
 import re
 
 import cv2
-import imgkit
 import pandas as pd
 import twitch
 from PIL import Image
+from html2image import Html2Image
 
 from scrapers.models import Match
 from videos.metadata.util import create_match_frame_part
@@ -104,7 +104,12 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
-def create_game_statistics():
+def create_game_statistics(match: Match):
     """Create an image that contains the statistics for each game and for the total match statistics."""
-    print(os.listdir())
-    imgkit.from_file("videos/html/post-match-statistics.html", "out.png", css="videos/html/post-match-statistics.css")
+    game = match.gamevod_set.first()
+
+    # Pass the data of the game into the html file.
+    with open("videos/html/post-match-statistics.html") as html_file:
+        html = html_file.read().format(team_1_name=match.team_1.name, team_2_name=match.team_2.name, team_1_score=14, team_2_score=16)
+        hti = Html2Image()
+        hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
