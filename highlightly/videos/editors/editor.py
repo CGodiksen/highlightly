@@ -171,7 +171,7 @@ def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_du
             group_video_filename = target_filename.replace('.mp4', f'_{group}.mp4')
             cmd = f"ffmpeg {clips_part} -filter_complex 'afade=t=in:ss=0:d=1[0:a], {'; '.join(group_video_filters)}; " \
                   f"{'; '.join(group_audio_filters)}, afade=t=out:st={fade_offset + clip_durations[group_file_ids[-1]] - 2}:d=2' " \
-                  f"-preset superfast -crf 28 -movflags +faststart {folder_path}/highlights/groups/{group_video_filename}"
+                  f"-preset superfast -crf 25 -movflags +faststart {folder_path}/highlights/groups/{group_video_filename}"
 
             subprocess.run(cmd, shell=True)
 

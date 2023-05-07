@@ -104,6 +104,8 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
+# TODO: Retrieve the per team round count instead of the total round count.
+# TODO: Retrieve the player photo of the best player on each team (persist this in a player object).
 def create_game_statistics(match: Match):
     """Create an image that contains the statistics for each game and for the total match statistics."""
     game: GameVod = match.gamevod_set.first()
@@ -114,7 +116,7 @@ def create_game_statistics(match: Match):
                        "team_1_logo": os.path.abspath(f"media/teams/{match.team_1.logo_filename}")}
         team_2_data = {"team_2_name": match.team_2.name, "team_2_score": 16, "team_2_result": "winner",
                        "team_2_logo": os.path.abspath(f"media/teams/{match.team_2.logo_filename}")}
-        general_data = {"match_info": f"Game {game.game_count} - {game.map}"}
+        general_data = {"match_info": f"Map {game.game_count} - {game.map}"}
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
