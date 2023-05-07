@@ -20,7 +20,7 @@ body {
 
 .match-info {
     grid-area: 1 / 1 / 2 / 4;
-    font-size: 70px;
+    font-size: 65px;
     padding-top: 40px;
 }
 
@@ -48,11 +48,13 @@ body {
 
 .mvp {
     grid-area: 6 / 1 / 11 / 4;
+    padding-top: 10px;
 }
 
 .mvp-name {
     grid-area: 11 / 1 / 12 / 4;
     font-size: 30px;
+    margin-top: -20px;
 }
 
 .team-1-table {
@@ -148,11 +150,11 @@ table.team-table {
     align-items: end;
 }
 
-.winner {
+.winner, .plus {
     color: #5ebe24;
 }
 
-.loser {
+.loser, .minus {
     color: #e63865;
 }
 

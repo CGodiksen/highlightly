@@ -118,7 +118,7 @@ def create_game_statistics(match: Match):
 
         general_data = {"match_info": f"Map {game.game_count} - {game.map}", "mvp_title": f"Map {game.game_count} MVP",
                         "mvp_profile_picture": os.path.abspath(f"media/players/9z_buda.png"),
-                        "mvp_name": "Nicolás <b>'buda'</b> Kramer"}
+                        "mvp_name": "Nicolás &nbsp;'<b>buda</b>'&nbsp; Kramer"}
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
@@ -140,5 +140,9 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:,column_count].tolist()):
             team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
+
+            if column == "plus_minus":
+                sign = "plus" if value > 0 else "minus" if value < 0 else ""
+                team_data[f"team_{team_number}_player_{value_count + 1}_sign"] = sign
 
     return team_data
