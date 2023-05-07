@@ -10,11 +10,16 @@ RUN wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz
 RUN tar xvf ffmpeg-git-amd64-static.tar.xz
 ENV PATH="${PATH}:/ffmpeg-git-20230313-amd64-static"
 
+# Install chromium.
+RUN apt-get update -y && apt-get install -y chromium
+
+# The --no-sandbox flag is needed by default since we execute chromium in a root environnement
+RUN echo 'export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --no-sandbox"' >> /etc/chromium.d/default-flags
+
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
 
-RUN apt-get install -y wkhtmltopdf
 RUN apt-get update && apt-get install -y python3-opencv
 RUN pip install --no-cache-dir -r requirements.txt
 
