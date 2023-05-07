@@ -105,7 +105,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 
 
 # TODO: Retrieve the per team round count instead of the total round count.
-# TODO: Retrieve the player photo of the best player on each team (persist this in a player object).
+# TODO: Retrieve the player photo of the best player of each map and the entire match (persist this in a player object).
 # TODO: Add flags to team names in table.
 def create_game_statistics(match: Match):
     """Create an image that contains the statistics for each game and for the total match statistics."""
@@ -116,7 +116,9 @@ def create_game_statistics(match: Match):
         team_1_data = get_team_statistics_data(game, match.team_1, 1)
         team_2_data = get_team_statistics_data(game, match.team_2, 2)
 
-        general_data = {"match_info": f"Map {game.game_count} - {game.map}"}
+        general_data = {"match_info": f"Map {game.game_count} - {game.map}", "mvp_title": f"Map {game.game_count} MVP",
+                        "mvp_profile_picture": os.path.abspath(f"media/players/9z_buda.png"),
+                        "mvp_name": "Nicolás <b>'buda'</b> Kramer"}
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 

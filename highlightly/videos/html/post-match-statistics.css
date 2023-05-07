@@ -26,27 +26,33 @@ body {
 
 .team-1-logo {
     grid-area: 2 / 1 / 5 / 2;
+    padding-top: 35px;
 }
 
 .score {
     grid-area: 2 / 2 / 5 / 3;
     font-size: 60px;
+    padding-top: 35px;
+
 }
 
 .team-2-logo {
     grid-area: 2 / 3 / 5 / 4;
+    padding-top: 35px;
 }
 
-.team-1-mvp {
-    grid-area: 6 / 1 / 11 / 2;
+.mvp-title {
+    grid-area: 5 / 2 / 6 / 3;
+    font-size: 35px;
 }
 
-.player-statistics {
-    grid-area: 6 / 2 / 11 / 3;
+.mvp {
+    grid-area: 6 / 1 / 11 / 4;
 }
 
-.team-2-mvp {
-    grid-area: 6 / 3 / 11 / 4;
+.mvp-name {
+    grid-area: 11 / 1 / 12 / 4;
+    font-size: 30px;
 }
 
 .team-1-table {
@@ -63,7 +69,7 @@ body {
     padding-right: 40px;
 }
 
-table {
+table.team-table {
     height: 100%;
     width: 100%;
     font-size: 28px;
@@ -71,11 +77,11 @@ table {
     border-spacing: 1px;
 }
 
-tr:nth-child(2n+1) {
+.team-table tr:nth-child(2n+1) {
     background-color: #232d38;
 }
 
-th, td {
+.team-table th, .team-table td {
     text-align: center;
     vertical-align: middle;
     border-left: 1px solid #495867;
@@ -91,22 +97,22 @@ th, td {
     top: -13px;
 }
 
-th {
+.team-table th {
     height: 70px;
 }
 
-th:first-child, td:first-child {
+.team-table th:first-child, td:first-child {
     border-left: 0;
     text-align: start;
     padding-left: 20px;
 }
 
-th:first-child {
+.team-table th:first-child {
     padding-left: 15px;
 }
 
-tr:last-child > td {
-  border-bottom: 0;
+.team-table tr:last-child > td {
+    border-bottom: 0;
 }
 
 .player-name-cell {
@@ -114,11 +120,11 @@ tr:last-child > td {
 }
 
 .rating-desc {
-	display: flex;
-	flex-direction: column;
-	font-size: 19px;
-	font-weight: 400;
-	margin-top: -7px;
+    display: flex;
+    flex-direction: column;
+    font-size: 19px;
+    font-weight: 400;
+    margin-top: -7px;
 }
 
 .team-logo {
@@ -132,10 +138,14 @@ tr:last-child > td {
     top: 5px;
 }
 
-.team-1-logo, .team-2-logo, .score, .match-info {
+.team-1-logo, .team-2-logo, .score, .match-info, .mvp, .mvp-title, .mvp-name {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.mvp-title {
+    align-items: end;
 }
 
 .winner {
