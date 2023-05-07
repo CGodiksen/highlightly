@@ -27,6 +27,7 @@ body {
 
 .score {
     grid-area: 2 / 2 / 4 / 3;
+    font-size: 70px;
 }
 
 .team-2-logo {
@@ -51,4 +52,27 @@ body {
 
 .team-2-table {
     grid-area: 4 / 4 / 7 / 8;
+}
+
+.team-logo {
+    width: 200px;
+    height: 200px;
+}
+
+.team-1-logo, .team-2-logo, .score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.winner {
+    color: #09c100;
+}
+
+.loser {
+    color: #fc1d1d
+}
+
+.team-1-score {
+    padding-right: 40px;
 }

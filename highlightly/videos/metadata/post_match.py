@@ -110,6 +110,12 @@ def create_game_statistics(match: Match):
 
     # Pass the data of the game into the html file.
     with open("videos/html/post-match-statistics.html") as html_file:
-        html = html_file.read().format(team_1_name=match.team_1.name, team_2_name=match.team_2.name, team_1_score=14, team_2_score=16)
+        team_1_data = {"team_1_name": match.team_1.name, "team_1_score": 14, "team_1_result": "loser",
+                       "team_1_logo": os.path.abspath(f"media/teams/{match.team_1.logo_filename}")}
+        team_2_data = {"team_2_name": match.team_2.name, "team_2_score": 16, "team_2_result": "winner",
+                       "team_2_logo": os.path.abspath(f"media/teams/{match.team_2.logo_filename}")}
+
+        html = html_file.read().format(**team_1_data, **team_2_data)
+
         hti = Html2Image()
         hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
