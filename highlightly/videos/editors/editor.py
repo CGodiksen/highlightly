@@ -141,7 +141,6 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
 
 
 # TODO: Find a way to combine all the clips in a single command without running out of memory.
-# TODO: Maybe use the "," chain operator to avoid processing too many filters at the same time.
 def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float]):
     """Combine the given clips, adding a crossfade effect between each clip for cleaner transitions."""
     # Split the clips into groups of 10 to avoid memory issues with combining them all with a single command.

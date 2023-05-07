@@ -3,6 +3,7 @@ import os
 import re
 
 import cv2
+import imgkit
 import pandas as pd
 import twitch
 from PIL import Image
@@ -101,3 +102,9 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 
     thumbnail.save(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
+
+
+def create_game_statistics():
+    """Create an image that contains the statistics for each game and for the total match statistics."""
+    print(os.listdir())
+    imgkit.from_file("videos/html/post-match-statistics.html", "out.png", css="videos/html/post-match-statistics.css")

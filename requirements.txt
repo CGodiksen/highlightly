@@ -40,6 +40,7 @@ grpcio==1.54.0
 grpcio-status==1.54.0
 hvac==1.1.0
 idna==3.4
+imgkit==1.2.3
 knox==0.1.14
 kombu==5.2.4
 loguru==0.7.0
