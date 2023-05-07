@@ -8,7 +8,7 @@ import twitch
 from PIL import Image
 from html2image import Html2Image
 
-from scrapers.models import Match, GameVod
+from scrapers.models import Match, GameVod, Team
 from videos.metadata.util import create_match_frame_part
 from videos.models import VideoMetadata
 
@@ -106,19 +106,37 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 
 # TODO: Retrieve the per team round count instead of the total round count.
 # TODO: Retrieve the player photo of the best player on each team (persist this in a player object).
+# TODO: Add flags to team names in table.
 def create_game_statistics(match: Match):
     """Create an image that contains the statistics for each game and for the total match statistics."""
     game: GameVod = match.gamevod_set.first()
 
     # Pass the data of the game into the html file.
     with open("videos/html/post-match-statistics.html") as html_file:
-        team_1_data = {"team_1_name": match.team_1.name, "team_1_score": 14, "team_1_result": "loser",
-                       "team_1_logo": os.path.abspath(f"media/teams/{match.team_1.logo_filename}")}
-        team_2_data = {"team_2_name": match.team_2.name, "team_2_score": 16, "team_2_result": "winner",
-                       "team_2_logo": os.path.abspath(f"media/teams/{match.team_2.logo_filename}")}
+        team_1_data = get_team_statistics_data(game, match.team_1, 1)
+        team_2_data = get_team_statistics_data(game, match.team_2, 2)
+
         general_data = {"match_info": f"Map {game.game_count} - {game.map}"}
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
         hti = Html2Image()
         hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
+
+
+def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
+    """Return a dict that can be used to populate the HTML for the post match statistics image."""
+    team_logo_filepath = os.path.abspath(f"media/teams/{team.logo_filename}")
+
+    team_data = {f"team_{team_number}_name": team.name, f"team_{team_number}_score": 14,
+                 f"team_{team_number}_result": "loser", f"team_{team_number}_logo": team_logo_filepath}
+
+    statistics_filename = game.team_1_statistics_filename if team_number == 1 else game.team_2_statistics_filename
+    df = pd.read_csv(f"{game.match.create_unique_folder_path('statistics')}/{statistics_filename}")
+
+    columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
+    for column_count, column in enumerate(columns):
+        for value_count, value in enumerate(df.iloc[:,column_count].tolist()):
+            team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
+
+    return team_data

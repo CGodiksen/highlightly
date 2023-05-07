@@ -109,6 +109,10 @@ tr:last-child > td {
   border-bottom: 0;
 }
 
+.player-name-cell {
+    width: 500px;
+}
+
 .rating-desc {
 	display: flex;
 	flex-direction: column;
