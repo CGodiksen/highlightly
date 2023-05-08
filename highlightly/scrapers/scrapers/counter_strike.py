@@ -410,3 +410,24 @@ def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
 
         rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in html_table.select("tr + tr")]
         writer.writerows(rows)
+
+
+    """Retrieve information about the player from the given URL and create a player object."""
+    logging.info(f"Player in {url} does not already exist. Creating new player.")
+
+    html = requests.get(url="https://www.hltv.org/player/20026/chay").text
+    soup = BeautifulSoup(html, "html.parser")
+
+    nationality = soup.find("img", class_="flag", itemprop="nationality")["title"]
+    tag = soup.find("h1", class_="playerNickname", itemprop="alternateName").text.strip()
+    name = soup.find("div", class_="playerRealname", itemprop="name").text.strip()
+
+    team_url = soup.find("div", class_="playerInfoRow playerTeam").find("a", href=True)["href"]
+    team = Team.objects.get(url=f"https://www.hltv.org{team_url}")
+
+    profile_picture_url = soup.find("img", class_="bodyshot-img", src=True)["src"]
+    profile_picture_filename = f"{team.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
+    download_file_from_url(profile_picture_url, f"media/players/{profile_picture_filename}")
+
+    return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
+                                 profile_picture_filename=profile_picture_filename)
