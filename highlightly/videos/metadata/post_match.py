@@ -104,7 +104,6 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
-# TODO: Retrieve the per team round count instead of the total round count.
 # TODO: Retrieve the player photo of the best player of each map and the entire match (persist this in a player object).
 # TODO: Add flags to team names in table.
 def create_game_statistics(match: Match):
@@ -130,10 +129,16 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
     """Return a dict that can be used to populate the HTML for the post match statistics image."""
     team_logo_filepath = os.path.abspath(f"media/teams/{team.logo_filename}")
 
-    team_data = {f"team_{team_number}_name": team.name, f"team_{team_number}_score": 14,
-                 f"team_{team_number}_result": "loser", f"team_{team_number}_logo": team_logo_filepath}
+    if team_number == 1:
+        result = "winner" if game.team_1_round_count > game.team_2_round_count else "loser"
+    else:
+        result = "winner" if game.team_2_round_count > game.team_1_round_count else "loser"
 
-    statistics_filename = game.team_1_statistics_filename if team_number == 1 else game.team_2_statistics_filename
+    score = getattr(game, f"team_{team_number}_round_count")
+    team_data = {f"team_{team_number}_name": team.name, f"team_{team_number}_score": score,
+                 f"team_{team_number}_result": result, f"team_{team_number}_logo": team_logo_filepath}
+
+    statistics_filename = getattr(game, f"team_{team_number}_statistics_filename")
     df = pd.read_csv(f"{game.match.create_unique_folder_path('statistics')}/{statistics_filename}")
 
     columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
