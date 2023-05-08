@@ -175,11 +175,10 @@ class CounterStrikeScraper(Scraper):
             download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}"
             subprocess.run(download_cmd, shell=True)
 
-            game_map = vod_urls[game_count].next_sibling.text.split(" ")[-1].removesuffix(")")
             round_count = [int(score.text) for score in results[game_count].findAll("div", class_="results-team-score")]
 
             # Persist the location of the files and other needed information about the vods to the database.
-            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=game_map, url=vod_url,
+            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename,
                                               team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
@@ -412,6 +411,7 @@ def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
         writer.writerows(rows)
 
 
+def extract_player_data(url: str) -> Player:
     """Retrieve information about the player from the given URL and create a player object."""
     logging.info(f"Player in {url} does not already exist. Creating new player.")
 

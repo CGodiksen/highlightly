@@ -120,7 +120,7 @@ class GameVod(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE)
 
     game_count = models.IntegerField(validators=[MinValueValidator(1)])
-    map = models.CharField(max_length=64)
+    map = models.CharField(max_length=64, blank=True, null=True)
 
     url = models.URLField(max_length=128)
     host = models.CharField(max_length=16, choices=Host.choices)
