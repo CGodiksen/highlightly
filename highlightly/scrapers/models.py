@@ -56,6 +56,8 @@ class Player(models.Model):
     nationality = models.CharField(max_length=128)
     profile_picture_filename = models.CharField(max_length=256, blank=True, null=True)
 
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="players")
+
 
 # TODO: When a match is created a websocket message should be sent.
 class Match(models.Model):
@@ -78,6 +80,7 @@ class Match(models.Model):
     format = models.CharField(max_length=16, choices=Format.choices)
     tier = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     url = models.URLField(max_length=128)
+    mvp = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     start_datetime = models.DateTimeField()
@@ -121,6 +124,8 @@ class GameVod(models.Model):
     team_1_round_count = models.IntegerField(validators=[MinValueValidator(0)])
     team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
     team_2_round_count = models.IntegerField(validators=[MinValueValidator(0)])
+
+    mvp = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"
