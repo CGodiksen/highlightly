@@ -17,7 +17,6 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
-    # TODO: Look into using tick data to extract player deaths instead since some game events seem to be missing.
     # TODO: Maybe remove player deaths using event information.
     def extract_events(self, game: GameVod) -> list[Event]:
         folder_path = game.match.create_unique_folder_path("demos")
@@ -27,13 +26,31 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_parser = DemoParser(self.demo_filepath)
 
         event_types = ["round_freeze_end", "round_end", "player_death", "bomb_planted", "bomb_defused", "bomb_exploded"]
-        events = [{"name": event["event_name"], "time": round(event["tick"] / 128), "info": event.get("winner", None)}
+        events = [{"name": event["event_name"], "time": event["tick"], "info": event.get("winner", None)}
                   for event in self.demo_parser.parse_events("") if event["event_name"] in event_types]
 
         # Remove 8 or more player deaths that happen in the same second since that is related to a technical pause.
         grouped_events = [list(v) for _, v in groupby(events, lambda event: event["time"])]
         duplicated_events = [x[0] for x in grouped_events if len(x) >= 8]
         events = [event for event in events if event not in duplicated_events]
+
+        # Check the tick data to ensure that player deaths that are not missing in the game events are included.
+        kill_df = self.demo_parser.parse_ticks(["round", "kills"])
+        kill_df = kill_df.drop_duplicates(["kills", "name"])[kill_df["tick"] > 128]
+
+        new_deaths = []
+        existing_deaths = [event["time"] for event in events if event["name"] == "player_death"]
+        for death in kill_df["tick"].tolist():
+            # If there is more than 100 ticks to the closest existing death, we count it is a new death.
+            if abs(min(existing_deaths, key=lambda x: abs(x - death)) - death) > 100:
+                events.append({"name": "player_death", "time": death, "info": None})
+                new_deaths.append(death)
+
+        logging.info(f"Found {len(new_deaths)} new deaths in the tick data that were not included in the game events.")
+
+        # Convert the tick time to seconds.
+        for event in events:
+            event["time"] = round(event["time"] / 128)
 
         return events
 
