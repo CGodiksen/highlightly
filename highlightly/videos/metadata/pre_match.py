@@ -40,7 +40,8 @@ def create_video_description(scheduled_match: Match) -> str:
     tournament = scheduled_match.tournament
     game = scheduled_match.team_1.get_game_display()
 
-    match_part = f"Highlights from all maps between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
+    match_part_prefix = "the game" if scheduled_match.format == Match.Format.BEST_OF_1 else "all maps"
+    match_part = f"Highlights from {match_part_prefix} between {scheduled_match.team_1.name} and {scheduled_match.team_2.name} " \
                  f"({scheduled_match.get_format_display()})\n" \
                  f"{scheduled_match.team_1.name}: TEAM_1_PLAYERS\n" \
                  f"{scheduled_match.team_2.name}: TEAM_2_PLAYERS\n"
