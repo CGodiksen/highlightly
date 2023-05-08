@@ -42,7 +42,7 @@ class TeamUpdateSerializer(serializers.ModelSerializer):
 class MatchSerializer(serializers.ModelSerializer):
     team_1 = TeamSerializer()
     team_2 = TeamSerializer()
-    tournament = TournamentSerializer()
+    tournament = serializers.StringRelatedField()
 
     class Meta:
         model = Match

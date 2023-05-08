@@ -26,7 +26,7 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             return serializers.MatchSerializer
 
     def get_queryset(self) -> QuerySet[Match]:
-        return Match.objects.all().order_by("-start_datetime")
+        return Match.objects.all().order_by("start_datetime")
 
     @action(detail=False, methods=["POST"])
     def scrape_matches(self, request: Request) -> Response:
@@ -42,7 +42,8 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "valorant":
             tasks.scrape_valorant_matches()
 
-        return Response({}, status=status.HTTP_200_OK)
+        matches = Match.objects.all()
+        return Response(MatchSerializer(matches, many=True).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["POST"])
     def scrape_finished_match(self, request: Request, pk: int) -> Response:
