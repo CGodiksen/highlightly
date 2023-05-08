@@ -15,7 +15,7 @@ from cairosvg import svg2png
 from demoparser import DemoParser
 from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo
+from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo, Player
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import MatchData, TournamentData
 from util.file_util import download_file_from_url
@@ -294,14 +294,20 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
 
 def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> None:
     """Extract the tournament logo and tournament context of the match from the match page HTML."""
-    tournament_logo_url = html.find("img", class_="matchSidebarEventLogo", src=True)["srcset"].removesuffix(" 2x")
-
     Path("media/tournaments").mkdir(parents=True, exist_ok=True)
     logo_filename = f"{match.tournament.name.replace(' ', '_')}.png"
 
     # Only download the tournament logo if it does not already exist.
-    if not Path(f"media/tournaments/{logo_filename}").is_file():
-        download_file_from_url(tournament_logo_url, f"media/tournaments/{logo_filename}")
+    if match.tournament.logo_filename is None:
+        tournament_logo_img = html.find("img", class_="matchSidebarEventLogo", src=True)
+
+        if ".svg?" in tournament_logo_img["src"]:
+            svg = requests.get(tournament_logo_img["src"]).text
+            svg2png(bytestring=svg, write_to=f"media/tournaments/{logo_filename}")
+        else:
+            tournament_logo_url = tournament_logo_img["srcset"].removesuffix(" 2x")
+            download_file_from_url(tournament_logo_url, f"media/tournaments/{logo_filename}")
+
         match.tournament.logo_filename = logo_filename
         match.tournament.save()
 
