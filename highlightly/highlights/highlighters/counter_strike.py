@@ -17,6 +17,7 @@ class CounterStrikeHighlighter(Highlighter):
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
+    # TODO: Look into using tick data to extract player deaths instead since some game events seem to be missing.
     # TODO: Maybe remove player deaths using event information.
     def extract_events(self, game: GameVod) -> list[Event]:
         folder_path = game.match.create_unique_folder_path("demos")

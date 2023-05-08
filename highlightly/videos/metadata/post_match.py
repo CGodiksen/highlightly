@@ -104,27 +104,29 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
-# TODO: Retrieve the player photo of the best player of each map and the entire match (persist this in a player object).
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
+# TODO: Maybe make the team mvp area larger.
 def create_game_statistics(match: Match):
     """Create an image that contains the statistics for each game and for the total match statistics."""
-    game: GameVod = match.gamevod_set.first()
+    for game in match.gamevod_set.all():
+        # Pass the data of the game into the html file.
+        with open("videos/html/post-match-statistics.html") as html_file:
+            team_1_data = get_team_statistics_data(game, match.team_1, 1)
+            team_2_data = get_team_statistics_data(game, match.team_2, 2)
 
-    # Pass the data of the game into the html file.
-    with open("videos/html/post-match-statistics.html") as html_file:
-        team_1_data = get_team_statistics_data(game, match.team_1, 1)
-        team_2_data = get_team_statistics_data(game, match.team_2, 2)
+            match_info = game.map if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
+            mvp_title = "Match MVP" if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
+            mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
-        general_data = {"match_info": f"Map {game.game_count} - {game.map}", "mvp_title": f"Map {game.game_count} MVP",
-                        "mvp_profile_picture": os.path.abspath(f"media/players/9z_buda.png"),
-                        "mvp_name": "Nicolás &nbsp;'<b>buda</b>'&nbsp; Kramer",
-                        "mvp_team_logo": os.path.abspath(f"media/teams/9z.png")}
+            general_data = {"match_info": match_info, "mvp_title": mvp_title,
+                            "mvp_profile_picture": mvp_profile_picture, "mvp_name": str(game.mvp),
+                            "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.logo_filename}")}
 
-        html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
+            html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
-        hti = Html2Image()
-        hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
+            hti = Html2Image()
+            hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
 
 
 def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
@@ -145,7 +147,7 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
 
     columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
     for column_count, column in enumerate(columns):
-        for value_count, value in enumerate(df.iloc[:,column_count].tolist()):
+        for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
             team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
 
             if column == "plus_minus":
