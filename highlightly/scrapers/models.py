@@ -51,6 +51,12 @@ class Team(models.Model):
         return f"{self.name} ({self.get_game_display()})"
 
 
+class Player(models.Model):
+    name = models.CharField(max_length=128)
+    nationality = models.CharField(max_length=128)
+    profile_picture_filename = models.CharField(max_length=256, blank=True, null=True)
+
+
 # TODO: When a match is created a websocket message should be sent.
 class Match(models.Model):
     class Meta:
