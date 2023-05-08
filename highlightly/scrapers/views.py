@@ -4,13 +4,16 @@ from typing import Type, TypeVar
 from django.db.models import QuerySet, F
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
 from scrapers import serializers
 from scrapers import tasks
-from scrapers.models import Match, Team
+from scrapers.models import Match, Team, Game
+from scrapers.serializers import MatchSerializer
+from util.file_util import save_base64_image
 
 T = TypeVar("T", bound=ModelSerializer)
 
@@ -40,6 +43,21 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             tasks.scrape_valorant_matches()
 
         return Response({}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["POST"])
+    def scrape_finished_match(self, request: Request, pk: int) -> Response:
+        match: Match = get_object_or_404(Match, id=pk)
+
+        if match.team_1.game == Game.COUNTER_STRIKE:
+            tasks.scrape_finished_counter_strike_match(pk)
+        elif match.team_1.game == Game.LEAGUE_OF_LEGENDS:
+            tasks.scrape_finished_league_of_legends_match(pk)
+        elif match.team_1.game == Game.VALORANT:
+            tasks.scrape_finished_valorant_match(pk)
+
+        match.refresh_from_db()
+        return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
+
 
 
 class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):

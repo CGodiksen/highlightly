@@ -4,7 +4,7 @@ from rest_framework import routers
 from scrapers import views
 
 router = routers.SimpleRouter()
-router.register(r"scheduled_matches", views.MatchViewSet, basename="scheduled-match")
+router.register(r"matches", views.MatchViewSet, basename="match")
 router.register(r"teams", views.TeamViewSet, basename="team")
 
 urlpatterns = [
