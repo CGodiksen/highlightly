@@ -144,7 +144,7 @@ def clean_rounds(rounds: list[RoundData]):
     """For each round, remove round metadata events and irrelevant non-metadata events."""
     for round in rounds:
         event_types_to_remove = ["round_freeze_end", "round_end"]
-        round["events"] = [event for event in round["events"] if event["name"] not in event_types_to_remove]
+        round["events"] = [event for event in round["events"] if event["name"] not in event_types_to_remove and event["time"] > 0]
 
         if len(round["events"]) >= 2:
             # Remove the bomb explosion if the CTs are saving and nothing happens between bomb plant and explosion.
