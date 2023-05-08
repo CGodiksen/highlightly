@@ -115,7 +115,7 @@ def create_game_statistics(match: Match):
             team_1_data = get_team_statistics_data(game, match.team_1, 1)
             team_2_data = get_team_statistics_data(game, match.team_2, 2)
 
-            match_info = game.map if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
+            match_info = "" if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
             mvp_title = "Match MVP" if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
             mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
@@ -153,5 +153,8 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
             if column == "plus_minus":
                 sign = "plus" if value > 0 else "minus" if value < 0 else ""
                 team_data[f"team_{team_number}_player_{value_count + 1}_sign"] = sign
+
+                value = f"+{value}" if value > 0 else value
+                team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
 
     return team_data

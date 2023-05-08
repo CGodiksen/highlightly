@@ -29,12 +29,12 @@ class CounterStrikeHighlighter(Highlighter):
         events = [{"name": event["event_name"], "time": event["tick"], "info": event.get("winner", None)}
                   for event in self.demo_parser.parse_events("") if event["event_name"] in event_types]
 
-        # Remove 8 or more player deaths that happen in the same second since that is related to a technical pause.
+        # Remove 8 or more player deaths that happen in the same tick since that is related to a technical pause.
         grouped_events = [list(v) for _, v in groupby(events, lambda event: event["time"])]
         duplicated_events = [x[0] for x in grouped_events if len(x) >= 8]
         events = [event for event in events if event not in duplicated_events]
 
-        # Check the tick data to ensure that player deaths that are not missing in the game events are included.
+        # Check the tick data to ensure that player deaths that are missing in the game events are included.
         kill_df = self.demo_parser.parse_ticks(["round", "kills"])
         kill_df = kill_df.drop_duplicates(["kills", "name"])[kill_df["tick"] > 128]
 
@@ -159,6 +159,7 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
     return round_data
 
 
+# TODO: Look into removing rounds where the CTs are saving but get 1-2 meaningless kills.
 def clean_rounds(rounds: list[RoundData]):
     """For each round, remove round metadata events and irrelevant non-metadata events."""
     for round in rounds:

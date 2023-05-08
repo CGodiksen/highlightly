@@ -81,6 +81,10 @@ class Editor:
         combine_clips_with_crossfade(folder_path, target_filename, exact_durations)
         logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
 
+        # TODO: Call function to create post match statistics.
+        # TODO: Add 15 seconds extra to last highlight. 5 seconds for the actual video and 10 seconds for the statistics.
+        # TODO: Replace the last 10 seconds of video with the post match statistics and keep the audio as it were.
+
         shutil.rmtree(f"{folder_path}/clips")
 
     @staticmethod
