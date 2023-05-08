@@ -61,6 +61,10 @@ class Player(models.Model):
     url = models.URLField(max_length=128)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="players")
 
+    def __str__(self) -> str:
+        split_name = self.name.split(" ")
+        return f"{split_name[0]} '{self.tag}' {' '.join(split_name[1:])}"
+
 
 # TODO: When a match is created a websocket message should be sent.
 class Match(models.Model):
