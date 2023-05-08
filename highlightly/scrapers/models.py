@@ -104,7 +104,6 @@ class GameVod(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE)
 
     game_count = models.IntegerField(validators=[MinValueValidator(1)])
-    round_count = models.IntegerField(validators=[MinValueValidator(16)])
     map = models.CharField(max_length=64)
 
     url = models.URLField(max_length=128)
@@ -113,7 +112,9 @@ class GameVod(models.Model):
     filename = models.CharField(max_length=256)
 
     team_1_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
+    team_1_round_count = models.IntegerField(validators=[MinValueValidator(0)])
     team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
+    team_2_round_count = models.IntegerField(validators=[MinValueValidator(0)])
 
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"

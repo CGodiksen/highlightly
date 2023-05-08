@@ -181,7 +181,7 @@ class CounterStrikeScraper(Scraper):
             # Persist the location of the files and other needed information about the vods to the database.
             game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=game_map, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename,
-                                              round_count=sum(round_count))
+                                              team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
 

@@ -26,14 +26,15 @@ class Editor:
         highlights = sorted(unsorted_highlights, key=lambda h: h.value / max(h.duration_seconds, 30), reverse=True)
 
         current_video_length_seconds = 0
-        wanted_video_length_seconds = timedelta(minutes=game_vod.round_count * 0.45).total_seconds()
+        round_count = game_vod.team_1_round_count + game_vod.team_2_round_count
+        wanted_video_length_seconds = timedelta(minutes=round_count * 0.45).total_seconds()
 
         logging.info(f"Selecting the best highlights for {wanted_video_length_seconds / 60} minute "
                      f"highlight video of {game_vod}.")
 
         # Pistol rounds (1, 16), the last round, and, if necessary, the last round of regulation should always be included.
-        rounds_to_include = list({1, 16, game_vod.round_count})
-        if game_vod.round_count > 30:
+        rounds_to_include = list({1, 16, round_count})
+        if round_count > 30:
             rounds_to_include.append(30)
 
         for round in rounds_to_include:
