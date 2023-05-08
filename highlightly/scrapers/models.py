@@ -54,8 +54,10 @@ class Team(models.Model):
 # TODO: Handle when a profile picture cannot be found for a player.
 class Player(models.Model):
     name = models.CharField(max_length=128)
+    tag = models.CharField(max_length=128)
     nationality = models.CharField(max_length=128)
     profile_picture_filename = models.CharField(max_length=256, blank=True, null=True)
+
     url = models.URLField(max_length=128)
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="players")
 
