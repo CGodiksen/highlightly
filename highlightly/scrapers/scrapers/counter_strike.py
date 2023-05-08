@@ -158,7 +158,7 @@ class CounterStrikeScraper(Scraper):
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
-        results = html.findAll("div", class_="results played")
+        results = html.findAll("div", class_="mapholder")
 
         for game_count, demo_file in enumerate(os.listdir(demos_folder_path)):
             vod_url = vod_urls[game_count].parent.parent["data-stream-embed"]
@@ -175,10 +175,11 @@ class CounterStrikeScraper(Scraper):
             download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video_id}"
             subprocess.run(download_cmd, shell=True)
 
+            map = results[game_count].find("div", class_="mapname").text
             round_count = [int(score.text) for score in results[game_count].findAll("div", class_="results-team-score")]
 
             # Persist the location of the files and other needed information about the vods to the database.
-            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, url=vod_url,
+            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename,
                                               team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
@@ -193,6 +194,7 @@ class CounterStrikeScraper(Scraper):
         stat_tables = html.findAll("div", class_="stats-content")
 
         # Convert the HTML tables into CSV and save the filename on the relevant object.
+        object_to_update = None
         for count, stat_table in enumerate(stat_tables):
             html_tables = stat_table.findAll("table", class_="table totalstats")
 
@@ -206,6 +208,19 @@ class CounterStrikeScraper(Scraper):
                 field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
 
                 setattr(object_to_update, field_to_update, filename)
+                object_to_update.save()
+
+            # Find the MVP of the game and, if necessary, extract information about the player.
+            mvp = max(stat_table.findAll("tr", class_=""), key=lambda row: float(row.find("td", class_="rating").text))
+            player_url = f"https://www.hltv.org{mvp.find('a')['href']}"
+
+            if not Player.objects.filter(url=player_url).exists():
+                mvp = extract_player_data(player_url)
+            else:
+                mvp = Player.objects.get(url=player_url)
+
+            if mvp and object_to_update:
+                setattr(object_to_update, "mvp", mvp)
                 object_to_update.save()
 
 
@@ -415,7 +430,7 @@ def extract_player_data(url: str) -> Player:
     """Retrieve information about the player from the given URL and create a player object."""
     logging.info(f"Player in {url} does not already exist. Creating new player.")
 
-    html = requests.get(url="https://www.hltv.org/player/20026/chay").text
+    html = requests.get(url=url).text
     soup = BeautifulSoup(html, "html.parser")
 
     nationality = soup.find("img", class_="flag", itemprop="nationality")["title"]

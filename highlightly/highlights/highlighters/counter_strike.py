@@ -53,8 +53,9 @@ def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData
 
     # Add the events within the round and the winner of the round to the round data.
     for count, game_round in enumerate(round_data):
-        start_time = 0 if count == 0 else round_data[count - 1]["end_time"] + 5
-        game_round["events"] = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 5]
+        # TODO: Test that 10 fixes the problem with single missed kills in the end of rounds.
+        start_time = 0 if count == 0 else round_data[count - 1]["end_time"] + 10
+        game_round["events"] = [event for event in events if start_time < event["time"] <= game_round["end_time"] + 10]
 
         round_end = next((event for event in game_round["events"][::-1] if event["name"] == "round_end"), None)
         game_round["winner"] = round_end["info"] if round_end else None
@@ -217,7 +218,7 @@ def get_highlight_value(events: list[Event], round: RoundData) -> int:
 
     # Add context scaling based on the economy of the teams in the round. The winning team having better
     # equipment scales the value down and the losing team having better equipment scales the value up.
-    if round["winner"] is not None:
+    if round["winner"] is not None and f"team_{round['winner']}_equipment_value" in round:
         winning_team_equipment = round[f"team_{round['winner']}_equipment_value"]
         losing_team = next(team for team in teams if team != round["winner"])
         losing_team_equipment = round[f"team_{losing_team}_equipment_value"]
