@@ -161,3 +161,30 @@ table.team-table {
 .team-1-score {
     padding-right: 40px;
 }
+
+.player-body-shot {
+	position: relative;
+	display: flex;
+	overflow: hidden;
+}
+
+.player-body-shot .body-shot-logo {
+	position: absolute;
+	opacity: .65;
+	margin-left: 16px;
+	margin-right: 16px;
+	align-self: flex-start;
+	padding-top: 4px;
+	z-index: 2;
+	max-height: 100%;
+	width: calc(100% - 32px);
+}
+
+.player-body-shot .body-shot-img {
+	position: relative;
+	width: 100%;
+	align-self: flex-end;
+	max-width: 400px;
+	margin: 0 auto;
+	z-index: 4;
+}
