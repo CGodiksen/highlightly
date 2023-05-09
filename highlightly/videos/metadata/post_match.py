@@ -114,7 +114,7 @@ def create_game_statistics(game: GameVod, filepath: str):
         team_1_data = get_team_statistics_data(game, game.match.team_1, 1)
         team_2_data = get_team_statistics_data(game, game.match.team_2, 2)
 
-        match_info = "" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
+        match_info = game.map if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
         mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
         mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
