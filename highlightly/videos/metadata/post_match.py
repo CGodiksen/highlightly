@@ -107,26 +107,25 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
 # TODO: Maybe make the team mvp area larger.
-def create_game_statistics(match: Match):
+def create_game_statistics(game: GameVod, filepath: str):
     """Create an image that contains the statistics for each game and for the total match statistics."""
-    for game in match.gamevod_set.all():
-        # Pass the data of the game into the html file.
-        with open("videos/html/post-match-statistics.html") as html_file:
-            team_1_data = get_team_statistics_data(game, match.team_1, 1)
-            team_2_data = get_team_statistics_data(game, match.team_2, 2)
+    # Pass the data of the game into the html file.
+    with open("videos/html/post-match-statistics.html") as html_file:
+        team_1_data = get_team_statistics_data(game, game.match.team_1, 1)
+        team_2_data = get_team_statistics_data(game, game.match.team_2, 2)
 
-            match_info = "" if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
-            mvp_title = "Match MVP" if match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
-            mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
+        match_info = "" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
+        mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
+        mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
-            general_data = {"match_info": match_info, "mvp_title": mvp_title,
-                            "mvp_profile_picture": mvp_profile_picture, "mvp_name": str(game.mvp),
-                            "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.logo_filename}")}
+        general_data = {"match_info": match_info, "mvp_title": mvp_title,
+                        "mvp_profile_picture": mvp_profile_picture, "mvp_name": str(game.mvp),
+                        "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.logo_filename}")}
 
-            html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
+        html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
-            hti = Html2Image()
-            hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as="out.png")
+        hti = Html2Image()
+        hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as=filepath)
 
 
 def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
