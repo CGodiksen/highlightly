@@ -211,7 +211,7 @@ class CounterStrikeScraper(Scraper):
                 object_to_update.save()
 
             # Find the MVP of the game and, if necessary, extract information about the player.
-            mvp = max(stat_table.findAll("tr", class_=""), key=lambda row: float(row.find("td", class_="rating").text))
+            mvp = max(stat_table.findAll("tr", class_=lambda x: x != "header-row"), key=lambda row: float(row.find("td", class_="rating").text))
             player_url = f"https://www.hltv.org{mvp.find('a')['href']}"
 
             if not Player.objects.filter(url=player_url).exists():

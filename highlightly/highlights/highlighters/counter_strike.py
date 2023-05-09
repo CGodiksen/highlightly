@@ -113,7 +113,7 @@ def calibrate_event_times(rounds: list[RoundData]):
     """Find the first round_freeze_end event and calibrate all event times based on it."""
     first_round_freeze_end = 0
     for round in rounds:
-        first_round_freeze_end = next((event["time"] for event in round["events"] if event["name"] == "round_freeze_end"), None)
+        first_round_freeze_end = next((event["time"] for event in round["events"][::-1] if event["name"] == "round_freeze_end"), None)
         if first_round_freeze_end is not None:
             break
 
