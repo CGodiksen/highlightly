@@ -7,7 +7,7 @@ from pathlib import Path
 
 from highlights.models import Highlight
 from scrapers.models import Match, GameVod
-from videos.metadata.post_match import create_game_statistics
+from videos.metadata.post_match import create_game_statistics_image
 from videos.models import VideoMetadata
 
 
@@ -66,22 +66,29 @@ class Editor:
         # For each highlight, cut the clip out and save the highlight clip to a temporary location.
         exact_durations = []
         for count, highlight in enumerate(highlights):
+            is_last = count + 1 == len(highlights)
+
             # Add 3 seconds at the start and 4 seconds at the end and add more time to the end of the last highlight.
-            duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 7)
+            duration = highlight.duration_seconds + (19 if is_last else 7)
             start = (highlight.start_time_seconds + offset) - 3
 
-            # TODO: If it is the last highlight, add 10 seconds to the end and replace the video with the post game statistics.
-            if count + 1 == len(highlights):
-                create_game_statistics(game_vod, f"game_{game_vod.game_count}.png")
-
-            clip_filepath = f"{folder_path}/clips/clip_{count + 1}.mkv"
+            clip_filepath = f"{folder_path}/clips/temp_clip_{count + 1}.mkv" if is_last else f"{folder_path}/clips/clip_{count + 1}.mkv"
             cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_filepath}"
             subprocess.run(cmd, shell=True)
 
-            logging.info(f"Created {duration} second highlight clip for round "
-                         f"{highlight.round_number} of {game_vod}.")
+            exact_duration = get_video_length(clip_filepath)
 
-            exact_durations.append(get_video_length(clip_filepath))
+            # If it is the last highlight, replace the last 10 seconds of the video with the post game statistics.
+            if is_last:
+                create_game_statistics_image(game_vod, folder_path, f"game_{game_vod.game_count}.png")
+
+                cmd = f"ffmpeg -i {clip_filepath} -i {folder_path}/game_{game_vod.game_count}.png " \
+                      f"-filter_complex \"[1][0]scale2ref[img][vid];[vid][img]overlay=enable='between(t,{exact_duration - 10},{exact_duration})'\" " \
+                      f"-c:a copy {clip_filepath.replace('temp_', '')}"
+                subprocess.run(cmd, shell=True)
+
+            logging.info(f"Created {duration} second highlight clip for round {highlight.round_number} of {game_vod}.")
+            exact_durations.append(exact_duration)
 
         combine_clips_with_crossfade(folder_path, target_filename, exact_durations)
         logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
