@@ -7,6 +7,7 @@ from pathlib import Path
 
 from highlights.models import Highlight
 from scrapers.models import Match, GameVod
+from videos.metadata.post_match import create_game_statistics
 from videos.models import VideoMetadata
 
 
@@ -68,6 +69,11 @@ class Editor:
             # Add 3 seconds at the start and 4 seconds at the end and add more time to the end of the last highlight.
             duration = highlight.duration_seconds + (15 if count + 1 == len(highlights) else 7)
             start = (highlight.start_time_seconds + offset) - 3
+
+            # TODO: If it is the last highlight, add 10 seconds to the end and replace the video with the post game statistics.
+            if count + 1 == len(highlights):
+                # create_game_statistics(game_vod, f"{folder_path}/game_{game_vod.game_count}.png")
+                pass
 
             clip_filepath = f"{folder_path}/clips/clip_{count + 1}.mkv"
             cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_filepath}"
@@ -149,18 +155,23 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
 def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float]):
     """Combine the given clips, adding a crossfade effect between each clip for cleaner transitions."""
     # Split the clips into groups of 10 to avoid memory issues with combining them all with a single command.
-    groups = math.ceil(len(clip_durations) / 10)
+    group_size = 10
+    groups = math.ceil(len(clip_durations) / group_size)
+
+    if len(clip_durations) % 10 == 1:
+        group_size = 9
+
     Path(f"{folder_path}/highlights/groups").mkdir(parents=True, exist_ok=True)
 
     with open(f"{folder_path}/highlights/groups/groups.txt", "a+") as groups_txt:
         for group in range(groups):
             group_video_filters = []
             group_audio_filters = []
-            group_file_ids = list(range(group * 10, min((group * 10) + 10, len(clip_durations))))
+            group_file_ids = list(range(group * group_size, min((group * group_size) + group_size, len(clip_durations))))
 
             fade_offset = 0
             for i in range(len(group_file_ids) - 1):
-                fade_offset += clip_durations[i + group * 10] - 1
+                fade_offset += clip_durations[i + group * group_size] - 1
 
                 v_filter_start = "[0]" if i == 0 else f"[vfade{i}]"
                 v_filter_end = ",format=yuv420p" if i + 1 == len(group_file_ids) - 1 else f"[vfade{i + 1}]"
