@@ -72,8 +72,7 @@ class Editor:
 
             # TODO: If it is the last highlight, add 10 seconds to the end and replace the video with the post game statistics.
             if count + 1 == len(highlights):
-                # create_game_statistics(game_vod, f"{folder_path}/game_{game_vod.game_count}.png")
-                pass
+                create_game_statistics(game_vod, f"game_{game_vod.game_count}.png")
 
             clip_filepath = f"{folder_path}/clips/clip_{count + 1}.mkv"
             cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_filepath}"
