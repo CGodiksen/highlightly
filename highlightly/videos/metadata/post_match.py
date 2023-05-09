@@ -107,7 +107,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
 # TODO: Maybe make the team mvp area larger.
-def create_game_statistics(game: GameVod, filepath: str):
+def create_game_statistics_image(game: GameVod, folder_path: str, filename: str):
     """Create an image that contains the statistics for each game and for the total match statistics."""
     # Pass the data of the game into the html file.
     with open("videos/html/post-match-statistics.html") as html_file:
@@ -124,8 +124,8 @@ def create_game_statistics(game: GameVod, filepath: str):
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
-        hti = Html2Image()
-        hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as=filepath)
+        hti = Html2Image(output_path=folder_path)
+        hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as=filename)
 
 
 def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
