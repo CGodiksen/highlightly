@@ -82,9 +82,15 @@ class Editor:
             if is_last:
                 create_game_statistics_image(game_vod, folder_path, f"game_{game_vod.game_count}.png")
 
-                cmd = f"ffmpeg -i {clip_filepath} -i {folder_path}/game_{game_vod.game_count}.png " \
-                      f"-filter_complex \"[1][0]scale2ref[img][vid];[vid][img]overlay=enable='between(t,{exact_duration - 10},{exact_duration})'\" " \
-                      f"-c:a copy {clip_filepath.replace('temp_', '')}"
+                # Create a 10-second video with the post game statistics image using the same frame rate as the clip.
+                frame_rate = get_video_frame_rate(clip_filepath)
+                statistics_filepath = f"{folder_path}/clips/statistics.mkv"
+                cmd = f"ffmpeg -loop 1 -i {folder_path}/game_{game_vod.game_count}.png -filter:v fps={frame_rate} -t 10 {statistics_filepath}"
+                subprocess.run(cmd, shell=True)
+
+                # Combine the statistics video and the clip into the complete final highlight clip.
+                cmd = f"ffmpeg -i {clip_filepath} -i {statistics_filepath} -filter_complex " \
+                      f"'xfade=transition=fade:offset={exact_duration - 11}:duration=1' -c:a copy {clip_filepath.replace('temp_', '')}"
                 subprocess.run(cmd, shell=True)
 
             logging.info(f"Created {duration} second highlight clip for round {highlight.round_number} of {game_vod}.")
