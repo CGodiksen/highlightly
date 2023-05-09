@@ -212,3 +212,11 @@ def get_video_length(filepath: str) -> float:
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
     return float(result.stdout)
+
+
+def get_video_frame_rate(filepath: str) -> float:
+    """Use ffprope to get the video frame rate in frames per second."""
+    cmd = f"ffprobe -v 0 -of csv=p=0 -select_streams v:0 -show_entries stream=r_frame_rate {filepath}"
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+    return eval(result.stdout.strip())
