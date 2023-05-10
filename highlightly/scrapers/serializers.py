@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from scrapers.models import Tournament, Team, Match
 from util.file_util import get_base64
+from videos.serializers import VideoMetadataSerializer
 
 
 class TournamentSerializer(serializers.ModelSerializer):
@@ -43,11 +44,17 @@ class MatchSerializer(serializers.ModelSerializer):
     team_1 = TeamSerializer()
     team_2 = TeamSerializer()
     tournament = serializers.StringRelatedField()
+    video_metadata = serializers.SerializerMethodField()
 
     class Meta:
         model = Match
         fields = ["id", "team_1", "team_2", "tournament", "tournament_context", "format", "tier", "url", "created_at",
-                  "start_datetime", "estimated_end_datetime", "create_video", "finished", "highlighted"]
+                  "start_datetime", "estimated_end_datetime", "create_video", "finished", "highlighted",
+                  "video_metadata"]
+
+    @staticmethod
+    def get_video_metadata(match: Match) -> dict:
+        return VideoMetadataSerializer(match.videometadata).data
 
 
 class MatchUpdateSerializer(serializers.ModelSerializer):
