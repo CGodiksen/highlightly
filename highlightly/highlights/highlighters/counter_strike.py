@@ -35,8 +35,9 @@ class CounterStrikeHighlighter(Highlighter):
         events = [event for event in events if event not in duplicated_events]
 
         # Check the tick data to ensure that player deaths that are missing in the game events are included.
-        kill_df = self.demo_parser.parse_ticks(["round", "kills"])
-        kill_df = kill_df.drop_duplicates(["kills", "name"])[kill_df["tick"] > 128]
+        kill_df = self.demo_parser.parse_ticks(["round", "kills", "deaths"])
+        kill_df = kill_df.drop_duplicates(["kills", "deaths", "name"])[kill_df["tick"] > 128]
+        kill_df = kill_df.drop_duplicates(["tick"])
 
         new_deaths = []
         existing_deaths = [event["time"] for event in events if event["name"] == "player_death"]
