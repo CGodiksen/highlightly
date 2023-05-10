@@ -1,11 +1,7 @@
-from django.urls import path, include
-from rest_framework import routers
+from django.urls import path
 
 from videos import views
 
-router = routers.SimpleRouter()
-router.register(r"video-metadatas", views.VideoMetadataViewSet, basename="video-metadata")
-
 urlpatterns = [
-    path('', include(router.urls)),
+    path('video-metadata/', views.UpdateVideoMetadata.as_view(), name="video_metadata"),
 ]
