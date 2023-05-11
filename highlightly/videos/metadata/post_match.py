@@ -48,9 +48,7 @@ def add_post_match_video_metadata(match: Match):
     new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
 
     # Add a frame from the match and the tournament logo to the thumbnail.
-    finish_video_thumbnail(match, video_metadata)
-
-    # TODO: Create an image with tables for the match statistics and the MVP of the match with player specific statistics.
+    finish_video_thumbnail(match, video_metadata, 60)
 
     video_metadata.description = new_description
     video_metadata.tags = new_tags
@@ -76,7 +74,7 @@ def get_match_vod_channel_name(match: Match) -> str:
 
 
 # TODO: Generate some eye catching text based on the context of the match and put it in the top of the match frame.
-def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
+def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, game_second: int) -> None:
     """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
     thumbnail_folder = match.create_unique_folder_path()
     thumbnail = Image.open(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
@@ -84,7 +82,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     # Retrieve a frame from one minute into the first game in the match.
     vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
     video_capture = cv2.VideoCapture(vod_filepath)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * 50)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * game_second)
 
     _res, frame = video_capture.read()
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
