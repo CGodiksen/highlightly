@@ -3,5 +3,5 @@ from django.urls import path
 from videos import views
 
 urlpatterns = [
-    path('video-metadata/', views.UpdateVideoMetadata.as_view(), name="video_metadata"),
+    path('video_metadata/<int:pk>/', views.UpdateVideoMetadata.as_view(), name="video_metadata"),
 ]
