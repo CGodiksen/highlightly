@@ -1,0 +1,12 @@
+{
+  "operationName": "ListPagedAllMatches",
+  "variables": {
+    "status": "not_started",
+    "leagueId": null,
+    "limit": 20,
+    "year": 2023,
+    "month": 5,
+    "page": 0
+  },
+  "query": "fragment CoreTeam on Team {\n  id\n  name\n  acronym\n  imageUrl\n  nationality\n  foundedAt\n  imageUrlDarkMode\n  imageUrlLightMode\n  youtube\n  twitter\n  facebook\n  instagram\n  discord\n  website\n  __typename\n}\n\nfragment CoreLeague on League {\n  id\n  name\n  shortName\n  imageUrl\n  region\n  __typename\n}\n\nfragment CoreSerie on Serie {\n  id\n  name\n  description\n  year\n  season\n  beginAt\n  endAt\n  league {\n    ...CoreLeague\n    __typename\n  }\n  __typename\n}\n\nfragment CoreTournament on Tournament {\n  id\n  name\n  beginAt\n  endAt\n  serie {\n    ...CoreSerie\n    __typename\n  }\n  __typename\n}\n\nfragment CoreMatch on Match {\n  id\n  tournamentId\n  name\n  originalScheduledAt\n  scheduledAt\n  beginAt\n  endAt\n  matchType\n  numberOfGames\n  streams {\n    isMain\n    isOfficial\n    language\n    rawUrl\n    embedUrl\n    __typename\n  }\n  homeTeamId\n  awayTeamId\n  homeTeam {\n    ...CoreTeam\n    __typename\n  }\n  awayTeam {\n    ...CoreTeam\n    __typename\n  }\n  winnerTeam {\n    ...CoreTeam\n    __typename\n  }\n  homeScore\n  awayScore\n  status\n  draw\n  forfeit\n  rescheduled\n  liveSupported\n  liveOpensAt\n  matchVersion\n  tournament {\n    ...CoreTournament\n    __typename\n  }\n  ranks {\n    awayTeamRank {\n      lose\n      point\n      position\n      previously\n      setLose\n      setWin\n      win\n      __typename\n    }\n    homeTeamRank {\n      lose\n      point\n      position\n      previously\n      setLose\n      setWin\n      win\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nquery ListPagedAllMatches($status: String!, $leagueId: ID, $teamId: ID, $page: Int, $year: Int, $month: Int, $limit: Int) {\n  pagedAllMatches(\n    status: $status\n    leagueId: $leagueId\n    teamId: $teamId\n    page: $page\n    year: $year\n    month: $month\n    limit: $limit\n  ) {\n    ...CoreMatch\n    tournament {\n      ...CoreTournament\n      serie {\n        league {\n          shortName\n          region\n          __typename\n        }\n        year\n        season\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n}"
+}
