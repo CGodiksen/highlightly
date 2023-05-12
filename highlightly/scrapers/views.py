@@ -29,7 +29,11 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             return serializers.MatchSerializer
 
     def get_queryset(self) -> QuerySet[Match]:
-        return Match.objects.all().order_by("start_datetime")
+        """Limit the queryset to the game given in the query parameters."""
+        if "game" in self.request.query_params:
+            return Match.objects.filter(team_1__game=self.request.query_params["game"]).order_by("start_datetime")
+        else:
+            raise ValidationError({"detail": "Matches cannot be accessed without supplying a game."})
 
     @action(detail=False, methods=["POST"])
     def scrape_matches(self, request: Request) -> Response:

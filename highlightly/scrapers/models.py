@@ -36,6 +36,7 @@ class Tournament(models.Model):
         return f"{self.name} ({self.get_game_display()})"
 
 
+# TODO: Create an organization model and move name, logo filename, and background color to it.
 class Team(models.Model):
     game = models.CharField(max_length=32, choices=Game.choices)
     name = models.CharField(max_length=128)
