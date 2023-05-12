@@ -39,17 +39,20 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
     def scrape_matches(self, request: Request) -> Response:
         serializer = serializers.ScrapeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        matches = Match.objects.all()
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "counter-strike":
             tasks.scrape_counter_strike_matches()
+            matches = Match.objects.filter(team_1__game=Game.COUNTER_STRIKE)
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "league-of-legends":
             tasks.scrape_league_of_legends_matches()
+            matches = Match.objects.filter(team_1__game=Game.LEAGUE_OF_LEGENDS)
 
         if "game" not in serializer.validated_data or serializer.validated_data["game"] == "valorant":
             tasks.scrape_valorant_matches()
+            matches = Match.objects.filter(team_1__game=Game.VALORANT)
 
-        matches = Match.objects.all()
         return Response(MatchSerializer(matches, many=True).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["POST"])

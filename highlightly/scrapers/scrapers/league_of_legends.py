@@ -1,4 +1,8 @@
+import json
+
+import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
 
 from scrapers.models import Tournament, Team, Match
 from scrapers.scrapers.scraper import Scraper
@@ -10,7 +14,23 @@ class LeagueOfLegendsScraper(Scraper):
 
     @staticmethod
     def list_upcoming_matches() -> list[MatchData]:
-        pass
+        upcoming_matches: list[MatchData] = []
+
+        # Use the graphql endpoint to retrieve the current scheduled match data.
+        with open("../data/graphql/op_gg_upcoming_matches.json") as file:
+            data = json.load(file)
+            data["variables"]["year"] = datetime.now().year
+            data["variables"]["month"] = datetime.now().month
+
+            response = requests.post("https://esports.op.gg/matches/graphql", json=data)
+            content = json.loads(response.content)
+
+            # For each match in the response, extract data related to the match.
+            for match in content["data"]["pagedAllMatches"]:
+                # TODO: Extract the start time, team 1 name and url, team 2 name and url, url, tournament name,
+                print(match)
+
+        return upcoming_matches
 
     @staticmethod
     def create_tournament(match: MatchData) -> Tournament:
