@@ -36,7 +36,7 @@ class CounterStrikeEditor(Editor):
 
             # Use OCR to get the characters in the image and find the timer. If not found, try again with a new frame.
             detected_text = detect_text(cv2.imencode(".png", cropped_frame)[1].tobytes())
-            detected_timer = next((text for text in detected_text if ":" in text and len(text) == 4), None)
+            detected_timer = next((text for text in detected_text if ":" in text and (len(text) == 4 or len(text) == 5)), None)
 
             if detected_timer is not None:
                 break
@@ -45,7 +45,9 @@ class CounterStrikeEditor(Editor):
 
         # Convert the time on the timer to an offset for when the game starts compared to when the video starts.
         split_timer = detected_timer.split(":")
-        seconds_left_in_round = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+        minutes = int(split_timer[0]) if len(split_timer[0]) == 1 else int(split_timer[0][1])
+
+        seconds_left_in_round = timedelta(minutes=minutes, seconds=int(split_timer[1])).seconds
         seconds_since_round_started = 115 - seconds_left_in_round
 
         return int(current_offset - seconds_since_round_started)
