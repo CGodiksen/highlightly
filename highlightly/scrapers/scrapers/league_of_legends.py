@@ -1,12 +1,11 @@
 import json
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 from scrapers.models import Tournament, Team, Match
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import MatchData
 
 
 class LeagueOfLegendsScraper(Scraper):
@@ -34,22 +33,15 @@ class LeagueOfLegendsScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def scheduled_match_already_exists(match: dict) -> bool:
-        """Return True if a Match object already exists for the given match."""
-        start_datetime = datetime.strptime(match["scheduledAt"][:-5], "%Y-%m-%dT%H:%M:%S")
-        return Match.objects.filter(start_datetime=start_datetime, team_1__name=match["homeTeam"]["name"],
-                                    team_2__name=match["awayTeam"]["name"]).exists()
-
-    @staticmethod
-    def create_tournament(match: MatchData) -> Tournament:
+    def create_tournament(match: dict) -> Tournament:
         pass
 
     @staticmethod
-    def create_team(team_name, team_id) -> Team:
+    def create_team(team_data: dict) -> Team:
         pass
 
     @staticmethod
-    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         pass
 
     @staticmethod

@@ -2,26 +2,25 @@ from bs4 import BeautifulSoup
 
 from scrapers.models import Tournament, Team, Match
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import MatchData
 
 
 class ValorantScraper(Scraper):
     """Webscraper that scrapes vlr.gg for upcoming Valorant matches."""
 
     @staticmethod
-    def list_upcoming_matches() -> list[MatchData]:
+    def list_upcoming_matches() -> list[dict]:
         pass
 
     @staticmethod
-    def create_tournament(match: MatchData) -> Tournament:
+    def create_tournament(match: dict) -> Tournament:
         pass
 
     @staticmethod
-    def create_team(team_name, team_id) -> Team:
+    def create_team(team_data: dict) -> Team:
         pass
 
     @staticmethod
-    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         pass
 
     @staticmethod

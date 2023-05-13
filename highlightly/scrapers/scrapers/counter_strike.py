@@ -17,7 +17,7 @@ from serpapi import GoogleSearch
 
 from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo, Player
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import MatchData, TournamentData
+from scrapers.types import CounterStrikeMatchData, TournamentData, CounterStrikeTeamData
 from util.file_util import download_file_from_url
 
 
@@ -25,10 +25,10 @@ class CounterStrikeScraper(Scraper):
     """Webscraper that scrapes hltv.org for upcoming Counter-Strike matches."""
 
     @staticmethod
-    def list_upcoming_matches() -> list[MatchData]:
+    def list_upcoming_matches() -> list[CounterStrikeMatchData]:
         logging.info("Scraping upcoming Counter-Strike matches from hltv.org.")
 
-        upcoming_matches: list[MatchData] = []
+        upcoming_matches: list[CounterStrikeMatchData] = []
 
         base_url = "https://www.hltv.org"
         soup = get_protected_page_html(f"{base_url}/matches")
@@ -52,7 +52,7 @@ class CounterStrikeScraper(Scraper):
 
     # TODO: Look into using HLTV for the tournament page as well.
     @staticmethod
-    def create_tournament(match: MatchData) -> Tournament:
+    def create_tournament(match: CounterStrikeMatchData) -> Tournament:
         tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
         if tournament is None:
             logging.info(f"{match['tournament_name']} does not already exist. Creating new tournament.")
@@ -74,12 +74,14 @@ class CounterStrikeScraper(Scraper):
         return tournament
 
     @staticmethod
-    def create_team(team_name, team_id) -> Team:
+    def create_team(team_data: CounterStrikeTeamData) -> Team:
+        team_name = team_data["name"]
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
+
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
 
-            team_url = f"https://www.hltv.org/team/{team_id}/{team_name.replace(' ', '-').lower()}"
+            team_url = f"https://www.hltv.org/team/{team_data['id']}/{team_name.replace(' ', '-').lower()}"
 
             # Extract the nationality and world ranking of the team.
             html = requests.get(url=team_url).text
@@ -99,7 +101,7 @@ class CounterStrikeScraper(Scraper):
         return team
 
     @staticmethod
-    def create_scheduled_match(match: MatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: CounterStrikeMatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         # Estimate the end datetime based on the start datetime and format.
         minimum_minutes = convert_format_to_minimum_time(match["format"])
         estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
@@ -241,7 +243,7 @@ def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
-def extract_match_data(html: Tag, base_url: str) -> MatchData:
+def extract_match_data(html: Tag, base_url: str) -> CounterStrikeMatchData:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
     team_1_id = html.get("team1")
     team_2_id = html.get("team2")
@@ -263,9 +265,10 @@ def extract_match_data(html: Tag, base_url: str) -> MatchData:
     tier = int(html["stars"])
     tournament_name: str = html.find("div", class_="matchEventName").text
 
-    return {"url": match_url, "team_1_id": int(team_1_id), "team_1_name": team_1_name, "team_2_id": int(team_2_id),
-            "team_2_name": team_2_name, "start_datetime": start_datetime, "tier": tier, "format": match_format,
-            "tournament_name": tournament_name}
+    team_1_data = {"id": int(team_1_id), "name": team_1_name}
+    team_2_data = {"id": int(team_2_id), "name": team_2_name}
+    return {"url": match_url, "team_1": team_1_data, "team_2": team_2_data, "start_datetime": start_datetime,
+            "tier": tier, "format": match_format, "tournament_name": tournament_name}
 
 
 def extract_team_name(html: Tag, team_number: int) -> str:

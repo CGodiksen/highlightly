@@ -4,12 +4,15 @@ from typing import TypedDict
 from scrapers.models import Match, Tournament
 
 
-class MatchData(TypedDict):
+class CounterStrikeTeamData(TypedDict):
+    id: int
+    name: str
+
+
+class CounterStrikeMatchData(TypedDict):
     url: str
-    team_1_id: int
-    team_1_name: str
-    team_2_id: int
-    team_2_name: str
+    team_1: CounterStrikeTeamData
+    team_2: CounterStrikeTeamData
     start_datetime: datetime
     tier: int
     format: Match.Format
