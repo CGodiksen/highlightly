@@ -13,8 +13,9 @@ class LeagueOfLegendsScraper(Scraper):
     """Webscraper that scrapes op.gg for upcoming League of Legends matches."""
 
     @staticmethod
-    def list_upcoming_matches() -> list[MatchData]:
-        upcoming_matches: list[MatchData] = []
+    def list_upcoming_matches() -> list[dict]:
+        """Use GraphQL to retrieve the upcoming matches from op.gg."""
+        upcoming_matches: list[dict] = []
 
         # Use the graphql endpoint to retrieve the current scheduled match data.
         with open("../data/graphql/op_gg_upcoming_matches.json") as file:
@@ -27,10 +28,17 @@ class LeagueOfLegendsScraper(Scraper):
 
             # For each match in the response, extract data related to the match.
             for match in content["data"]["pagedAllMatches"]:
-                # TODO: Extract the start time, team 1 name and url, team 2 name and url, url, tournament name,
-                print(match)
+                if match["homeTeam"] is not None and match["awayTeam"] is not None:
+                    upcoming_matches.append(match)
 
         return upcoming_matches
+
+    @staticmethod
+    def scheduled_match_already_exists(match: dict) -> bool:
+        """Return True if a Match object already exists for the given match."""
+        start_datetime = datetime.strptime(match["scheduledAt"][:-5], "%Y-%m-%dT%H:%M:%S")
+        return Match.objects.filter(start_datetime=start_datetime, team_1__name=match["homeTeam"]["name"],
+                                    team_2__name=match["awayTeam"]["name"]).exists()
 
     @staticmethod
     def create_tournament(match: MatchData) -> Tournament:
