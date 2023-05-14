@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 import re
 
 import cv2
@@ -48,7 +49,7 @@ def add_post_match_video_metadata(match: Match):
     new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
 
     # Add a frame from the match and the tournament logo to the thumbnail.
-    finish_video_thumbnail(match, video_metadata, 60)
+    finish_video_thumbnail(match, video_metadata)
 
     video_metadata.description = new_description
     video_metadata.tags = new_tags
@@ -74,19 +75,14 @@ def get_match_vod_channel_name(match: Match) -> str:
 
 
 # TODO: Generate some eye catching text based on the context of the match and put it in the top of the match frame.
-def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, game_second: int) -> None:
+def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
     thumbnail_folder = match.create_unique_folder_path()
     thumbnail = Image.open(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
 
-    # Retrieve a frame from one minute into the first game in the match.
-    vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
-    video_capture = cv2.VideoCapture(vod_filepath)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * game_second)
-
-    _res, frame = video_capture.read()
+    # Retrieve a frame right before a kill in the first game in the match.
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
-    cv2.imwrite(frame_filepath, frame)
+    save_match_frame(match, frame_filepath)
 
     # Add the frame from the match to the right 3/5 of the thumbnail.
     match_frame_part = create_match_frame_part(frame_filepath, 360 + 160)
@@ -102,10 +98,26 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, game_sec
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
+def save_match_frame(match: Match, frame_filepath: str) -> None:
+    """Retrieve a frame right before a kill in the first game in the match and save it to the given filepath."""
+    # Select a random highlight from the first 10 highlights.
+    first_game: GameVod = match.gamevod_set.first()
+    highlight = random.choice(first_game.highlight_set.all()[:10])
+    highlight_second = highlight.start_time_seconds + first_game.game_start_offset
+
+    # Extract the frame from the VOD and save it.
+    vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
+    video_capture = cv2.VideoCapture(vod_filepath)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * highlight_second)
+
+    _res, frame = video_capture.read()
+    cv2.imwrite(frame_filepath, frame)
+
+
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
 # TODO: Maybe make the team mvp area larger.
-def create_game_statistics_image(game: GameVod, folder_path: str, filename: str):
+def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
     """Create an image that contains the statistics for each game and for the total match statistics."""
     # Pass the data of the game into the html file.
     with open("videos/html/post-match-statistics.html") as html_file:

@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 from typing import Type, TypeVar
 
@@ -74,7 +73,7 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
         match: Match = get_object_or_404(Match, id=pk)
 
         if match.gamevod_set.count() > 0:
-            finish_video_thumbnail(match, match.videometadata, random.randint(30, 500))
+            finish_video_thumbnail(match, match.videometadata)
         else:
             raise ValidationError("Match does not have any VODs.", code=status.HTTP_403_FORBIDDEN)
 
