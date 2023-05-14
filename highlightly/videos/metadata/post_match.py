@@ -100,15 +100,15 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
 
 def save_match_frame(match: Match, frame_filepath: str) -> None:
     """Retrieve a frame right before a kill in the first game in the match and save it to the given filepath."""
-    # Select a random highlight from the first 10 highlights.
+    # Select a random highlight from the highlights.
     first_game: GameVod = match.gamevod_set.first()
-    highlight = random.choice(first_game.highlight_set.all()[:10])
+    highlight = random.choice(first_game.highlight_set.all())
     highlight_second = highlight.start_time_seconds + first_game.game_start_offset
 
     # Extract the frame from the VOD and save it.
     vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
     video_capture = cv2.VideoCapture(vod_filepath)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * highlight_second)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * (highlight_second + 0.5))
 
     _res, frame = video_capture.read()
     cv2.imwrite(frame_filepath, frame)
@@ -116,7 +116,6 @@ def save_match_frame(match: Match, frame_filepath: str) -> None:
 
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
-# TODO: Maybe make the team mvp area larger.
 def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
     """Create an image that contains the statistics for each game and for the total match statistics."""
     # Pass the data of the game into the html file.

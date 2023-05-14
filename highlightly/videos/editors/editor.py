@@ -90,7 +90,8 @@ class Editor:
 
                 # Combine the statistics video and the clip into the complete final highlight clip.
                 cmd = f"ffmpeg -i {clip_filepath} -i {statistics_filepath} -filter_complex " \
-                      f"'xfade=transition=fade:offset={exact_duration - 11}:duration=1' -c:a copy {clip_filepath.replace('temp_', '')}"
+                      f"'xfade=transition=fade:offset={exact_duration - 11}:duration=1' -preset superfast -crf 27 " \
+                      f"-c:a copy {clip_filepath.replace('temp_', '')}"
                 subprocess.run(cmd, shell=True)
 
             logging.info(f"Created {duration} second highlight clip for round {highlight.round_number} of {game_vod}.")
@@ -98,10 +99,6 @@ class Editor:
 
         combine_clips_with_crossfade(folder_path, target_filename, exact_durations)
         logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
-
-        # TODO: Call function to create post match statistics.
-        # TODO: Add 15 seconds extra to last highlight. 5 seconds for the actual video and 10 seconds for the statistics.
-        # TODO: Replace the last 10 seconds of video with the post match statistics and keep the audio as it were.
 
         shutil.rmtree(f"{folder_path}/clips")
 
