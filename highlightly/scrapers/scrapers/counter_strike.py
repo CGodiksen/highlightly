@@ -44,8 +44,8 @@ class CounterStrikeScraper(Scraper):
             match = extract_match_data(row, base_url)
 
             # Ignore the match if it currently still contains a "TBD" team.
-            if match is not None and match["team_1_name"] != "TBD" and match["team_2_name"] != "TBD":
-                logging.info(f"Extracted initial data for {match['team_1_name']} VS. {match['team_2_name']}.")
+            if match is not None and match["team_1"]["name"] != "TBD" and match["team_2"]["name"] != "TBD":
+                logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
                 upcoming_matches.append(match)
 
         return upcoming_matches

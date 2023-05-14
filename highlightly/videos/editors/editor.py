@@ -126,7 +126,7 @@ class Editor:
                 offset = self.find_game_starting_point(game_vod)
 
                 highlights = self.select_highlights(game_vod)
-                highlight_video_filename = game_vod.filename.replace('.mkv', '_highlights.mp4')
+                highlight_video_filename = game_vod.filename.replace(".mkv", "_highlights.mp4")
                 self.create_highlight_video(highlights, game_vod, highlight_video_filename, offset, folder_path)
 
                 highlights_txt.write(f"file '{highlight_video_filename}'\n")
