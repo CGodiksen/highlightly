@@ -134,6 +134,7 @@ class GameVod(models.Model):
     team_2_round_count = models.IntegerField(validators=[MinValueValidator(0)])
 
     mvp = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
+    game_start_offset = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
 
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"

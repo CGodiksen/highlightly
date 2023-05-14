@@ -124,6 +124,8 @@ class Editor:
             for game_vod in match.gamevod_set.all():
                 logging.info(f"Creating a highlight video for {game_vod}.")
                 offset = self.find_game_starting_point(game_vod)
+                game_vod.game_start_offset = offset
+                game_vod.save()
 
                 highlights = self.select_highlights(game_vod)
                 highlight_video_filename = game_vod.filename.replace(".mkv", "_highlights.mp4")
