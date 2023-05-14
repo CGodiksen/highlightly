@@ -133,7 +133,7 @@ def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | Non
     search = GoogleSearch({
         "engine": "google",
         "api_key": os.environ["SERP_API_KEY"],
-        "q": f"{tournament_name} site:https://liquipedia.net/{game.replace('-', '').replace(' ', '').lower()}",
+        "q": f"{tournament_name} site:https://liquipedia.net/{game.replace('_', '').lower()}",
         "as_qdr": "w2"
     })
     result = search.get_dict()

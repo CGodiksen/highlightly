@@ -41,7 +41,8 @@ class CounterStrikeScraper(Scraper):
         # For each row in the table, extract the teams, tournament, and match.
         for row in rows:
             match = extract_match_data(row, base_url)
-
+            match["game"] = Game.COUNTER_STRIKE
+            
             # Ignore the match if it currently still contains a "TBD" team.
             if match is not None and match["team_1"]["name"] != "TBD" and match["team_2"]["name"] != "TBD":
                 logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")

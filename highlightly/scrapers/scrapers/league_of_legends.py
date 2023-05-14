@@ -4,7 +4,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 
-from scrapers.models import Tournament, Team, Match
+from scrapers.models import Tournament, Team, Match, Game
 from scrapers.scrapers.scraper import Scraper
 
 
@@ -28,9 +28,12 @@ class LeagueOfLegendsScraper(Scraper):
             # For each match in the response, extract data related to the match.
             for match in content["data"]["pagedAllMatches"]:
                 if match["homeTeam"] is not None and match["awayTeam"] is not None:
-                    match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
                     match["team_1"] = match.pop("homeTeam")
                     match["team_2"] = match.pop("awayTeam")
+
+                    match["game"] = Game.LEAGUE_OF_LEGENDS
+                    match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
+                    match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
 
                     upcoming_matches.append(match)
 
