@@ -78,7 +78,8 @@ class CounterStrikeScraper(Scraper):
         return team
 
     @staticmethod
-    def create_scheduled_match(match: CounterStrikeMatchData, tournament: Tournament, team_1: Team, team_2: Team) -> None:
+    def create_scheduled_match(match: CounterStrikeMatchData, tournament: Tournament, team_1: Team,
+                               team_2: Team) -> None:
         # Estimate the end datetime based on the start datetime and format.
         minimum_minutes = convert_format_to_minimum_time(match["format"])
         estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
@@ -297,23 +298,6 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
 
     match.tournament_context = tournament_context
     match.save()
-
-
-def get_liquipedia_tournament_url(tournament_name: str) -> str | None:
-    """
-    Attempt to retrieve the url for the tournaments liquipedia wiki page. Since the liquipedia wiki search is faulty,
-    use Google Search to find the corresponding liquipedia page.
-    """
-    # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
-    search = GoogleSearch({
-        "engine": "google",
-        "api_key": os.environ["SERP_API_KEY"],
-        "q": f"{tournament_name} site:https://liquipedia.net/counterstrike",
-        "as_qdr": "w2"
-    })
-    result = search.get_dict()
-
-    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
 
 
 def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | None:

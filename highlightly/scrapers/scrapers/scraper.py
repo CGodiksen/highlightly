@@ -1,10 +1,12 @@
 import logging
+import os
 
 import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
+from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team
+from scrapers.models import Match, Tournament, Team, Game
 
 
 class Scraper:
@@ -118,3 +120,20 @@ class Scraper:
 
             match.finished = True
             match.save(update_fields=["finished"])
+
+
+def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | None:
+    """
+    Attempt to retrieve the url for the tournaments liquipedia wiki page. Since the liquipedia wiki search is faulty,
+    use Google Search to find the corresponding liquipedia page.
+    """
+    # Since the liquipedia wiki search is faulty, use Google Search to find the corresponding liquipedia page.
+    search = GoogleSearch({
+        "engine": "google",
+        "api_key": os.environ["SERP_API_KEY"],
+        "q": f"{tournament_name} site:https://liquipedia.net/{game.replace('-', '').replace(' ', '').lower()}",
+        "as_qdr": "w2"
+    })
+    result = search.get_dict()
+
+    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
