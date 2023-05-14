@@ -40,10 +40,6 @@ class LeagueOfLegendsScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def create_tournament(match: dict) -> Tournament:
-        pass
-
-    @staticmethod
     def create_team(team_data: dict) -> Team:
         pass
 

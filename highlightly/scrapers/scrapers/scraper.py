@@ -148,7 +148,7 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
 
     prize_pool = get_tournament_table_data(html, "Prize Pool:").split("\xa0")[0]
     location = get_tournament_table_data(html, "Location:").strip()
-    tier = convert_letter_tier_to_number_tier(get_tournament_table_data(html, "Liquipedia Tier:").lower())
+    tier = convert_letter_tier_to_number_tier(get_tournament_table_data(html, "Liquipedia Tier:").lower().strip())
     type = Tournament.Type(get_tournament_table_data(html, "Type:").upper())
 
     first_place_row = html.find("div", class_="csstable-widget-row background-color-first-place")
