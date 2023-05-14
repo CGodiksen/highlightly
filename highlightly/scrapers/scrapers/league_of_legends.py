@@ -28,6 +28,10 @@ class LeagueOfLegendsScraper(Scraper):
             # For each match in the response, extract data related to the match.
             for match in content["data"]["pagedAllMatches"]:
                 if match["homeTeam"] is not None and match["awayTeam"] is not None:
+                    match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
+                    match["team_1"] = match.pop("homeTeam")
+                    match["team_2"] = match.pop("awayTeam")
+
                     upcoming_matches.append(match)
 
         return upcoming_matches
@@ -49,7 +53,7 @@ class LeagueOfLegendsScraper(Scraper):
         pass
 
     @staticmethod
-    def download_match_files(match:Match, html: BeautifulSoup) -> None:
+    def download_match_files(match: Match, html: BeautifulSoup) -> None:
         pass
 
     @staticmethod

@@ -50,29 +50,6 @@ class CounterStrikeScraper(Scraper):
 
         return upcoming_matches
 
-    # TODO: Look into using HLTV for the tournament page as well.
-    @staticmethod
-    def create_tournament(match: CounterStrikeMatchData) -> Tournament:
-        tournament = Tournament.objects.filter(game=Game.COUNTER_STRIKE, name=match["tournament_name"]).first()
-        if tournament is None:
-            logging.info(f"{match['tournament_name']} does not already exist. Creating new tournament.")
-
-            tournament_url = get_liquipedia_tournament_url(match["tournament_name"])
-            html = requests.get(url=tournament_url).text
-            soup = BeautifulSoup(html, "html.parser")
-
-            # Extract the tournament data from the HTML.
-            data = extract_tournament_data(soup)
-            logging.info(f"Extracted data from {tournament_url} to create tournament for {match['tournament_name']}.")
-
-            tournament = Tournament.objects.create(game=Game.COUNTER_STRIKE, name=match["tournament_name"],
-                                                   url=tournament_url, start_date=data["start_date"],
-                                                   end_date=data["end_date"], prize_pool_us_dollars=data["prize_pool"],
-                                                   first_place_prize_us_dollars=data["first_place_prize"],
-                                                   location=data["location"], tier=data["tier"], type=data["type"])
-
-        return tournament
-
     @staticmethod
     def create_team(team_data: CounterStrikeTeamData) -> Team:
         team_name = team_data["name"]
