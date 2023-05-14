@@ -13,11 +13,10 @@ import requests
 from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
 from demoparser import DemoParser
-from serpapi import GoogleSearch
 
 from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo, Player
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import CounterStrikeMatchData, TournamentData, CounterStrikeTeamData
+from scrapers.types import CounterStrikeMatchData, CounterStrikeTeamData
 from util.file_util import download_file_from_url
 
 
@@ -257,23 +256,6 @@ def extract_team_name(html: Tag, team_number: int) -> str:
     return team_name.replace("\n", "")
 
 
-def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
-    """Given the HTML for the tournaments liquipedia wiki page, extract the data for the tournament."""
-    start_date = datetime.strptime(get_tournament_table_data(html, "Start Date:"), "%Y-%m-%d").date()
-    end_date = datetime.strptime(get_tournament_table_data(html, "End Date:"), "%Y-%m-%d").date()
-
-    prize_pool = get_tournament_table_data(html, "Prize Pool:").split("\xa0")[0]
-    location = get_tournament_table_data(html, "Location:").strip()
-    tier = convert_letter_tier_to_number_tier(get_tournament_table_data(html, "Liquipedia Tier:").lower())
-    type = Tournament.Type(get_tournament_table_data(html, "Type:").upper())
-
-    first_place_row = html.find("div", class_="csstable-widget-row background-color-first-place")
-    first_place_prize = first_place_row.find_next().find_next_sibling().text
-
-    return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
-            "tier": tier, "type": type, "first_place_prize": first_place_prize}
-
-
 def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> None:
     """Extract the tournament logo and tournament context of the match from the match page HTML."""
     Path("media/tournaments").mkdir(parents=True, exist_ok=True)
@@ -321,22 +303,6 @@ def get_team_logo_filename(team_soup: BeautifulSoup, team_name: str) -> str | No
         download_file_from_url(large_size_url, f"media/teams/{logo_filename}")
 
     return logo_filename
-
-
-def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
-    """Return the data of the row with the given text in the tournament information table."""
-    tag = html.find("div", class_="infobox-cell-2 infobox-description", text=row_text)
-    return tag.find_next_sibling().text if tag else ""
-
-
-def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
-    """Convert the given letter tier to the corresponding number tier."""
-    if "qualifier" in letter_tier:
-        letter_tier = letter_tier[letter_tier.find("(") + 1:letter_tier.find(")")]
-
-    conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
-
-    return conversion[letter_tier]
 
 
 def convert_label_to_format(label: str) -> Match.Format:
