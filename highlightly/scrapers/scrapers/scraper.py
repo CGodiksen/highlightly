@@ -8,7 +8,7 @@ from django_celery_beat.models import PeriodicTask
 from serpapi import GoogleSearch
 
 from scrapers.models import Match, Tournament, Team, Game
-from scrapers.types import TournamentData
+from scrapers.types import TournamentData, TeamData
 
 
 class Scraper:
@@ -50,12 +50,28 @@ class Scraper:
         return tournament
 
     @staticmethod
-    def create_team(team_data: dict) -> Team:
+    def extract_team_data(match_team_data: dict) -> TeamData:
+        """Parse through the match team data to extract the team data that can be used to create a team object."""
+        raise NotImplementedError
+
+    def create_team(self, match_team_data: dict, game: Game) -> Team:
         """
         Based on the information in the given match, create a Team object and return it. If an object for the team
         already exists, the existing object is returned.
         """
-        raise NotImplementedError
+        team_name = match_team_data["name"]
+        team = Team.objects.filter(game=game, name=team_name).first()
+
+        if team is None:
+            logging.info(f"{team_name} does not already exist. Creating new team.")
+            team_data = self.extract_team_data(match_team_data)
+            logging.info(f"Extracted data from {team_data['team_url']} to create team for {team_name}.")
+
+            team = Team.objects.create(game=game, name=team_name, logo_filename=team_data["logo_filename"],
+                                       nationality=team_data["nationality"], ranking=team_data["ranking"],
+                                       url=team_data["team_url"])
+
+        return team
 
     @staticmethod
     def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
@@ -77,8 +93,8 @@ class Scraper:
         # For each remaining match in the list, create a Match object.
         for match in new_matches:
             tournament = self.create_tournament(match)
-            team_1 = self.create_team(match["team_1"])
-            team_2 = self.create_team(match["team_2"])
+            team_1 = self.create_team(match["team_1"], match["game"])
+            team_2 = self.create_team(match["team_2"], match["game"])
 
             self.create_scheduled_match(match, tournament, team_1, team_2)
 
@@ -88,7 +104,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def download_match_files(match:Match, html: BeautifulSoup) -> None:
+    def download_match_files(match: Match, html: BeautifulSoup) -> None:
         """
         Download all required files from the match page url such as vods, missing logos, and demo files. For each vod,
         a game vod object is created.

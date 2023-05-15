@@ -70,33 +70,6 @@ class CounterStrikeScraper(Scraper):
         return {"url": team_url, "nationality": nationality, "ranking": ranking, "logo_filename": logo_filename}
 
     @staticmethod
-    def create_team(team_data: dict) -> Team:
-        team_name = team_data["name"]
-        team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
-
-        if team is None:
-            logging.info(f"{team_name} does not already exist. Creating new team.")
-
-            team_url = f"https://www.hltv.org/team/{team_data['id']}/{team_name.replace(' ', '-').lower()}"
-
-            # Extract the nationality and world ranking of the team.
-            html = requests.get(url=team_url).text
-            soup = BeautifulSoup(html, "html.parser")
-
-            nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
-            ranking = soup.find("b", text="World ranking").find_next_sibling().text[1:]
-            ranking = int(ranking) if ranking.isdigit() else None
-
-            # Retrieve the team logo if possible.
-            logo_filename = get_team_logo_filename(soup, team_name)
-
-            logging.info(f"Extracted data from {team_url} to create team for {team_name}.")
-            team = Team.objects.create(game=Game.COUNTER_STRIKE, name=team_name, logo_filename=logo_filename,
-                                       nationality=nationality, ranking=ranking, url=team_url)
-
-        return team
-
-    @staticmethod
     def create_scheduled_match(match: CounterStrikeMatchData, tournament: Tournament, team_1: Team,
                                team_2: Team) -> None:
         # Estimate the end datetime based on the start datetime and format.

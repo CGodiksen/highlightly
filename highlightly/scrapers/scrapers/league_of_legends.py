@@ -47,10 +47,6 @@ class LeagueOfLegendsScraper(Scraper):
         return {}
 
     @staticmethod
-    def create_team(team_data: dict) -> Team:
-        pass
-
-    @staticmethod
     def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         pass
 
