@@ -1,6 +1,7 @@
 import json
 import logging
 from datetime import datetime
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -8,6 +9,7 @@ from bs4 import BeautifulSoup
 from scrapers.models import Tournament, Team, Match, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
+from util.file_util import download_file_from_url
 
 
 class LeagueOfLegendsScraper(Scraper):
@@ -44,7 +46,14 @@ class LeagueOfLegendsScraper(Scraper):
     @staticmethod
     def extract_team_data(match_team_data: dict) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
-        return {}
+        team_url = f"https://esports.op.gg/teams/{match_team_data['id']}"
+
+        logo_filename = f"{match_team_data['name'].replace(' ', '_')}.png"
+        Path("media/teams").mkdir(parents=True, exist_ok=True)
+        download_file_from_url(match_team_data["imageUrl"], f"media/teams/{logo_filename}")
+
+        return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None,
+                "logo_filename": logo_filename}
 
     @staticmethod
     def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
