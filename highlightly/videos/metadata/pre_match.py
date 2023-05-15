@@ -4,7 +4,7 @@ import math
 from PIL import Image, ImageDraw
 from colorthief import ColorThief
 
-from scrapers.models import Match, Team
+from scrapers.models import Match, Team, Game
 from videos.metadata.util import create_match_frame_part
 from videos.models import VideoMetadata
 
@@ -102,7 +102,8 @@ def create_video_thumbnail(scheduled_match: Match) -> str:
     draw.line(xy, fill=(255, 255, 255), width=3)
 
     # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
-    match_frame_part = create_match_frame_part("../data/test/match_frame.png", team_1_part.width + text_part.width)
+    path = get_temporary_match_frame_path(scheduled_match.team_1.game)
+    match_frame_part = create_match_frame_part(path, team_1_part.width + text_part.width)
     thumbnail.paste(match_frame_part, (team_1_part.width + text_part.width, 0))
 
     # Save the thumbnail to a file and return the filename of the saved thumbnail.
@@ -179,3 +180,11 @@ def get_color_distance(rgb_1: tuple[int, int, int], rgb_2: tuple[int, int, int])
 
 def clamp(x):
     return max(0, min(x, 255))
+
+
+def get_temporary_match_frame_path(game: Game):
+    """Return the file path to the temporary match frame for the given game."""
+    if game == Game.COUNTER_STRIKE:
+        return "../data/match_frames/counter_strike_match_frame.png"
+    else:
+        return "../data/match_frames/league_of_legends_match_frame.png"

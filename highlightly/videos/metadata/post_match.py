@@ -108,7 +108,7 @@ def save_match_frame(match: Match, frame_filepath: str) -> None:
     # Extract the frame from the VOD and save it.
     vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
     video_capture = cv2.VideoCapture(vod_filepath)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * (highlight_second + 0.5))
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * (highlight_second + random.randint(0, highlight.duration_seconds)))
 
     _res, frame = video_capture.read()
     cv2.imwrite(frame_filepath, frame)
