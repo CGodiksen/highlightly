@@ -16,7 +16,7 @@ from demoparser import DemoParser
 
 from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo, Player
 from scrapers.scrapers.scraper import Scraper
-from scrapers.types import CounterStrikeMatchData, CounterStrikeTeamData
+from scrapers.types import CounterStrikeMatchData, TeamData
 from util.file_util import download_file_from_url
 
 
@@ -51,7 +51,26 @@ class CounterStrikeScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def create_team(team_data: CounterStrikeTeamData) -> Team:
+    def extract_team_data(match_team_data: dict) -> TeamData:
+        """Parse through the match team data to extract the team data that can be used to create a team object."""
+        team_name = match_team_data["name"]
+        team_url = f"https://www.hltv.org/team/{match_team_data['id']}/{team_name.replace(' ', '-').lower()}"
+
+        # Extract the nationality and world ranking of the team.
+        html = requests.get(url=team_url).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
+        ranking = soup.find("b", text="World ranking").find_next_sibling().text[1:]
+        ranking = int(ranking) if ranking.isdigit() else None
+
+        # Retrieve the team logo if possible.
+        logo_filename = get_team_logo_filename(soup, team_name)
+
+        return {"url": team_url, "nationality": nationality, "ranking": ranking, "logo_filename": logo_filename}
+
+    @staticmethod
+    def create_team(team_data: dict) -> Team:
         team_name = team_data["name"]
         team = Team.objects.filter(game=Game.COUNTER_STRIKE, name=team_name).first()
 

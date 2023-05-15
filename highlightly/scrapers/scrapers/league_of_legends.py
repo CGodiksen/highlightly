@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 import requests
@@ -6,6 +7,7 @@ from bs4 import BeautifulSoup
 
 from scrapers.models import Tournament, Team, Match, Game
 from scrapers.scrapers.scraper import Scraper
+from scrapers.types import TeamData
 
 
 class LeagueOfLegendsScraper(Scraper):
@@ -38,6 +40,11 @@ class LeagueOfLegendsScraper(Scraper):
                     upcoming_matches.append(match)
 
         return upcoming_matches
+
+    @staticmethod
+    def extract_team_data(match_team_data: dict) -> TeamData:
+        """Parse through the match team data to extract the team data that can be used to create a team object."""
+        return {}
 
     @staticmethod
     def create_team(team_data: dict) -> Team:
