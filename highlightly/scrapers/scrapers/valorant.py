@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import requests
 from bs4 import BeautifulSoup, Tag
 
@@ -31,9 +33,9 @@ class ValorantScraper(Scraper):
             # Only add the match if is from an included tournament, both teams are determined, and the time is determined.
             if tournament_name in self.included_tournaments and "TBD" not in team_names and time != "TBD":
                 match_data = extract_match_data(team_names, time, match_row)
+                match_data["tournament_name"] = tournament_name
 
-                if match_data is not None:
-                    upcoming_matches.append(match_data)
+                upcoming_matches.append(match_data)
 
         return upcoming_matches
 
@@ -60,7 +62,11 @@ def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict
     team_1 = {"name": team_names[0]}
     team_2 = {"name": team_names[1]}
 
-    date = match_row.parent.find_previous_sibling().text.strip()
-    print(date)
+    match_url = f"https://www.vlr.gg{match_row['href']}"
 
-    return {"game": Game.VALORANT, "team_1": team_1, "team_2": team_2}
+    date = match_row.parent.find_previous_sibling().text.strip()
+    date = date.replace("\n", "").replace("\t", "").replace("Today", "").strip()
+    start_datetime = datetime.strptime(f"{date} {time}", "%a, %b %d, %Y %I:%M %p")
+
+    return {"game": Game.VALORANT, "team_1": team_1, "team_2": team_2, "start_datetime": start_datetime,
+            "format": Match.Format.BEST_OF_3, "tier": 1, "url": match_url}
