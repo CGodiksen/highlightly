@@ -1,3 +1,4 @@
+import requests
 from bs4 import BeautifulSoup
 
 from scrapers.models import Match
@@ -10,7 +11,17 @@ class ValorantScraper(Scraper):
 
     @staticmethod
     def list_upcoming_matches() -> list[dict]:
-        pass
+        html = requests.get(url="https://www.vlr.gg/matches").text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Find all match rows.
+        match_rows = soup.findAll("a", class_="match-item")
+
+        # For each match, extract the data necessary to create a tournament, teams, and match objects.
+        for match_row in match_rows:
+            print(match_row.find("div", class_="match-item-vs-team-name").text.strip())
+
+        return []
 
     @staticmethod
     def extract_team_data(match_team_data: dict) -> TeamData:

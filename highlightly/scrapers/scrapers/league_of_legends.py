@@ -9,7 +9,6 @@ from bs4 import BeautifulSoup
 from scrapers.models import Match, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
-from util.file_util import download_file_from_url
 
 
 class LeagueOfLegendsScraper(Scraper):
