@@ -54,7 +54,7 @@ class LeagueOfLegendsScraper(Scraper):
 
         logo_filename = f"{match_team_data['name'].replace(' ', '_')}.png"
         Path("media/teams").mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(match_team_data["imageUrl"], f"media/teams/{logo_filename}")
+        urllib.request.urlretrieve(match_team_data["imageUrlDarkMode"], f"media/teams/{logo_filename}")
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None,
                 "logo_filename": logo_filename}

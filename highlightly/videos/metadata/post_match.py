@@ -85,7 +85,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     save_match_frame(match, frame_filepath)
 
     # Add the frame from the match to the right 3/5 of the thumbnail.
-    match_frame_part = create_match_frame_part(frame_filepath, 360 + 160)
+    match_frame_part = create_match_frame_part(frame_filepath, 360 + 160, match.team_1.game)
     thumbnail.paste(match_frame_part, (360 + 160, 0))
     os.remove(frame_filepath)
 

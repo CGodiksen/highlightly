@@ -103,7 +103,7 @@ def create_video_thumbnail(scheduled_match: Match) -> str:
 
     # Add a temporary match frame for testing how the thumbnail looks before the actual match frame is added later.
     path = get_temporary_match_frame_path(scheduled_match.team_1.game)
-    match_frame_part = create_match_frame_part(path, team_1_part.width + text_part.width)
+    match_frame_part = create_match_frame_part(path, team_1_part.width + text_part.width, scheduled_match.team_1.game)
     thumbnail.paste(match_frame_part, (team_1_part.width + text_part.width, 0))
 
     # Save the thumbnail to a file and return the filename of the saved thumbnail.
@@ -185,6 +185,6 @@ def clamp(x):
 def get_temporary_match_frame_path(game: Game):
     """Return the file path to the temporary match frame for the given game."""
     if game == Game.COUNTER_STRIKE:
-        return "../data/match_frames/counter_strike_match_frame.png"
+        return "media/match_frames/counter_strike_match_frame.png"
     else:
-        return "../data/match_frames/league_of_legends_match_frame.png"
+        return "media/match_frames/league_of_legends_match_frame.png"
