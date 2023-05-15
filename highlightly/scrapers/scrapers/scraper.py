@@ -65,11 +65,11 @@ class Scraper:
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
             team_data = self.extract_team_data(match_team_data)
-            logging.info(f"Extracted data from {team_data['team_url']} to create team for {team_name}.")
+            logging.info(f"Extracted data from {team_data['url']} to create team for {team_name}.")
 
             team = Team.objects.create(game=game, name=team_name, logo_filename=team_data["logo_filename"],
                                        nationality=team_data["nationality"], ranking=team_data["ranking"],
-                                       url=team_data["team_url"])
+                                       url=team_data["url"])
 
         return team
 
