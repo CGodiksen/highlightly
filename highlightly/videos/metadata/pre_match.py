@@ -63,17 +63,22 @@ def create_video_description(scheduled_match: Match) -> str:
 
     tags_part = f"#{scheduled_match.team_1.name.replace(' ', '').lower()} " \
                 f"#{scheduled_match.team_2.name.replace(' ', '').lower()} " \
-                f"#{game.replace(' ', '').replace('-','').lower()}"
+                f"#{game.replace(' ', '').replace('-', '').lower()}"
 
     return f"{match_part}\n{link_part}\n{channel_part}\n{channels_part}\n{tags_part}"
 
 
 def create_video_tags(scheduled_match: Match) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
-    return [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
+    tags = [scheduled_match.team_1.name, scheduled_match.team_2.name, scheduled_match.tournament.name,
             scheduled_match.team_1.get_game_display(), scheduled_match.tournament.location,
             scheduled_match.team_1.nationality, scheduled_match.team_2.nationality,
             scheduled_match.get_format_display()]
+
+    if scheduled_match.team_1.game == Game.COUNTER_STRIKE:
+        tags.extend(["csgo", "global offensive", "blast", "paris major", "csgo major", "csgo paris major", "blast tv"])
+
+    return tags
 
 
 def create_video_thumbnail(scheduled_match: Match) -> str:
