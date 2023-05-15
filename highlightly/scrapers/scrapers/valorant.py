@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 
-from scrapers.models import Tournament, Team, Match
+from scrapers.models import Match
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -15,10 +15,6 @@ class ValorantScraper(Scraper):
     @staticmethod
     def extract_team_data(match_team_data: dict) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
-        pass
-
-    @staticmethod
-    def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         pass
 
     @staticmethod

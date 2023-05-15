@@ -1,12 +1,11 @@
 import json
-import logging
 from datetime import datetime
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 
-from scrapers.models import Tournament, Team, Match, Game
+from scrapers.models import Match, Game
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 from util.file_util import download_file_from_url
@@ -39,6 +38,10 @@ class LeagueOfLegendsScraper(Scraper):
                     match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
                     match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
 
+                    match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
+                    match["url"] = f"https://esports.op.gg/matches/{match['id']}"
+                    match["tier"] = 1
+
                     upcoming_matches.append(match)
 
         return upcoming_matches
@@ -56,10 +59,6 @@ class LeagueOfLegendsScraper(Scraper):
                 "logo_filename": logo_filename}
 
     @staticmethod
-    def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
-        pass
-
-    @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         pass
 
@@ -70,3 +69,13 @@ class LeagueOfLegendsScraper(Scraper):
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
         pass
+
+
+def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
+    """Convert the given number to the corresponding match format."""
+    if number_of_games == 1:
+        return Match.Format.BEST_OF_1
+    elif number_of_games == 3:
+        return Match.Format.BEST_OF_3
+    else:
+        return Match.Format.BEST_OF_5

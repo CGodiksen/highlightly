@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
 from demoparser import DemoParser
 
-from scrapers.models import Match, Tournament, Team, Game, GameVod, GOTVDemo, Player
+from scrapers.models import Match, Team, Game, GameVod, GOTVDemo, Player
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import CounterStrikeMatchData, TeamData
 from util.file_util import download_file_from_url
