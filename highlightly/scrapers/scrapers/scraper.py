@@ -1,6 +1,6 @@
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup
@@ -76,7 +76,17 @@ class Scraper:
     @staticmethod
     def create_scheduled_match(match: dict, tournament: Tournament, team_1: Team, team_2: Team) -> None:
         """Based on the information in the given match, create a Match object."""
-        raise NotImplementedError
+        # Estimate the end datetime based on the start datetime and format.
+        minimum_minutes = convert_format_to_minimum_time(match["format"])
+        estimated_end_datetime = match["start_datetime"] + timedelta(minutes=minimum_minutes)
+
+        # Automatically mark the scheduled match for highlight creation if it is tier 1 or higher.
+        create_video = match["tier"] >= 1
+
+        logging.info(f"Creating scheduled match for {team_1.name} VS. {team_2.name}.")
+        Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
+                             tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
+                             create_video=create_video, estimated_end_datetime=estimated_end_datetime)
 
     def scrape_upcoming_matches(self) -> None:
         """
@@ -188,3 +198,16 @@ def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
 
     return conversion[letter_tier]
+
+
+def convert_format_to_minimum_time(match_format: Match.Format) -> int:
+    """
+    Return the minimum number of minutes required to complete a match with the given format. We assume each game takes
+    at least 30 minutes and that there is at least 5 minutes of break between games.
+    """
+    if match_format == Match.Format.BEST_OF_1:
+        return 1 * 30
+    elif match_format == Match.Format.BEST_OF_3:
+        return (2 * 30) + 5
+    else:
+        return (3 * 30) + 10
