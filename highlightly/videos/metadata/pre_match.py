@@ -30,7 +30,7 @@ def create_video_title(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
     # TODO: Generate an eye catching initial part of the video title based on the context of the match.
     team_part = f"{scheduled_match.team_1.name} vs {scheduled_match.team_2.name}"
-    basic_title = f"{team_part} - HIGHLIGHTS - {scheduled_match.tournament.name} | CSGO"
+    basic_title = f"{team_part} - {scheduled_match.tournament.name} | CSGO HIGHLIGHTS"
 
     return basic_title
 
