@@ -164,7 +164,14 @@ def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | Non
     })
     result = search.get_dict()
 
-    return result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
+    tournament_url: str | None = result["organic_results"][0]["link"] if len(result["organic_results"]) > 0 else None
+
+    # Remove potential end parts of the URL that directs to a subpage of the main tournament page.
+    if tournament_url is not None:
+        tournament_url = tournament_url.removesuffix("/Regular_Season").removesuffix("/Showmatch").removesuffix(
+            "/Statistics").removesuffix("/Additional_Content")
+
+    return tournament_url
 
 
 def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
