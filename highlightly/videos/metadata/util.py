@@ -3,7 +3,6 @@ from PIL import Image
 from scrapers.models import Game
 
 
-# TODO: For league of legends find a better temporary match frame that is more realistic.
 # TODO: For League of Legends and valorant, zoom into the image center way more.
 def create_match_frame_part(match_frame_filepath: str, team_part_width: int, game: Game) -> Image.Image:
     """
