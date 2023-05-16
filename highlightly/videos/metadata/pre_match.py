@@ -61,9 +61,10 @@ def create_video_description(scheduled_match: Match) -> str:
                     "Valorant: https://www.youtube.com/channel/UCR40P8gajrDJcaP3Y5pQVxQ\n" \
                     "League of Legends: https://www.youtube.com/channel/UCH97dRgcN7vvhzpfAZRiUlg\n"
 
+    game_name = game if game != "Counter-Strike" else "csgo"
     tags_part = f"#{scheduled_match.team_1.name.replace(' ', '').lower()} " \
                 f"#{scheduled_match.team_2.name.replace(' ', '').lower()} " \
-                f"#{game.replace(' ', '').replace('-', '').lower()}"
+                f"#{game_name.replace(' ', '').replace('-', '').lower()}"
 
     return f"{match_part}\n{link_part}\n{channel_part}\n{channels_part}\n{tags_part}"
 
