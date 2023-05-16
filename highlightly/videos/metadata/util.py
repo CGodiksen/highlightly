@@ -14,7 +14,7 @@ def create_match_frame_part(match_frame_filepath: str, team_part_width: int, gam
     if game == Game.LEAGUE_OF_LEGENDS:
         match_frame = zoom_at(match_frame, match_frame.width / 2, match_frame.height / 3.5, 1.1)
     elif game == Game.VALORANT:
-        match_frame = zoom_at(match_frame, match_frame.width / 1.70, match_frame.height / 2.5, 1.1)
+        match_frame = zoom_at(match_frame, match_frame.width / 1.72, match_frame.height / 2.35, 1.1)
 
     match_frame.thumbnail(get_game_match_frame_size(game))
 
