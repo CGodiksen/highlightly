@@ -192,5 +192,7 @@ def get_temporary_match_frame_path(game: Game):
     """Return the file path to the temporary match frame for the given game."""
     if game == Game.COUNTER_STRIKE:
         return "media/match_frames/counter_strike_match_frame.png"
-    else:
+    elif game == Game.LEAGUE_OF_LEGENDS:
         return "media/match_frames/league_of_legends_match_frame.png"
+    else:
+        return "media/match_frames/valorant_match_frame.png"
