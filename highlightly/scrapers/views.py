@@ -12,7 +12,7 @@ from rest_framework.serializers import ModelSerializer
 
 from scrapers import serializers
 from scrapers import tasks
-from scrapers.models import Match, Team, Game, Organization
+from scrapers.models import Match, Game, Organization
 from scrapers.serializers import MatchSerializer
 from util.file_util import save_base64_image
 from videos.metadata.post_match import finish_video_thumbnail

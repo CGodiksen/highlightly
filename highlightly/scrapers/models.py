@@ -41,6 +41,9 @@ class Organization(models.Model):
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
     background_color = ColorField(blank=True, null=True)
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class Team(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="teams")

@@ -28,12 +28,12 @@ class OrganizationSerializer(serializers.ModelSerializer):
     teams = TeamSerializer(many=True)
 
     class Meta:
-        model = Team
+        model = Organization
         fields = ["id", "name", "logo", "background_color", "teams"]
 
     @staticmethod
-    def get_logo(team: Team) -> str:
-        return get_base64(f"media/teams/{team.organization.logo_filename}")
+    def get_logo(organization: Organization) -> str:
+        return get_base64(f"media/teams/{organization.logo_filename}")
 
 
 class OrganizationUpdateSerializer(serializers.ModelSerializer):
@@ -43,13 +43,13 @@ class OrganizationUpdateSerializer(serializers.ModelSerializer):
         model = Organization
         fields = ["name", "background_color", "logo_base64"]
 
-    def to_representation(self, team: Team) -> dict:
-        return OrganizationSerializer(team).data
+    def to_representation(self, organization: Organization) -> dict:
+        return OrganizationSerializer(organization).data
 
 
 class MatchSerializer(serializers.ModelSerializer):
-    team_1 = OrganizationSerializer()
-    team_2 = OrganizationSerializer()
+    team_1 = TeamSerializer()
+    team_2 = TeamSerializer()
     tournament = serializers.StringRelatedField()
     video_metadata = serializers.SerializerMethodField()
 

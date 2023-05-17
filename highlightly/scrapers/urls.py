@@ -5,7 +5,7 @@ from scrapers import views
 
 router = routers.SimpleRouter()
 router.register(r"matches", views.MatchViewSet, basename="match")
-router.register(r"teams", views.OrganizationViewSet, basename="team")
+router.register(r"organizations", views.OrganizationViewSet, basename="organization")
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -20,8 +20,9 @@ class Scraper:
     @staticmethod
     def scheduled_match_already_exists(match: dict) -> bool:
         """Return True if a Match object already exists for the given match."""
-        return Match.objects.filter(start_datetime=match["start_datetime"], team_1__name=match["team_1"]["name"],
-                                    team_2__name=match["team_2"]["name"]).exists()
+        return Match.objects.filter(start_datetime=match["start_datetime"],
+                                    team_1__organization__name=match["team_1"]["name"],
+                                    team_2__organization__name=match["team_2"]["name"]).exists()
 
     @staticmethod
     def create_tournament(match: dict) -> Tournament:

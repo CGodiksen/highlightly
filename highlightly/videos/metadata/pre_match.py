@@ -141,7 +141,7 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
 
 def get_logo_background_color(team: Team, logo_filepath: str) -> str:
     """Generate a background color based on the dominant color in the logo."""
-    if team.background_color is None:
+    if team.organization.background_color is None:
         color_thief = ColorThief(logo_filepath)
         dominant_color = color_thief.get_color(quality=1)
         palette = list(set(color_thief.get_palette()))
@@ -157,10 +157,10 @@ def get_logo_background_color(team: Team, logo_filepath: str) -> str:
             (r, g, b) = tuple(channel - 25 for channel in dominant_color)
 
         # Convert RGB to hex and save it on the team model to avoid calculating the background color each time.
-        team.background_color = "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
-        team.save()
+        team.organization.background_color = "#{0:02x}{1:02x}{2:02x}".format(clamp(r), clamp(g), clamp(b))
+        team.organization.save()
 
-    return team.background_color
+    return team.organization.background_color
 
 
 def is_single_colored(palette: list[tuple[int, int, int]]) -> bool:
