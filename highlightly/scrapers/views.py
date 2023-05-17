@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Type, TypeVar
 
-from django.db.models import QuerySet, F
+from django.db.models import QuerySet
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -12,7 +12,7 @@ from rest_framework.serializers import ModelSerializer
 
 from scrapers import serializers
 from scrapers import tasks
-from scrapers.models import Match, Team, Game
+from scrapers.models import Match, Team, Game, Organization
 from scrapers.serializers import MatchSerializer
 from util.file_util import save_base64_image
 from videos.metadata.post_match import finish_video_thumbnail
@@ -80,25 +80,26 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
         return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
 
 
-class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+class OrganizationViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin,
+                          viewsets.GenericViewSet):
     def get_serializer_class(self) -> Type[T]:
         if self.action == "update":
-            return serializers.TeamUpdateSerializer
+            return serializers.OrganizationUpdateSerializer
         else:
-            return serializers.TeamSerializer
+            return serializers.OrganizationSerializer
 
-    def get_queryset(self) -> QuerySet[Team]:
-        return Team.objects.all().order_by(F("ranking").asc(nulls_last=True))
+    def get_queryset(self) -> QuerySet[Organization]:
+        return Organization.objects.all()
 
     def update(self, request: Request, *args, **kwargs) -> Response:
-        instance: Team = self.get_object()
+        instance: Organization = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # If a new logo is provided, replace the old image in local storage.
         if "logo_base64" in serializer.validated_data and serializer.validated_data["logo_base64"]:
-            if instance.organization.logo_filename != "default.png":
-                Path(f"media/teams/{instance.organization.logo_filename}").unlink(missing_ok=True)
+            if instance.logo_filename != "default.png":
+                Path(f"media/teams/{instance.logo_filename}").unlink(missing_ok=True)
 
             new_filename = f"{serializer.validated_data['name'].replace(' ', '_')}.png"
             base64: str = serializer.validated_data["logo_base64"]
