@@ -7,7 +7,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django_celery_beat.models import IntervalSchedule, PeriodicTask, MINUTES
 
-from scrapers.models import Tournament, Team, Match, GOTVDemo, GameVod
+from scrapers.models import Tournament, Match, GOTVDemo, GameVod, Organization
 
 
 @receiver(post_delete, sender=Tournament)
@@ -19,14 +19,12 @@ def delete_tournament_logo(instance: Tournament, **_kwargs) -> None:
         pass
 
 
-@receiver(post_delete, sender=Team)
-def delete_team_logo(instance: Team, **_kwargs) -> None:
+@receiver(post_delete, sender=Organization)
+def delete_organization_logo(instance: Organization, **_kwargs) -> None:
     try:
-        if instance.organization.logo_filename != "default.png":
-            logging.info(f"{instance} deleted. Also deleting the related team logo at "
-                         f"{instance.organization.logo_filename}.")
-
-            os.remove(f"media/teams/{instance.organization.logo_filename}")
+        if instance.logo_filename != "default.png":
+            logging.info(f"{instance} deleted. Also deleting the related team logo at {instance.logo_filename}.")
+            os.remove(f"media/teams/{instance.logo_filename}")
     except OSError:
         pass
 

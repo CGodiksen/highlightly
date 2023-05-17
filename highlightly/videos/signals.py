@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from scrapers.models import Match, Game, Team
+from scrapers.models import Match, Game, Team, Organization
 from videos.editors.counter_strike import CounterStrikeEditor
 from videos.editors.league_of_legends import LeagueOfLegendsEditor
 from videos.editors.valorant import ValorantEditor
@@ -32,11 +32,11 @@ def create_match_video_metadata(instance: Match, created: bool, update_fields: f
             editor.edit_and_upload_video(instance)
 
 
-@receiver(post_save, sender=Team)
-def update_video_metadata(instance: Team, created: bool, **_kwargs) -> None:
+@receiver(post_save, sender=Organization)
+def update_video_metadata(instance: Organization, created: bool, **_kwargs) -> None:
     if not created:
         # For each current match that includes the updated team, update the video metadata for the match by recreating.
-        for match in Match.objects.filter(Q(team_1=instance) | Q(team_2=instance)):
+        for match in Match.objects.filter(Q(team_1__in=instance.teams.all()) | Q(team_2__in=instance.teams.all())):
             if hasattr(match, "videometadata"):
                 match.videometadata.delete()
                 create_pre_match_video_metadata(match)
