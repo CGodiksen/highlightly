@@ -71,6 +71,7 @@ class ValorantScraper(Scraper):
 
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
+        """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
         pass
 
     @staticmethod

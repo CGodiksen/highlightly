@@ -36,20 +36,22 @@ class Tournament(models.Model):
         return f"{self.name} ({self.get_game_display()})"
 
 
-# TODO: Create an organization model and move name, logo filename, and background color to it.
-class Team(models.Model):
-    game = models.CharField(max_length=32, choices=Game.choices)
+class Organization(models.Model):
     name = models.CharField(max_length=128)
-
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
     background_color = ColorField(blank=True, null=True)
 
+
+class Team(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="teams")
+
+    game = models.CharField(max_length=32, choices=Game.choices)
     nationality = models.CharField(max_length=256, blank=True, null=True)
     ranking = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
     url = models.URLField(max_length=128, blank=True, null=True)
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.get_game_display()})"
+        return f"{self.organization.name} ({self.get_game_display()})"
 
 
 # TODO: Handle when a profile picture cannot be found for a player.
