@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup, Tag
 from cairosvg import svg2png
 from demoparser import DemoParser
 
-from scrapers.models import Match, Team, Game, GameVod, GOTVDemo, Player
+from scrapers.models import Match, Team, Game, GameVod, GOTVDemo, Player, Organization
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import CounterStrikeMatchData, TeamData
 from util.file_util import download_file_from_url
@@ -51,7 +51,7 @@ class CounterStrikeScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def extract_team_data(match_team_data: dict) -> TeamData:
+    def extract_team_data(match_team_data: dict, organization: Organization) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
         team_name = match_team_data["name"]
         team_url = f"https://www.hltv.org/team/{match_team_data['id']}/{team_name.replace(' ', '-').lower()}"
@@ -64,10 +64,12 @@ class CounterStrikeScraper(Scraper):
         ranking = soup.find("b", text="World ranking").find_next_sibling().text[1:]
         ranking = int(ranking) if ranking.isdigit() else None
 
-        # Retrieve the team logo if possible.
-        logo_filename = get_team_logo_filename(soup, team_name)
+        # Retrieve the team logo if necessary.
+        if organization.logo_filename is None:
+            organization.logo_filename = get_team_logo_filename(soup, team_name)
+            organization.save()
 
-        return {"url": team_url, "nationality": nationality, "ranking": ranking, "logo_filename": logo_filename}
+        return {"url": team_url, "nationality": nationality, "ranking": ranking}
 
     # TODO: Use https://www.hltv.org/results?content=demo&content=vod to check instead of checking the match page.
     @staticmethod

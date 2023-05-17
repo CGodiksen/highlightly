@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team, Game
+from scrapers.models import Match, Tournament, Team, Game, Organization
 from scrapers.types import TournamentData, TeamData
 
 
@@ -50,7 +50,7 @@ class Scraper:
         return tournament
 
     @staticmethod
-    def extract_team_data(match_team_data: dict) -> TeamData:
+    def extract_team_data(match_team_data: dict, organization: Organization) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
         raise NotImplementedError
 
@@ -60,16 +60,18 @@ class Scraper:
         already exists, the existing object is returned.
         """
         team_name = match_team_data["name"]
-        team = Team.objects.filter(game=game, name=team_name).first()
+        team = Team.objects.filter(game=game, organization__name=team_name).first()
 
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
-            team_data = self.extract_team_data(match_team_data)
+
+            organization, _ = Organization.objects.get_or_create(name=team_name)
+            team_data = self.extract_team_data(match_team_data, organization)
+
             logging.info(f"Extracted data from {team_data['url']} to create team for {team_name}.")
 
-            team = Team.objects.create(game=game, name=team_name, logo_filename=team_data["logo_filename"],
-                                       nationality=team_data["nationality"], ranking=team_data["ranking"],
-                                       url=team_data["url"])
+            team = Team.objects.create(organization=organization, game=game, nationality=team_data["nationality"],
+                                       ranking=team_data["ranking"], url=team_data["url"])
 
         return team
 
@@ -83,7 +85,7 @@ class Scraper:
         # Automatically mark the scheduled match for highlight creation if it is tier 1 or higher.
         create_video = match["tier"] >= 1
 
-        logging.info(f"Creating scheduled match for {team_1.name} VS. {team_2.name}.")
+        logging.info(f"Creating scheduled match for {team_1.organization.name} VS. {team_2.organization.name}.")
         Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                              create_video=create_video, estimated_end_datetime=estimated_end_datetime)

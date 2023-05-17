@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scrapers.models import Match, Game
+from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -42,7 +42,7 @@ class ValorantScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def extract_team_data(match_team_data: dict) -> TeamData:
+    def extract_team_data(match_team_data: dict, organization: Organization) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
         team_name = match_team_data["name"]
 
@@ -63,11 +63,15 @@ class ValorantScraper(Scraper):
         team_logo_img = team_soup.find("div", class_="team-header-logo").find("img")
         team_logo_url = f"https:{team_logo_img['src']}"
 
-        logo_filename = f"{team_name.replace(' ', '_')}.png"
-        Path("media/teams").mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(team_logo_url, f"media/teams/{logo_filename}")
+        if organization.logo_filename is None:
+            logo_filename = f"{team_name.replace(' ', '_')}.png"
+            Path("media/teams").mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(team_logo_url, f"media/teams/{logo_filename}")
 
-        return {"url": team_url, "nationality": nationality, "ranking": ranking, "logo_filename": logo_filename}
+            organization.logo_filename = logo_filename
+            organization.save()
+
+        return {"url": team_url, "nationality": nationality, "ranking": ranking}
 
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:

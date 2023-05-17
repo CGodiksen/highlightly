@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
-from scrapers.models import Match, Game
+from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -47,16 +47,19 @@ class LeagueOfLegendsScraper(Scraper):
         return upcoming_matches
 
     @staticmethod
-    def extract_team_data(match_team_data: dict) -> TeamData:
+    def extract_team_data(match_team_data: dict, organization: Organization) -> TeamData:
         """Parse through the match team data to extract the team data that can be used to create a team object."""
         team_url = f"https://esports.op.gg/teams/{match_team_data['id']}"
 
-        logo_filename = f"{match_team_data['name'].replace(' ', '_')}.png"
-        Path("media/teams").mkdir(parents=True, exist_ok=True)
-        urllib.request.urlretrieve(match_team_data["imageUrlDarkMode"], f"media/teams/{logo_filename}")
+        if organization.logo_filename is None:
+            logo_filename = f"{match_team_data['name'].replace(' ', '_')}.png"
+            Path("media/teams").mkdir(parents=True, exist_ok=True)
+            urllib.request.urlretrieve(match_team_data["imageUrlDarkMode"], f"media/teams/{logo_filename}")
 
-        return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None,
-                "logo_filename": logo_filename}
+            organization.logo_filename = logo_filename
+            organization.save()
+
+        return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
