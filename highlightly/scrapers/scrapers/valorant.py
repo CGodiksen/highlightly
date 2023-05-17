@@ -76,7 +76,12 @@ class ValorantScraper(Scraper):
     @staticmethod
     def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
         """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
-        pass
+        html = requests.get(url=scheduled_match.url).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        status = soup.find("div", class_="match-header-vs-note").text
+
+        return html if status == "final" else None
 
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
