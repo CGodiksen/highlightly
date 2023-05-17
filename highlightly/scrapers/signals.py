@@ -22,9 +22,11 @@ def delete_tournament_logo(instance: Tournament, **_kwargs) -> None:
 @receiver(post_delete, sender=Team)
 def delete_team_logo(instance: Team, **_kwargs) -> None:
     try:
-        if instance.logo_filename != "default.png":
-            logging.info(f"{instance} deleted. Also deleting the related team logo at {instance.logo_filename}.")
-            os.remove(f"media/teams/{instance.logo_filename}")
+        if instance.organization.logo_filename != "default.png":
+            logging.info(f"{instance} deleted. Also deleting the related team logo at "
+                         f"{instance.organization.logo_filename}.")
+
+            os.remove(f"media/teams/{instance.organization.logo_filename}")
     except OSError:
         pass
 

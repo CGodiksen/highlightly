@@ -129,7 +129,7 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
 
         general_data = {"match_info": match_info, "mvp_title": mvp_title,
                         "mvp_profile_picture": mvp_profile_picture, "mvp_name": str(game.mvp),
-                        "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.logo_filename}")}
+                        "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.organization.logo_filename}")}
 
         html = html_file.read().format(**team_1_data, **team_2_data, **general_data)
 
@@ -139,7 +139,7 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
 
 def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
     """Return a dict that can be used to populate the HTML for the post match statistics image."""
-    team_logo_filepath = os.path.abspath(f"media/teams/{team.logo_filename}")
+    team_logo_filepath = os.path.abspath(f"media/teams/{team.organization.logo_filename}")
 
     if team_number == 1:
         result = "winner" if game.team_1_round_count > game.team_2_round_count else "loser"
@@ -147,7 +147,7 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
         result = "winner" if game.team_2_round_count > game.team_1_round_count else "loser"
 
     score = getattr(game, f"team_{team_number}_round_count")
-    team_data = {f"team_{team_number}_name": team.name, f"team_{team_number}_score": score,
+    team_data = {f"team_{team_number}_name": team.organization.name, f"team_{team_number}_score": score,
                  f"team_{team_number}_result": result, f"team_{team_number}_logo": team_logo_filepath}
 
     statistics_filename = getattr(game, f"team_{team_number}_statistics_filename")

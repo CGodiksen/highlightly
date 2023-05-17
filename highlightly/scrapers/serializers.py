@@ -26,7 +26,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_logo(team: Team) -> str:
-        return get_base64(f"media/teams/{team.logo_filename}")
+        return get_base64(f"media/teams/{team.organization.logo_filename}")
 
 
 class TeamUpdateSerializer(serializers.ModelSerializer):

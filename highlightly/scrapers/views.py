@@ -97,8 +97,8 @@ class TeamViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.List
 
         # If a new logo is provided, replace the old image in local storage.
         if "logo_base64" in serializer.validated_data and serializer.validated_data["logo_base64"]:
-            if instance.logo_filename != "default.png":
-                Path(f"media/teams/{instance.logo_filename}").unlink(missing_ok=True)
+            if instance.organization.logo_filename != "default.png":
+                Path(f"media/teams/{instance.organization.logo_filename}").unlink(missing_ok=True)
 
             new_filename = f"{serializer.validated_data['name'].replace(' ', '_')}.png"
             base64: str = serializer.validated_data["logo_base64"]
