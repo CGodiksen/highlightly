@@ -1,3 +1,4 @@
+import subprocess
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -85,7 +86,30 @@ class ValorantScraper(Scraper):
 
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
-        pass
+        """Download a VOD for each game in the match."""
+        # Find the best stream url for the match.
+        stream_divs = html.findAll("div", class_="match-streams-btn")
+        stream_url = stream_divs[0].find("a")["href"]
+
+        valid_stream_languages = ["mod-un", "mod-eu", "mod-us", "mod-au"]
+        banned_streams = ["https://www.twitch.tv/valorant"]
+
+        for stream_div in stream_divs:
+            stream_flag = stream_div.find("i", class_="flag")
+            stream_div_url = stream_div.find("a")["href"]
+
+            # Only allow stream urls from english speaking streams and non-banned streams.
+            if stream_flag["class"][1] in valid_stream_languages and stream_div_url not in banned_streams:
+                stream_url = stream_div_url
+                break
+
+        # Find the latest video from the stream which should be the video with the VOD for each game.
+        list_videos_cmd = f"twitch-dl videos {stream_url.split('/')[-1]}"
+        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+        print(result.stdout)
+
+        # TODO: For each game, download the VOD for the game from the Twitch video.
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
