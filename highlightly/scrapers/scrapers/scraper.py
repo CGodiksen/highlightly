@@ -151,6 +151,7 @@ class Scraper:
             PeriodicTask.objects.filter(name=f"Scrape {match} if finished").delete()
 
             self.download_match_files(match, html)
+            logging.info(f"Extracting per-game and total match statistics for {match}.")
             self.extract_match_statistics(match, html)
 
             logging.info(f"All data required for processing {match} has been scraped.")

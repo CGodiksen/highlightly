@@ -145,22 +145,71 @@ class CounterStrikeScraper(Scraper):
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
 
     @staticmethod
-    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
-        statistics_folder_path = match.create_unique_folder_path("statistics")
+    def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:
+        """Return a statistics table group for each game in the match and for the total statistics."""
+        return html.findAll("div", class_="stats-content")
 
-        # For both teams, find the statistics table.
-        stat_tables = html.findAll("div", class_="stats-content")
+    @staticmethod
+    def get_statistics_tables(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+        """Return the tables in the given table group."""
+        return table_group.findAll("table", class_="table totalstats")
+
+    @staticmethod
+    def get_mvp_url(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+        """Find the MVP of the game and return the URL to the players page."""
+        player_rows = [row for row in table_group.select(".totalstats tr") if "header-row" not in row["class"]]
+        mvp_row = max(player_rows, key=lambda row: float(row.find("td", class_="rating").text))
+        return f"https://www.hltv.org{mvp_row.find('a')['href']}"
+
+    @staticmethod
+    def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
+        """Convert the given HTML table to CSV and save the CSV data to a file."""
+        headers = [th.text.strip() for th in html_table.select("tr.header-row td")]
+
+        with open(filepath, "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+
+            rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in
+                    html_table.select("tr + tr")]
+            writer.writerows(rows)
+
+    @staticmethod
+    def extract_player_data(url: str) -> Player:
+        """Retrieve information about the player from the given URL and create a player object."""
+        logging.info(f"Player in {url} does not already exist. Creating new player.")
+
+        html = requests.get(url=url).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        nationality = soup.find("img", class_="flag", itemprop="nationality")["title"]
+        tag = soup.find("h1", class_="playerNickname", itemprop="alternateName").text.strip()
+        name = soup.find("div", class_="playerRealname", itemprop="name").text.strip()
+
+        team_url = soup.find("div", class_="playerInfoRow playerTeam").find("a", href=True)["href"]
+        team = Team.objects.get(url=f"https://www.hltv.org{team_url}")
+
+        profile_picture_url = soup.find("img", class_="bodyshot-img", src=True)["src"]
+        profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
+        download_file_from_url(profile_picture_url, f"media/players/{profile_picture_filename}")
+
+        return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
+                                     profile_picture_filename=profile_picture_filename)
+
+    def extract_match_statistics(self, match: Match, html: BeautifulSoup) -> None:
+        statistics_folder_path = match.create_unique_folder_path("statistics")
+        table_groups = self.get_statistics_table_groups(html)
 
         # Convert the HTML tables into CSV and save the filename on the relevant object.
         object_to_update = None
-        for count, stat_table in enumerate(stat_tables):
-            html_tables = stat_table.findAll("table", class_="table totalstats")
+        for count, table_group in enumerate(table_groups):
+            html_tables = self.get_statistics_tables(table_group)
 
             for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
                 team_name = team.organization.name.lower().replace(' ', '_')
                 filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
 
-                save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
+                self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
 
                 object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
                 field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
@@ -169,12 +218,10 @@ class CounterStrikeScraper(Scraper):
                 object_to_update.save()
 
             # Find the MVP of the game and, if necessary, extract information about the player.
-            player_rows = [row for row in stat_table.select(".totalstats tr") if "header-row" not in row["class"]]
-            mvp_row = max(player_rows, key=lambda row: float(row.find("td", class_="rating").text))
-            player_url = f"https://www.hltv.org{mvp_row.find('a')['href']}"
+            player_url = self.get_mvp_url(table_group)
 
             if not Player.objects.filter(url=player_url).exists():
-                mvp = extract_player_data(player_url)
+                mvp = self.extract_player_data(player_url)
             else:
                 mvp = Player.objects.get(url=player_url)
 
@@ -315,37 +362,3 @@ def convert_twitch_timestamp_to_timedelta(timestamp: str) -> timedelta:
     seconds = int(re.sub("\D", "", timestamp.split("s")[0][-2:])) if "s" in timestamp else 0
 
     return timedelta(hours=hours, minutes=minutes, seconds=seconds)
-
-
-def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
-    """Convert the given HTML table to CSV and save the CSV data to a file."""
-    headers = [th.text.strip() for th in html_table.select("tr.header-row td")]
-
-    with open(filepath, "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(headers)
-
-        rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in html_table.select("tr + tr")]
-        writer.writerows(rows)
-
-
-def extract_player_data(url: str) -> Player:
-    """Retrieve information about the player from the given URL and create a player object."""
-    logging.info(f"Player in {url} does not already exist. Creating new player.")
-
-    html = requests.get(url=url).text
-    soup = BeautifulSoup(html, "html.parser")
-
-    nationality = soup.find("img", class_="flag", itemprop="nationality")["title"]
-    tag = soup.find("h1", class_="playerNickname", itemprop="alternateName").text.strip()
-    name = soup.find("div", class_="playerRealname", itemprop="name").text.strip()
-
-    team_url = soup.find("div", class_="playerInfoRow playerTeam").find("a", href=True)["href"]
-    team = Team.objects.get(url=f"https://www.hltv.org{team_url}")
-
-    profile_picture_url = soup.find("img", class_="bodyshot-img", src=True)["src"]
-    profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
-    download_file_from_url(profile_picture_url, f"media/players/{profile_picture_filename}")
-
-    return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
-                                 profile_picture_filename=profile_picture_filename)
