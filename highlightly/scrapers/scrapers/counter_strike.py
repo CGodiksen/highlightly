@@ -196,39 +196,6 @@ class CounterStrikeScraper(Scraper):
         return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
                                      profile_picture_filename=profile_picture_filename)
 
-    def extract_match_statistics(self, match: Match, html: BeautifulSoup) -> None:
-        statistics_folder_path = match.create_unique_folder_path("statistics")
-        table_groups = self.get_statistics_table_groups(html)
-
-        # Convert the HTML tables into CSV and save the filename on the relevant object.
-        object_to_update = None
-        for count, table_group in enumerate(table_groups):
-            html_tables = self.get_statistics_tables(table_group)
-
-            for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
-                team_name = team.organization.name.lower().replace(' ', '_')
-                filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
-
-                self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
-
-                object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
-                field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
-
-                setattr(object_to_update, field_to_update, filename)
-                object_to_update.save()
-
-            # Find the MVP of the game and, if necessary, extract information about the player.
-            player_url = self.get_mvp_url(table_group)
-
-            if not Player.objects.filter(url=player_url).exists():
-                mvp = self.extract_player_data(player_url)
-            else:
-                mvp = Player.objects.get(url=player_url)
-
-            if mvp and object_to_update:
-                setattr(object_to_update, "mvp", mvp)
-                object_to_update.save()
-
 
 # TODO: Change this function back when done with testing.
 def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
