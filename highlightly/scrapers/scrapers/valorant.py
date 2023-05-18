@@ -1,8 +1,11 @@
+import json
+import logging
 import subprocess
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
 
@@ -80,9 +83,9 @@ class ValorantScraper(Scraper):
         html = requests.get(url=scheduled_match.url).text
         soup = BeautifulSoup(html, "html.parser")
 
-        status = soup.find("div", class_="match-header-vs-note").text
+        status = soup.find("div", class_="match-header-vs-note").text.strip()
 
-        return html if status == "final" else None
+        return soup if status == "final" else None
 
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
@@ -104,12 +107,25 @@ class ValorantScraper(Scraper):
                 break
 
         # Find the latest video from the stream which should be the video with the VOD for each game.
-        list_videos_cmd = f"twitch-dl videos {stream_url.split('/')[-1]}"
+        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
         result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        video = json.loads(result.stdout.decode())["videos"][0]
 
-        print(result.stdout)
+        # Find the start time of the game in the full VOD.
+        tz = pytz.timezone("Europe/Copenhagen")
+        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
+        vod_match_start_offset = match.start_datetime.replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
 
-        # TODO: For each game, download the VOD for the game from the Twitch video.
+        # TODO: Download the entire Twitch video from the start offset to now.
+        logging.info(f"Downloading VOD for all games of {match} from {video['id']}.")
+
+        game_start = vod_match_start_offset - timedelta(minutes=5)
+        print(game_start)
+
+        # TODO: For each game, create a game vod object.
+        games = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[1:]
+        for game_count, game in enumerate(games):
+            pass
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
