@@ -143,22 +143,37 @@ class ValorantScraper(Scraper):
                                    team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
     @staticmethod
-    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
+    def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:
+        """Return a statistics table group for each game in the match and for the total statistics."""
+        stat_table_buttons = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})
+
+        return [html.find("div", class_="vm-stats-game", attrs={"data-game-id": stat_table_button["data-game-id"]})
+                for stat_table_button in stat_table_buttons]
+
+    @staticmethod
+    def get_statistics_tables(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+        """Return the tables in the given table group."""
+        return table_group.findAll("table", class_="wf-table-inset")
+
+    @staticmethod
+    def get_mvp_url(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+        """Find the MVP of the game and return the URL to the players page."""
+        player_rows = table_group.select("tbody tr")
+        mvp_row = max(player_rows, key=lambda row: float(row.findAll("td")[2].find("span", class_="mod-both").text))
+        return f"https://www.vlr.gg{mvp_row.find('a')['href']}"
+
+    def extract_match_statistics(self, match: Match, html: BeautifulSoup) -> None:
         """
         Extract and save per-game statistics for the entire match. Also determine the MVP based on the statistics
         and extract the players photo.
         """
         statistics_folder_path = match.create_unique_folder_path("statistics")
-        stat_table_buttons = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})
-        stat_tables = [
-            html.find("div", class_="vm-stats-game", attrs={"data-game-id": stat_table_button["data-game-id"]}) for
-            stat_table_button in stat_table_buttons
-        ]
+        table_groups = self.get_statistics_table_groups(html)
 
         # Convert the HTML tables into CSV and save the filename on the relevant object.
         object_to_update = None
-        for count, stat_table in enumerate(stat_tables):
-            html_tables = stat_table.findAll("table", class_="wf-table-inset")
+        for count, table_group in enumerate(table_groups):
+            html_tables = self.get_statistics_tables(table_group)
 
             for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
                 team_name = team.organization.name.lower().replace(' ', '_')
@@ -173,9 +188,7 @@ class ValorantScraper(Scraper):
                 object_to_update.save()
 
             # Find the MVP of the game and, if necessary, extract information about the player.
-            player_rows = stat_table.select("tbody tr")
-            mvp_row = max(player_rows, key=lambda row: float(row.findAll("td")[2].find("span", class_="mod-both").text))
-            player_url = f"https://www.vlr.gg{mvp_row.find('a')['href']}"
+            player_url = self.get_mvp_url(table_group)
 
             if not Player.objects.filter(url=player_url).exists():
                 mvp = extract_player_data(player_url)
