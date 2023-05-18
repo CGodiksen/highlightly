@@ -69,10 +69,6 @@ class LeagueOfLegendsScraper(Scraper):
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
         pass
 
-    @staticmethod
-    def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
-        pass
-
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
     """Convert the given number to the corresponding match format."""

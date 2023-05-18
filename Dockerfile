@@ -23,6 +23,12 @@ COPY requirements.txt ./
 RUN apt-get update && apt-get install -y python3-opencv
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install PaddleOCR for performing optical character recognition.
+RUN pip install --upgrade pip setuptools wheel
+COPY ocr/paddlepaddle-2.4.2-cp310-cp310-manylinux1_x86_64.whl ./
+RUN pip install paddlepaddle-2.4.2-cp310-cp310-manylinux1_x86_64.whl
+RUN pip install "paddleocr>=2.0.1"
+
 # Install twitch-dl to support downloading videos from Twitch.
 ENV PATH="${PATH}:/root/.local/bin"
 RUN pipx install twitch-dl
