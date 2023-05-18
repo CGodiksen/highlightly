@@ -17,3 +17,9 @@ class RoundData(TypedDict):
     team_2_alive: int
     team_1_equipment_value: int
     team_2_equipment_value: int
+
+
+class SecondData(TypedDict):
+    round_time_left: int
+    round_number: int
+    events: list[Event]
