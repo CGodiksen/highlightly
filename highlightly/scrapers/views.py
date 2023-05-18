@@ -89,7 +89,7 @@ class OrganizationViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mix
             return serializers.OrganizationSerializer
 
     def get_queryset(self) -> QuerySet[Organization]:
-        return Organization.objects.all()
+        return Organization.objects.all().order_by("name")
 
     def update(self, request: Request, *args, **kwargs) -> Response:
         instance: Organization = self.get_object()

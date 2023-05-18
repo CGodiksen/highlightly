@@ -9,7 +9,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scrapers.models import Match, Game, Organization
+from scrapers.models import Match, Game, Organization, GameVod
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -116,13 +116,18 @@ class ValorantScraper(Scraper):
         vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
         vod_match_start_offset = match.start_datetime.replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
 
-        # TODO: Download the entire Twitch video from the start offset to now.
+        # Download the entire Twitch video from the start offset to now.
         logging.info(f"Downloading VOD for all games of {match} from {video['id']}.")
 
-        game_start = vod_match_start_offset - timedelta(minutes=5)
-        print(game_start)
+        vod_start = vod_match_start_offset - timedelta(minutes=5)
+        vod_end = datetime.now(tz=tz).replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
 
-        # TODO: For each game, create a game vod object.
+        vods_folder_path = match.create_unique_folder_path("vods")
+        vod_filepath = f"{vods_folder_path}/games.mkv"
+        download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video['id']}"
+        subprocess.run(download_cmd, shell=True)
+
+        # For each game, create a game vod object.
         games = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[1:]
         for game_count, game in enumerate(games):
             pass
