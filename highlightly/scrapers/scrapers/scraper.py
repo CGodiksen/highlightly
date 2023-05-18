@@ -172,7 +172,7 @@ class Scraper:
                 team_name = team.organization.name.lower().replace(' ', '_')
                 filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
 
-                self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
+                self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}", team.organization.name)
 
                 object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
                 field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"

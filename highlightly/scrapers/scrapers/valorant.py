@@ -199,7 +199,8 @@ class ValorantScraper(Scraper):
 
         profile_picture_url = soup.find("div", class_="wf-avatar mod-player").find("img")["src"]
         profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
-        urllib.request.urlretrieve(f"https:{profile_picture_url}", f"media/players/{profile_picture_filename}")
+        full_url = f"https://www.vlr.gg{profile_picture_url}" if "base/ph/sil.png" in profile_picture_url else f"https:{profile_picture_url}"
+        urllib.request.urlretrieve(full_url, f"media/players/{profile_picture_filename}")
 
         return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
                                      profile_picture_filename=profile_picture_filename)
