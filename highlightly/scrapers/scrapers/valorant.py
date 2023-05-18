@@ -10,7 +10,7 @@ import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from scrapers.models import Match, Game, Organization, GameVod
+from scrapers.models import Match, Game, Organization, GameVod, Player, Team
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -172,6 +172,20 @@ class ValorantScraper(Scraper):
                 setattr(object_to_update, field_to_update, filename)
                 object_to_update.save()
 
+            # Find the MVP of the game and, if necessary, extract information about the player.
+            player_rows = stat_table.select("tbody tr")
+            mvp_row = max(player_rows, key=lambda row: float(row.findAll("td")[2].find("span", class_="mod-both").text))
+            player_url = f"https://www.vlr.gg{mvp_row.find('a')['href']}"
+
+            if not Player.objects.filter(url=player_url).exists():
+                mvp = extract_player_data(player_url)
+            else:
+                mvp = Player.objects.get(url=player_url)
+
+            if mvp and object_to_update:
+                setattr(object_to_update, "mvp", mvp)
+                object_to_update.save()
+
 
 def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict:
     """Extract the match data from the tag."""
@@ -205,3 +219,26 @@ def save_html_table_to_csv(html_table: Tag, filepath: str, team_name) -> None:
             del row[1]
 
         writer.writerows(rows)
+
+
+def extract_player_data(url: str) -> Player:
+    """Retrieve information about the player from the given URL and create a player object."""
+    logging.info(f"Player in {url} does not already exist. Creating new player.")
+
+    html = requests.get(url=url).text
+    soup = BeautifulSoup(html, "html.parser")
+
+    nationality = soup.find("i", class_="flag").parent.text.strip()
+    tag = soup.find("h1", class_="wf-title").text.strip()
+    name = soup.find("h2", class_="player-real-name").text.strip()
+
+    current_team = soup.find("h2", text=lambda x: "Current Teams" in x).find_next_sibling()
+    team_url = current_team.find("a", href=True)["href"]
+    team = Team.objects.get(url=f"https://www.vlr.gg{team_url}")
+
+    profile_picture_url = soup.find("div", class_="wf-avatar mod-player").find("img")["src"]
+    profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
+    urllib.request.urlretrieve(f"https:{profile_picture_url}", f"media/players/{profile_picture_filename}")
+
+    return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,
+                                 profile_picture_filename=profile_picture_filename)
