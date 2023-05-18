@@ -130,7 +130,16 @@ class ValorantScraper(Scraper):
         # For each game, create a game vod object.
         games = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[1:]
         for game_count, game in enumerate(games):
-            pass
+            game_stats = html.find("div", class_="vm-stats-game", attrs={"data-game-id": game["data-game-id"]})
+
+            vod_url = f"https://www.twitch.tv/videos/{video['id']}"
+            map = game_stats.find("div", class_="map").find("span").text.replace("PICK", "").strip()
+            round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
+
+            # Persist the location of the files and other needed information about the vods to the database.
+            GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
+                                   host=GameVod.Host.TWITCH, language="english", filename="games.mkv",
+                                   team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
