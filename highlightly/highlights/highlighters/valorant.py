@@ -3,7 +3,6 @@ import subprocess
 from multiprocessing import Pool
 
 import cv2
-from paddleocr import PaddleOCR
 
 from highlights.highlighters.highlighter import Highlighter
 from highlights.types import SecondData
@@ -44,9 +43,10 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     grouped_frames = get_grouped_frames(vod_filepath)
 
     with Pool(len(grouped_frames)) as p:
-        print(p.starmap(save_video_frames, [(vod_filepath, group, folder_path) for group in grouped_frames]))
+        p.starmap(save_video_frames, [(vod_filepath, group, folder_path) for group in grouped_frames])
 
-    cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true --use_mp true"
+    cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
+          f"--use_mp true --show_log false"
     subprocess.run(cmd, shell=True)
 
     return round_timeline
@@ -73,14 +73,15 @@ def get_grouped_frames(vod_filepath: str) -> list[list[int]]:
 
 def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: str) -> None:
     """Parse through the VOD for the frames in the given group and save them to the folder path."""
+    video_capture = cv2.VideoCapture(vod_filepath)
+
     for frame_second in frame_group:
-        video_capture = cv2.VideoCapture(vod_filepath)
         video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * frame_second)
         _res, frame = video_capture.read()
 
         if frame is not None:
             cropped_frame = frame[0:85, 910:1010]
-            cv2.imwrite(f"{folder_path}/{frame_second}.jpg", scale_image(cropped_frame, 250))
+            cv2.imwrite(f"{folder_path}/{frame_second}.png", scale_image(cropped_frame, 250))
 
 
 def scale_image(image: any, scale_percent) -> any:
