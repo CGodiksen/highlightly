@@ -162,7 +162,7 @@ class CounterStrikeScraper(Scraper):
         return f"https://www.hltv.org{mvp_row.find('a')['href']}"
 
     @staticmethod
-    def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
+    def save_html_table_to_csv(html_table: Tag, filepath: str, _team_name: str) -> None:
         """Convert the given HTML table to CSV and save the CSV data to a file."""
         headers = [th.text.strip() for th in html_table.select("tr.header-row td")]
 

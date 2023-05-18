@@ -146,7 +146,7 @@ class Scraper:
         raise NotImplementedError
 
     @staticmethod
-    def save_html_table_to_csv(html_table: Tag, filepath: str) -> None:
+    def save_html_table_to_csv(html_table: Tag, filepath: str, team_name: str) -> None:
         """Convert the given HTML table to CSV and save the CSV data to a file."""
         raise NotImplementedError
 
