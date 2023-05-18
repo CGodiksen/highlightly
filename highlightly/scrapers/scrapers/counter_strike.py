@@ -146,7 +146,6 @@ class CounterStrikeScraper(Scraper):
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
-        logging.info(f"Extracting per-game and total match statistics for {match}.")
         statistics_folder_path = match.create_unique_folder_path("statistics")
 
         # For both teams, find the statistics table.
@@ -158,7 +157,7 @@ class CounterStrikeScraper(Scraper):
             html_tables = stat_table.findAll("table", class_="table totalstats")
 
             for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
-                team_name = team.name.lower().replace(' ', '_')
+                team_name = team.organization.name.lower().replace(' ', '_')
                 filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
 
                 save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}")
@@ -345,7 +344,7 @@ def extract_player_data(url: str) -> Player:
     team = Team.objects.get(url=f"https://www.hltv.org{team_url}")
 
     profile_picture_url = soup.find("img", class_="bodyshot-img", src=True)["src"]
-    profile_picture_filename = f"{team.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
+    profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
     download_file_from_url(profile_picture_url, f"media/players/{profile_picture_filename}")
 
     return Player.objects.create(nationality=nationality, tag=tag, name=name, url=url, team=team,

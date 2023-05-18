@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import subprocess
@@ -160,3 +161,21 @@ def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict
     # TODO: Find the actual format and tier.
     return {"game": Game.VALORANT, "team_1": team_1, "team_2": team_2, "start_datetime": start_datetime,
             "format": Match.Format.BEST_OF_3, "tier": 1, "url": match_url}
+
+
+def save_html_table_to_csv(html_table: Tag, filepath: str, team_name) -> None:
+    """Convert the given HTML table to CSV and save the CSV data to a file."""
+    headers = [th.text.strip() for th in html_table.select("thead th")]
+    headers[0] = team_name
+    del headers[1]
+
+    with open(filepath, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(headers)
+
+        rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in html_table.select("tbody tr")]
+        for row in rows:
+            row[0] = row[0].strip()
+            del row[1]
+
+        writer.writerows(rows)
