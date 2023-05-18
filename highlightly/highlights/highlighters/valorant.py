@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 from multiprocessing import Pool
 
@@ -7,7 +8,7 @@ import cv2
 from highlights.highlighters.highlighter import Highlighter
 from highlights.types import SecondData
 from scrapers.models import GameVod
-from videos.editors.editor import get_video_length
+from videos.editors.editor import get_video_length, get_video_frame_rate
 
 
 class ValorantHighlighter(Highlighter):
@@ -40,14 +41,30 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     round_timeline = {}
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
+
     grouped_frames = get_grouped_frames(vod_filepath)
+    frame_rate = get_video_frame_rate(vod_filepath)
 
+    # Save the frames that should be analyzed to disk.
     with Pool(len(grouped_frames)) as p:
-        p.starmap(save_video_frames, [(vod_filepath, group, folder_path) for group in grouped_frames])
+        p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
 
+    # Perform optical character recognition on the saved frames to find potential text.
     cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
           f"--use_mp true --show_log false"
-    subprocess.run(cmd, shell=True)
+    result: subprocess.CompletedProcess = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+    frame_detections = {}
+
+    # For each analyzed frame, save the detections in the frame.
+    for detection in result.stdout.decode().split(f"**********{folder_path}/"):
+        split_detection = detection.replace("**********", "").split("\n")
+        frame_second: str = split_detection[0].replace('.png', '')
+
+        if frame_second.isdigit():
+            frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
+
+    print(frame_detections)
 
     return round_timeline
 
@@ -71,12 +88,12 @@ def get_grouped_frames(vod_filepath: str) -> list[list[int]]:
     return grouped_frames
 
 
-def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: str) -> None:
+def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: str, frame_rate: float) -> None:
     """Parse through the VOD for the frames in the given group and save them to the folder path."""
     video_capture = cv2.VideoCapture(vod_filepath)
 
     for frame_second in frame_group:
-        video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * frame_second)
+        video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
         _res, frame = video_capture.read()
 
         if frame is not None:
