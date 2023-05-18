@@ -38,31 +38,28 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     round_timeline = {}
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     frame_folder_path = game.match.create_unique_folder_path("frames")
+def get_grouped_frames(vod_filepath: str) -> list[list[int]]:
+    """Find 10-minute groups of frames that need to be extracted from the given vod filepath."""
+    grouped_frames = []
     total_seconds = get_video_length(vod_filepath)
 
     current_second = 0
     second_limit = 0
 
-    # Continue parsing through the VOD in 10 minute increments until the last round is over.
     while second_limit <= total_seconds:
         second_limit += 600
+        grouped_frames.append([])
 
         for i in range(current_second, min(int(total_seconds), second_limit) + 1, 10):
-            # Save the top middle part of the frame in the current second.
-            video_capture = cv2.VideoCapture(vod_filepath)
-            video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * current_second)
-            _res, frame = video_capture.read()
-
-            cropped_frame = frame[0:85, 920:1000]
-
-            frame_filepath = f"{frame_folder_path}/{current_second}.jpg"
-            cv2.imwrite(frame_filepath, cropped_frame)
-
+            grouped_frames[-1].append(current_second)
             current_second += 10
 
-    return round_timeline
+    return grouped_frames
 
 
-def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
-    """Check for kill events for each second in the round timeline and add the new events to the data."""
-    pass
+def scale_image(image: any, scale_percent) -> any:
+    """Scale the given image while keeping the aspect ratio."""
+    width = int(image.shape[1] * scale_percent / 100)
+    height = int(image.shape[0] * scale_percent / 100)
+
+    return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
