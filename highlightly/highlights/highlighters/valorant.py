@@ -1,8 +1,11 @@
 import logging
 
+import cv2
+
 from highlights.highlighters.highlighter import Highlighter
 from highlights.types import SecondData
 from scrapers.models import GameVod
+from videos.editors.editor import get_video_length
 
 
 class ValorantHighlighter(Highlighter):
@@ -33,6 +36,29 @@ class ValorantHighlighter(Highlighter):
 def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     """Parse through the VOD to find the round number, round timer, and spike events for each second of the game."""
     round_timeline = {}
+    vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
+    frame_folder_path = game.match.create_unique_folder_path("frames")
+    total_seconds = get_video_length(vod_filepath)
+
+    current_second = 0
+    second_limit = 0
+
+    # Continue parsing through the VOD in 10 minute increments until the last round is over.
+    while second_limit <= total_seconds:
+        second_limit += 600
+
+        for i in range(current_second, min(int(total_seconds), second_limit) + 1, 10):
+            # Save the top middle part of the frame in the current second.
+            video_capture = cv2.VideoCapture(vod_filepath)
+            video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * current_second)
+            _res, frame = video_capture.read()
+
+            cropped_frame = frame[0:85, 920:1000]
+
+            frame_filepath = f"{frame_folder_path}/{current_second}.jpg"
+            cv2.imwrite(frame_filepath, cropped_frame)
+
+            current_second += 10
 
     return round_timeline
 
