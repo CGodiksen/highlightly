@@ -20,9 +20,12 @@ class Scraper:
     @staticmethod
     def scheduled_match_already_exists(match: dict) -> bool:
         """Return True if a Match object already exists for the given match."""
+        cleaned_team_1_name = match["team_1"]["name"].removeprefix("Team ").removesuffix(" Clan").strip()
+        cleaned_team_2_name = match["team_2"]["name"].removeprefix("Team ").removesuffix(" Clan").strip()
+
         return Match.objects.filter(start_datetime=match["start_datetime"],
-                                    team_1__organization__name=match["team_1"]["name"],
-                                    team_2__organization__name=match["team_2"]["name"]).exists()
+                                    team_1__organization__name__icontains=cleaned_team_1_name,
+                                    team_2__organization__name__icontains=cleaned_team_2_name).exists()
 
     @staticmethod
     def create_tournament(match: dict) -> Tournament:
@@ -60,15 +63,18 @@ class Scraper:
         Based on the information in the given match, create a Team object and return it. If an object for the team
         already exists, the existing object is returned.
         """
-        team_name = match_team_data["name"]
-        team = Team.objects.filter(game=game, organization__name=team_name).first()
+        team_name: str = match_team_data["name"]
+        cleaned_team_name = team_name.removeprefix("Team ").removesuffix(" Clan").strip()
+        team = Team.objects.filter(game=game, organization__name__icontains=cleaned_team_name).first()
 
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
 
-            organization, _ = Organization.objects.get_or_create(name=team_name)
-            team_data = self.extract_team_data(match_team_data, organization)
+            organization = Organization.objects.filter(name__icontains=cleaned_team_name).first()
+            if organization is None:
+                organization = Organization.objects.create(name=team_name)
 
+            team_data = self.extract_team_data(match_team_data, organization)
             logging.info(f"Extracted data from {team_data['url']} to create team for {team_name}.")
 
             team = Team.objects.create(organization=organization, game=game, nationality=team_data["nationality"],
