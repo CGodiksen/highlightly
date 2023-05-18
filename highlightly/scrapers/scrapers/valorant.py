@@ -144,7 +144,33 @@ class ValorantScraper(Scraper):
 
     @staticmethod
     def extract_match_statistics(match: Match, html: BeautifulSoup) -> None:
-        pass
+        """
+        Extract and save per-game statistics for the entire match. Also determine the MVP based on the statistics
+        and extract the players photo.
+        """
+        statistics_folder_path = match.create_unique_folder_path("statistics")
+        stat_table_buttons = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})
+        stat_tables = [
+            html.find("div", class_="vm-stats-game", attrs={"data-game-id": stat_table_button["data-game-id"]}) for
+            stat_table_button in stat_table_buttons
+        ]
+
+        # Convert the HTML tables into CSV and save the filename on the relevant object.
+        object_to_update = None
+        for count, stat_table in enumerate(stat_tables):
+            html_tables = stat_table.findAll("table", class_="wf-table-inset")
+
+            for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
+                team_name = team.organization.name.lower().replace(' ', '_')
+                filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
+
+                save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}", team.organization.name)
+
+                object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
+                field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
+
+                setattr(object_to_update, field_to_update, filename)
+                object_to_update.save()
 
 
 def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict:
