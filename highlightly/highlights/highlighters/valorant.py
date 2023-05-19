@@ -39,7 +39,6 @@ class ValorantHighlighter(Highlighter):
 
 def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     """Parse through the VOD to find the round number, round timer, and spike events for each second of the game."""
-    round_timeline = {}
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
 
@@ -139,6 +138,32 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
 
     return round_timeline
 
+
+def fill_in_round_timeline_gaps(round_timeline: dict[int, SecondData]) -> None:
+    """Fill in the missing seconds and round numbers by using the surrounding text detections."""
+    # If the round number is missing but the surrounding detections are from the same round, set the round number.
+    for frame_second, second_data in round_timeline.items():
+        if "round_number" not in second_data:
+            previous = get_closest_round_number(round_timeline, frame_second, "previous")
+            next = get_closest_round_number(round_timeline, frame_second, "next")
+
+            if previous is not None and next is not None and previous == next:
+                second_data["round_number"] = previous
+
+
+def get_closest_round_number(round_timeline: dict[int, SecondData], frame_second: int, direction: str) -> int | None:
+    """Return the closest round number to the frame second in the given direction."""
+    current_frame_second = frame_second
+    closest_round_number = None
+
+    while 0 < current_frame_second < max(round_timeline.keys()):
+        current_frame_second = current_frame_second - 10 if direction == "previous" else current_frame_second + 10
+        closest_round_number = round_timeline.get(current_frame_second, {}).get("round_number", None)
+
+        if closest_round_number is not None:
+            break
+
+    return closest_round_number
 
 def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
     """Check for kill events for each second in the round timeline and add the new events to the data."""
