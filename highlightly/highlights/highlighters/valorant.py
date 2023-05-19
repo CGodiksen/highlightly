@@ -1,6 +1,7 @@
 import logging
 import re
 import subprocess
+from datetime import timedelta
 from multiprocessing import Pool
 
 import cv2
@@ -64,7 +65,11 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
         if frame_second.isdigit():
             frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
 
-    print(frame_detections)
+    initial_round_timeline = create_initial_round_timeline(frame_detections)
+    print(initial_round_timeline)
+
+    # TODO: Fill in the missing seconds by using the surrounding text detections.
+    # TODO: Find the exact times of the spike being planted, being defused, and exploding.
 
     return round_timeline
 
@@ -107,6 +112,32 @@ def scale_image(image: any, scale_percent) -> any:
     height = int(image.shape[0] * scale_percent / 100)
 
     return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
+
+
+def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, SecondData]:
+    """Use the detections to create the initial round timeline with gaps."""
+    round_timeline = {}
+    round_strings = ["ROUND", "RDUND", "RDUNO", "ROVND", "ROUVND"]
+
+    # Use the detections to create the initial round timeline with gaps.
+    for frame_second, detections in frame_detections.items():
+        second_data = {}
+
+        if len(detections) >= 1 and any(round_string in detections[0] for round_string in round_strings):
+            round_numbers = re.findall(r'\d+', detections[0])
+            if len(round_numbers) >= 1:
+                second_data["round_number"] = int(round_numbers[0])
+
+        if len(detections) == 2 and ":" in detections[1]:
+            split_timer = detections[1].split(":")
+            second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+
+        if len(detections) == 2 and "." in detections[1]:
+            second_data["round_time_left"] = timedelta(seconds=int(float(detections[1]))).seconds
+
+        round_timeline[frame_second] = second_data
+
+    return round_timeline
 
 
 def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
