@@ -46,8 +46,8 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     frame_rate = get_video_frame_rate(vod_filepath)
 
     # Save the frames that should be analyzed to disk.
-    # with Pool(len(grouped_frames)) as p:
-    #     p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
+    with Pool(len(grouped_frames)) as p:
+        p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
 
     # Perform optical character recognition on the saved frames to find potential text.
     cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
@@ -149,18 +149,26 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
 
 def fill_in_round_timeline_gaps(round_timeline: dict[int, SecondData]) -> None:
     """Fill in the missing seconds and round numbers by using the surrounding text detections."""
-    # If the round number is missing but the surrounding detections are from the same round, set the round number.
     for frame_second, second_data in round_timeline.items():
         if "round_number" not in second_data:
-            previous = get_closest_frame_with_round_number(round_timeline, frame_second, "previous")
-            next = get_closest_frame_with_round_number(round_timeline, frame_second, "next")
+            previous_second, previous = get_closest_frame_with_round_number(round_timeline, frame_second, "previous")
+            next_second, next = get_closest_frame_with_round_number(round_timeline, frame_second, "next")
 
+            # If the surrounding detections are from the same round, set the round number.
             if previous is not None and next is not None and previous["round_number"] == next["round_number"]:
                 second_data["round_number"] = previous["round_number"]
+            else:
+                # If the difference in the time left in the round matches the difference in the frame seconds, set the round number.
+                if previous is not None and "round_time_left" in second_data and "round_time_left" in previous:
+                    if (frame_second - previous_second) == (previous["round_time_left"] - second_data["round_time_left"]):
+                        second_data["round_number"] = previous["round_number"]
+                elif next is not None and "round_time_left" in second_data and "round_time_left" in next:
+                    if (next_second - frame_second) == (second_data["round_time_left"] - next["round_time_left"]):
+                        second_data["round_number"] = next["round_number"]
 
 
 def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], frame_second: int,
-                                        direction: str) -> SecondData | None:
+                                        direction: str) -> tuple[int, SecondData] | tuple[None, None]:
     """Return the closest frame with a round number to the given frame in the given direction."""
     current_frame_second = frame_second
 
@@ -169,9 +177,9 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
         closest_frame = round_timeline.get(current_frame_second, {})
 
         if "round_number" in closest_frame:
-            return closest_frame
+            return current_frame_second, closest_frame
 
-    return None
+    return None, None
 
 
 def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
