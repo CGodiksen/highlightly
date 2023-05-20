@@ -65,6 +65,9 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
 
     round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(round_timeline)
+    rounds = split_timeline_into_rounds(round_timeline, game.team_1_round_count + game.team_2_round_count)
+
+    print(rounds)
 
     # TODO: Find the exact times of the spike being planted, being defused, and exploding.
 
@@ -193,6 +196,38 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
             return current_frame_second, closest_frame
 
     return None, None
+
+# TODO: Find the start time and estimated end time of each round.
+# TODO: Find the seconds that need to be checked for the spike being planted, exploding/defused, or round ending due to last player being killed.
+# TODO: Find the seconds that need to be checked for kill events.
+# TODO: Check the seconds for the events and add each event to the round.
+
+# TODO: Group the events within each round and create highlights.
+# TODO: For each group of events, get the value of the group.
+# TODO: Create a highlight object for each group of events.
+def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_count: int) -> dict:
+    """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
+    rounds = {}
+    current_round = 1
+    current_round_timeline = []
+    sorted_timeline = dict(sorted(round_timeline.items()))
+
+    for second, second_data in sorted_timeline.items():
+        if "round_number" in second_data:
+            data = {"second": second, "round_time_left": second_data.get("round_time_left", None)}
+
+            if second_data["round_number"] == current_round:
+                current_round_timeline.append(data)
+            elif second_data["round_number"] == current_round + 1:
+                rounds[current_round] = current_round_timeline
+                current_round += 1
+                current_round_timeline = []
+            elif second_data["round_number"] == 1:
+                # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
+                rounds[current_round] = current_round_timeline
+                break
+
+    return rounds
 
 
 def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
