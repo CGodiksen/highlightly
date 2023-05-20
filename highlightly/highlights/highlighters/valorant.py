@@ -52,12 +52,10 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     # Perform optical character recognition on the saved frames to find potential text.
     cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
           f"--use_mp true --show_log false"
-    result: subprocess.CompletedProcess = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                                         shell=True)
-
-    frame_detections = {}
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
     # For each analyzed frame, save the detections in the frame.
+    frame_detections = {}
     for detection in result.stdout.decode().split(f"**********{folder_path}/"):
         split_detection = detection.replace("**********", "").split("\n")
         frame_second: str = split_detection[0].replace('.png', '')
@@ -66,15 +64,7 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
             frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
 
     round_timeline = create_initial_round_timeline(frame_detections)
-
-    print(len([key for key, value in round_timeline.items() if "round_number" in value]))
-
     fill_in_round_timeline_gaps(round_timeline)
-
-    print(len([key for key, value in round_timeline.items() if "round_number" in value]))
-    print([key for key, value in round_timeline.items() if "round_time_left" in value and "round_number" not in value])
-
-    print(round_timeline)
 
     # TODO: Find the exact times of the spike being planted, being defused, and exploding.
 
@@ -160,12 +150,12 @@ def handle_round_detection_errors(most_recent_number: int, round: str, round_num
         round_numbers = [7]
     elif most_recent_number == 8 and (round == "ROUND" or round == "ROVNOB" or round == "ROUNDB" or round == "ROUNOB"):
         round_numbers = [8]
-    elif most_recent_number == 20 and (round == "ROUND Z0" or round == "ROUND 10"):
-        round_numbers = [20]
-    elif most_recent_number == 21 and (round == "ROUND Z1" or round == "ROUND 11"):
-        round_numbers = [21]
-    elif most_recent_number == 22 and (round == "ROUND Z2" or round == "ROUND 2Z" or round == "ROUND 12"):
-        round_numbers = [22]
+
+    for i in range(0, 10):
+        if most_recent_number == i + 20 and (round == f"ROUND Z{i}" or round == f"ROUND 1{i}"):
+            round_numbers = [i + 20]
+        elif most_recent_number == 22 and (round == "ROUND 2Z"):
+            round_numbers = [22]
 
     return round_numbers
 
