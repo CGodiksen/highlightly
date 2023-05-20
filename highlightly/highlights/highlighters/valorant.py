@@ -197,6 +197,7 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
 
     return None, None
 
+
 # TODO: Find the start time and estimated end time of each round.
 # TODO: Find the seconds that need to be checked for the spike being planted, exploding/defused, or round ending due to last player being killed.
 # TODO: Find the seconds that need to be checked for kill events.
@@ -205,13 +206,14 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
 # TODO: Group the events within each round and create highlights.
 # TODO: For each group of events, get the value of the group.
 # TODO: Create a highlight object for each group of events.
-def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_count: int) -> dict:
+def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
     rounds = {}
     current_round = 1
     current_round_timeline = []
     sorted_timeline = dict(sorted(round_timeline.items()))
 
+    # Split the timeline into rounds.
     for second, second_data in sorted_timeline.items():
         if "round_number" in second_data:
             data = {"second": second, "round_time_left": second_data.get("round_time_left", None)}
@@ -226,6 +228,15 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
                 # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
                 rounds[current_round] = current_round_timeline
                 break
+
+    # Find the starting point and estimated end point of each round.
+    for round, timeline in rounds.items():
+        print(round)
+        print(timeline)
+        first_live_frame = [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
+        start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
+        print(start_time)
+        print()
 
     return rounds
 
