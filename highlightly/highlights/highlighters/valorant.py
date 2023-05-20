@@ -237,7 +237,6 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
                 rounds[current_round] = current_round_timeline
                 break
 
-    # TODO: Fix issue with 45 second pause in half time.
     # Find the starting point and estimated end point of each round.
     for count, (round, timeline) in enumerate(rounds.items()):
         first_live_frame = get_first_frame_in_round(timeline)
@@ -249,7 +248,9 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
         else:
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
-            estimated_end_time = next_first_live_frame["second"] - (130 - next_first_live_frame["round_time_left"])
+
+            length = 145 if count + 1 == 12 else 130
+            estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
         print(round)
         print(timeline)
