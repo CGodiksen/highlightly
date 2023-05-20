@@ -124,15 +124,33 @@ def scale_image(image: any, scale_percent) -> any:
 def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, SecondData]:
     """Use the detections to create the initial round timeline with gaps."""
     round_timeline = {}
-    round_strings = ["ROUND", "RDUND", "RDUNO", "ROVND", "ROUVND"]
+    round_strings = ["ROUND", "RDUND", "RDUNO", "ROVND", "ROUVND", "ROVNO", "ROUNO"]
+    most_recent_number = None
 
     # Use the detections to create the initial round timeline with gaps.
     for frame_second, detections in frame_detections.items():
         second_data = {}
 
         if len(detections) >= 1 and any(round_string in detections[0] for round_string in round_strings):
-            round_numbers = re.findall(r'\d+', detections[0])
+            round = detections[0]
+            round_numbers = re.findall(r'\d+', round)
+
+            # Handle common issues with missing number in round number detections.
+            if most_recent_number == 1 and (round == "ROUND" or round == "ROUNDT" or round == "ROUND T" or round == "ROUNDE"):
+                round_numbers = [1]
+            elif most_recent_number == 7 and (round == "ROUNDT" or round == "ROUND T"):
+                round_numbers = [7]
+            elif most_recent_number == 8 and (round == "ROUND" or round == "ROVNOB" or round == "ROUNDB" or round == "ROUNOB"):
+                round_numbers = [8]
+            elif most_recent_number == 20 and (round == "ROUND Z0" or round == "ROUND 10"):
+                round_numbers = [20]
+            elif most_recent_number == 21 and (round == "ROUND Z1" or round == "ROUND 11"):
+                round_numbers = [21]
+            elif most_recent_number == 22 and (round == "ROUND Z2" or round == "ROUND 2Z" or round == "ROUND 12"):
+                round_numbers = [22]
+
             if len(round_numbers) >= 1:
+                most_recent_number = int(round_numbers[0])
                 second_data["round_number"] = int(round_numbers[0])
 
         if len(detections) == 2 and ":" in detections[1]:
