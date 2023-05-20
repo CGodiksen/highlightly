@@ -134,20 +134,7 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
         if len(detections) >= 1 and any(round_string in detections[0] for round_string in round_strings):
             round = detections[0]
             round_numbers = re.findall(r'\d+', round)
-
-            # Handle common issues with missing number in round number detections.
-            if most_recent_number == 1 and (round == "ROUND" or round == "ROUNDT" or round == "ROUND T" or round == "ROUNDE"):
-                round_numbers = [1]
-            elif most_recent_number == 7 and (round == "ROUNDT" or round == "ROUND T"):
-                round_numbers = [7]
-            elif most_recent_number == 8 and (round == "ROUND" or round == "ROVNOB" or round == "ROUNDB" or round == "ROUNOB"):
-                round_numbers = [8]
-            elif most_recent_number == 20 and (round == "ROUND Z0" or round == "ROUND 10"):
-                round_numbers = [20]
-            elif most_recent_number == 21 and (round == "ROUND Z1" or round == "ROUND 11"):
-                round_numbers = [21]
-            elif most_recent_number == 22 and (round == "ROUND Z2" or round == "ROUND 2Z" or round == "ROUND 12"):
-                round_numbers = [22]
+            round_numbers = handle_round_detection_errors(most_recent_number, round, round_numbers)
 
             if len(round_numbers) >= 1:
                 most_recent_number = int(round_numbers[0])
@@ -163,6 +150,24 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
         round_timeline[frame_second] = second_data
 
     return round_timeline
+
+
+def handle_round_detection_errors(most_recent_number: int, round: str, round_numbers: list[int]) -> list[int]:
+    """Handle common issues with missing number in round number detection."""
+    if most_recent_number == 1 and (round == "ROUND" or round == "ROUNDT" or round == "ROUND T" or round == "ROUNDE"):
+        round_numbers = [1]
+    elif most_recent_number == 7 and (round == "ROUNDT" or round == "ROUND T"):
+        round_numbers = [7]
+    elif most_recent_number == 8 and (round == "ROUND" or round == "ROVNOB" or round == "ROUNDB" or round == "ROUNOB"):
+        round_numbers = [8]
+    elif most_recent_number == 20 and (round == "ROUND Z0" or round == "ROUND 10"):
+        round_numbers = [20]
+    elif most_recent_number == 21 and (round == "ROUND Z1" or round == "ROUND 11"):
+        round_numbers = [21]
+    elif most_recent_number == 22 and (round == "ROUND Z2" or round == "ROUND 2Z" or round == "ROUND 12"):
+        round_numbers = [22]
+
+    return round_numbers
 
 
 def fill_in_round_timeline_gaps(round_timeline: dict[int, SecondData]) -> None:
