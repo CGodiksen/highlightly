@@ -1,6 +1,7 @@
 import logging
 import re
 import subprocess
+from collections import OrderedDict
 from datetime import timedelta
 from multiprocessing import Pool
 
@@ -65,9 +66,7 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
 
     round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(round_timeline)
-    rounds = split_timeline_into_rounds(round_timeline, game.team_1_round_count + game.team_2_round_count)
-
-    print(rounds)
+    rounds = split_timeline_into_rounds(round_timeline)
 
     # TODO: Find the exact times of the spike being planted, being defused, and exploding.
 
@@ -208,7 +207,7 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
 # TODO: Create a highlight object for each group of events.
 def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
-    rounds = {}
+    rounds = OrderedDict()
     current_round = 1
     current_round_timeline = []
     sorted_timeline = dict(sorted(round_timeline.items()))
@@ -230,15 +229,30 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
                 break
 
     # Find the starting point and estimated end point of each round.
-    for round, timeline in rounds.items():
+    for count, (round, timeline) in enumerate(rounds.items()):
+        first_live_frame = get_first_frame_in_round(timeline)
+        start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
+
+        # We can only estimate the end time since there could be pauses between rounds.
+        if count + 1 == len(rounds.keys()):
+            estimated_end_time = timeline[-1]["second"] + 30
+        else:
+            next_round_timeline = list(rounds.values())[count + 1]
+            next_first_live_frame = get_first_frame_in_round(next_round_timeline)
+            estimated_end_time = next_first_live_frame["second"] - (130 - next_first_live_frame["round_time_left"])
+
         print(round)
         print(timeline)
-        first_live_frame = [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
-        start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
         print(start_time)
+        print(estimated_end_time)
         print()
 
     return rounds
+
+
+def get_first_frame_in_round(timeline: list[dict]) -> dict:
+    """Get the first live frame in the given timeline."""
+    return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
 
 
 def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
