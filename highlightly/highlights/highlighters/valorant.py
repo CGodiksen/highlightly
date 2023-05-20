@@ -52,7 +52,7 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
 
     # Perform optical character recognition on the saved frames to find potential text.
     cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
-          f"--use_mp true --show_log false"
+          f"--use_mp true --show_log false --use_dilation true"
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
     # For each analyzed frame, save the detections in the frame.
@@ -101,8 +101,8 @@ def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: st
         _res, frame = video_capture.read()
 
         if frame is not None:
-            cropped_frame = frame[0:85, 910:1010]
-            cv2.imwrite(f"{folder_path}/{frame_second}.png", scale_image(cropped_frame, 250))
+            cropped_frame = frame[0:70, 910:1010]
+            cv2.imwrite(f"{folder_path}/{frame_second}.png", scale_image(cropped_frame, 300))
 
 
 def scale_image(image: any, scale_percent) -> any:
