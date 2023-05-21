@@ -16,29 +16,30 @@ from videos.editors.editor import get_video_length, get_video_frame_rate
 class ValorantHighlighter(Highlighter):
     """Highlighter that uses PaddleOCR to extract highlights from Valorant matches."""
 
-    def extract_events(self, game: GameVod) -> dict[int, SecondData]:
+    def extract_events(self, game: GameVod) -> list[dict]:
         """Parse through the match to find all significant events that could be included in a highlight."""
-        logging.info(f"Extracting round timeline and spike events from VOD at {game.filename}.")
-        round_timeline = extract_round_timeline(game)
+        logging.info(f"Extracting round timeline from VOD at {game.filename} for {game}.")
+        rounds = extract_round_timeline(game)
+
+        # TODO: Check the seconds for spike events and add each found event to the round.
+        logging.info(f"Finding spike events for {game}.")
+
+        # TODO: Check the seconds for kill events and add each found event to the round.
+        logging.info(f"Finding kill events for {game}.")
 
         # TODO: If not the last game, remove the part of the VOD related to this game so it is not included in the next.
 
-        # TODO: Run through the VOD within the rounds and find all kill events.
-        logging.info(f"Extracting kill events from VOD at {game.filename}.")
-        add_kill_events(game, round_timeline)
-
-        return round_timeline
+        return rounds
 
     def combine_events(self, game: GameVod, events: dict[int, SecondData]) -> None:
         """Combine multiple events happening in close succession together to create highlights."""
-        # TODO: Group the events in the data into rounds.
         # TODO: Group the events within each round and create highlights.
         # TODO: For each group of events, get the value of the group.
         # TODO: Create a highlight object for each group of events.
         pass
 
 
-def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
+def extract_round_timeline(game: GameVod) -> list[dict]:
     """Parse through the VOD to find the round number, round timer, and spike events for each second of the game."""
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
@@ -68,9 +69,7 @@ def extract_round_timeline(game: GameVod) -> dict[int, SecondData]:
     fill_in_round_timeline_gaps(round_timeline)
     rounds = split_timeline_into_rounds(round_timeline)
 
-    # TODO: Find the exact times of the spike being planted, being defused, and exploding.
-
-    return round_timeline
+    return rounds
 
 
 def get_grouped_frames(vod_filepath: str) -> list[list[int]]:
@@ -207,11 +206,6 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
     return None, None
 
 
-# TODO: Check the seconds for the events and add each event to the round.
-
-# TODO: Group the events within each round and create highlights.
-# TODO: For each group of events, get the value of the group.
-# TODO: Create a highlight object for each group of events.
 def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
     rounds = OrderedDict()
@@ -267,8 +261,6 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
 
             spike_planted_end = spike_planted_frames[-1]["second"]
             frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
-            print(frames_to_check_for_spike_planted)
-            print(frames_to_check_for_spike_stopped)
 
         # Find the frames that should be checked for kills.
         frames_to_check_for_kills = list(range(start_time + 1, estimated_end_time))
@@ -283,8 +275,3 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
 def get_first_frame_in_round(timeline: list[dict]) -> dict:
     """Get the first live frame in the given timeline."""
     return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
-
-
-def add_kill_events(game: GameVod, round_timeline: dict[int, SecondData]) -> None:
-    """Check for kill events for each second in the round timeline and add the new events to the data."""
-    pass
