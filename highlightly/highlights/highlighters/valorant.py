@@ -20,6 +20,7 @@ class ValorantHighlighter(Highlighter):
         """Parse through the match to find all significant events that could be included in a highlight."""
         logging.info(f"Extracting round timeline from VOD at {game.filename} for {game}.")
         rounds = extract_round_timeline(game)
+        add_frames_to_check(rounds)
 
         # TODO: Check the seconds for spike events and add each found event to the round.
         logging.info(f"Finding spike events for {game}.")
@@ -39,8 +40,8 @@ class ValorantHighlighter(Highlighter):
         pass
 
 
-def extract_round_timeline(game: GameVod) -> list[dict]:
-    """Parse through the VOD to find the round number, round timer, and spike events for each second of the game."""
+def extract_round_timeline(game: GameVod) -> dict:
+    """Parse through the VOD to find each round in the game."""
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
 
@@ -244,8 +245,21 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
             length = 145 if count + 1 == 12 else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
+        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline}
+
+    return rounds
+
+
+def get_first_frame_in_round(timeline: list[dict]) -> dict:
+    """Get the first live frame in the given timeline."""
+    return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
+
+
+def add_frames_to_check(rounds: dict) -> None:
+    """Add the frames that should be checked for spike events and kills events to each round."""
+    for round, round_data in rounds.items():
         # Find the frames where the spike is planted.
-        timeline_without_leading_none = timeline
+        timeline_without_leading_none = round_data["timeline"]
         while timeline_without_leading_none[0]["round_time_left"] is None:
             del timeline_without_leading_none[0]
 
@@ -263,15 +277,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
             frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
 
         # Find the frames that should be checked for kills.
-        frames_to_check_for_kills = list(range(start_time + 1, estimated_end_time))
-        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time,
-                         "frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
-                         "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
-                         "frames_to_check_for_kills": frames_to_check_for_kills, "timeline": timeline}
+        frames_to_check_for_kills = list(range(round_data["start_time"] + 1, round_data["estimated_end_time"]))
 
-    return rounds
-
-
-def get_first_frame_in_round(timeline: list[dict]) -> dict:
-    """Get the first live frame in the given timeline."""
-    return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
+        round_data.update({"frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
+                           "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
+                           "frames_to_check_for_kills": frames_to_check_for_kills})
