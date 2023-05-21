@@ -1,8 +1,9 @@
 import logging
 import re
 import subprocess
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from datetime import timedelta
+from difflib import SequenceMatcher
 from multiprocessing import Pool
 
 import cv2
@@ -316,7 +317,7 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
     """Check the seconds for kill events and add each found event to the round."""
     # Extract the kill feed for each frame to check.
     for round, data in rounds.items():
-        for frame_second in data["frames_to_check_for_kills"]:
+        for frame_second in data["frames_to_check_for_kills"][::2]:
             file_path = f"{folder_path}/{frame_second}.png"
 
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
@@ -325,6 +326,29 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
             if frame is not None:
                 cropped_frame = frame[75:350, 1340:1840]
                 cv2.imwrite(file_path, scale_image(cropped_frame, 200))
+
+    frame_detections = optical_character_recognition(folder_path)
+    print(frame_detections)
+
+    # Use the text detections to create kill events.
+    events = defaultdict(list)
+    for frame_second, detections in frame_detections.items():
+        detections = [det for det in detections if len(det) > 3]
+        recent_kills = events.get(frame_second - 2, []) + events.get(frame_second - 4, [])
+        recent_kills = [kill["info"] for kill in recent_kills]
+
+        # Group the detections into kills and add an event for each new kill.
+        if len(detections) >= 2 and len(detections) % 2 == 0:
+            kills = zip(*(iter(detections),) * 2)
+
+            for kill in kills:
+                kill_info = f"{kill[0]} - {kill[1]}"
+
+                if all([SequenceMatcher(a=k, b=kill_info).ratio() < 0.85 for k in recent_kills]):
+                    event = {"name": "player_death", "time": frame_second, "info": kill_info}
+                    events[frame_second].append(event)
+
+    print(events)
 
 
 def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str):
@@ -337,7 +361,7 @@ def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, 
         cv2.imwrite(file_path, scale_image(cropped_frame, 300))
 
 
-def optical_character_recognition(path: str) -> str:
+def optical_character_recognition(path: str) -> dict:
     """Perform optical character recognition on the given image/images using PaddleOCR."""
     cmd = f"paddleocr --image_dir {path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
           f"--use_mp true --show_log false --use_dilation true"
