@@ -58,8 +58,6 @@ def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) 
     # Save the frames that should be analyzed to disk.
     with Pool(len(grouped_frames)) as p:
         p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
-    # with Pool(len(grouped_frames)) as p:
-    #     p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
 
     # Perform optical character recognition on the saved frames to find potential text.
     frame_detections = optical_character_recognition(folder_path)
@@ -302,11 +300,11 @@ def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, 
             if count + 1 == len(frames_to_check_for_planted):
                 data["events"].append({"name": "spike_planted", "time": frames_to_check_for_planted[-1] + 1})
 
-        # TODO: Fix problem with the timer not being shown immediately after the spike is stopped.
         # Add a spike stopped event on the exact second the timer is visible again.
         frames_to_check_for_stopped = data["frames_to_check_for_spike_stopped"]
         for count, frame_second in enumerate(frames_to_check_for_stopped):
-            if "round_time_left" in spike_round_timeline[frame_second]:
+            frame = spike_round_timeline[frame_second]
+            if "round_time_left" in frame or "round_number" not in frame:
                 data["events"].append({"name": "spike_stopped", "time": frame_second})
                 break
 
