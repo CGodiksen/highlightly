@@ -228,7 +228,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
 
         # We can only estimate the end time since there could be pauses between rounds.
         if count + 1 == len(rounds.keys()):
-            estimated_end_time = timeline[-1]["second"] + 30
+            estimated_end_time = timeline[-1]["second"] + 15
         else:
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
@@ -314,7 +314,17 @@ def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, 
 
 def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for kill events and add each found event to the round."""
-    pass
+    # Extract the kill feed for each frame to check.
+    for round, data in rounds.items():
+        for frame_second in data["frames_to_check_for_kills"]:
+            file_path = f"{folder_path}/{frame_second}.png"
+
+            video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
+            _res, frame = video_capture.read()
+
+            if frame is not None:
+                cropped_frame = frame[75:350, 1340:1840]
+                cv2.imwrite(file_path, scale_image(cropped_frame, 200))
 
 
 def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str):
