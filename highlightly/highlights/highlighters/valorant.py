@@ -22,11 +22,10 @@ class ValorantHighlighter(Highlighter):
         rounds = extract_round_timeline(game)
         add_frames_to_check(rounds)
 
-        # TODO: Check the seconds for spike events and add each found event to the round.
-        logging.info(f"Finding spike events for {game}.")
-
-        # TODO: Check the seconds for kill events and add each found event to the round.
-        logging.info(f"Finding kill events for {game}.")
+        logging.info(f"Finding spike and kill events for {game}.")
+        for round, round_data in rounds.items():
+            add_spike_events(round)
+            add_kill_events(round)
 
         # TODO: If not the last game, remove the part of the VOD related to this game so it is not included in the next.
 
@@ -40,7 +39,7 @@ class ValorantHighlighter(Highlighter):
         pass
 
 
-def extract_round_timeline(game: GameVod) -> dict:
+def extract_round_timeline(game: GameVod) -> dict[int, dict]:
     """Parse through the VOD to find each round in the game."""
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
@@ -207,7 +206,7 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
     return None, None
 
 
-def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
+def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[int, dict]:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
     rounds = OrderedDict()
     current_round = 1
@@ -282,3 +281,13 @@ def add_frames_to_check(rounds: dict) -> None:
         round_data.update({"frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
                            "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
                            "frames_to_check_for_kills": frames_to_check_for_kills})
+
+
+def add_spike_events(round: dict) -> None:
+    """Check the seconds for spike events and add each found event to the round."""
+    pass
+
+
+def add_kill_events(round: dict) -> None:
+    """Check the seconds for kill events and add each found event to the round."""
+    pass
