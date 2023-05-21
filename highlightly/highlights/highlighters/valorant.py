@@ -207,8 +207,6 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
     return None, None
 
 
-# TODO: Find the seconds that need to be checked for the spike being planted, exploding/defused, or round ending due to last player being killed.
-# TODO: Find the seconds that need to be checked for kill events.
 # TODO: Check the seconds for the events and add each event to the round.
 
 # TODO: Group the events within each round and create highlights.
@@ -259,12 +257,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
 
         spike_planted_frames = [frame for frame in timeline_without_leading_none if frame["round_time_left"] is None]
 
-        print(round)
-        print(timeline)
-        print(start_time)
-        print(estimated_end_time)
-        print(spike_planted_frames)
-        print()
+        frames_to_check_for_spike_planted = []
+        frames_to_check_for_spike_stopped = []
 
         # Find the frames that should be checked for the spike being planted and being defused/exploding/stopping.
         if len(spike_planted_frames) > 0:
@@ -275,6 +269,13 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
             frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
             print(frames_to_check_for_spike_planted)
             print(frames_to_check_for_spike_stopped)
+
+        # Find the frames that should be checked for kills.
+        frames_to_check_for_kills = list(range(start_time + 1, estimated_end_time))
+        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time,
+                         "frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
+                         "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
+                         "frames_to_check_for_kills": frames_to_check_for_kills, "timeline": timeline}
 
     return rounds
 
