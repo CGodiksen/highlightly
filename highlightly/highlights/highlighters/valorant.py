@@ -328,7 +328,6 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
                 cv2.imwrite(file_path, scale_image(cropped_frame, 200))
 
     frame_detections = optical_character_recognition(folder_path)
-    print(frame_detections)
 
     # Use the text detections to create kill events.
     events = defaultdict(list)
@@ -348,7 +347,12 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
                     event = {"name": "player_death", "time": frame_second, "info": kill_info}
                     events[frame_second].append(event)
 
-    print(events)
+    # Add the kill events to the correct rounds in the round data.
+    for frame_second, frame_events in events.items():
+        corresponding_round = next(round_data for round, round_data in rounds.items() if
+                                   round_data["start_time"] <= frame_second <= round_data["estimated_end_time"])
+
+        corresponding_round["events"].extend(frame_events)
 
 
 def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str):
