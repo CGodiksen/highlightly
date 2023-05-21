@@ -54,18 +54,7 @@ def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) 
         p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
 
     # Perform optical character recognition on the saved frames to find potential text.
-    cmd = f"paddleocr --image_dir {folder_path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
-          f"--use_mp true --show_log false --use_dilation true"
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-
-    # For each analyzed frame, save the detections in the frame.
-    frame_detections = {}
-    for detection in result.stdout.decode().split(f"**********{folder_path}/"):
-        split_detection = detection.replace("**********", "").split("\n")
-        frame_second: str = split_detection[0].replace('.png', '')
-
-        if frame_second.isdigit():
-            frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
+    frame_detections = optical_character_recognition(folder_path)
 
     round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(round_timeline)
@@ -299,3 +288,22 @@ def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, 
     if frame is not None:
         cropped_frame = frame[0:70, 910:1010]
         cv2.imwrite(file_path, scale_image(cropped_frame, 300))
+
+
+def optical_character_recognition(path: str) -> str:
+    """Perform optical character recognition on the given image/images using PaddleOCR."""
+    cmd = f"paddleocr --image_dir {path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
+          f"--use_mp true --show_log false --use_dilation true"
+
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+
+    # For each analyzed frame, save the detections in the frame.
+    frame_detections = {}
+    for detection in result.stdout.decode().split(f"**********{path}/"):
+        split_detection = detection.replace("**********", "").split("\n")
+        frame_second: str = split_detection[0].replace('.png', '')
+
+        if frame_second.isdigit():
+            frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
+
+    return frame_detections
