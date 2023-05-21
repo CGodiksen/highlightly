@@ -58,6 +58,8 @@ def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) 
     # Save the frames that should be analyzed to disk.
     with Pool(len(grouped_frames)) as p:
         p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
+    # with Pool(len(grouped_frames)) as p:
+    #     p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
 
     # Perform optical character recognition on the saved frames to find potential text.
     frame_detections = optical_character_recognition(folder_path)
@@ -279,8 +281,8 @@ def add_frames_to_check(rounds: dict) -> None:
 def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for spike events and add each found event to the round."""
     # Extract the round and timer for each frame to check.
-    for round, round_data in rounds.items():
-        for frame_second in round_data["frames_to_check_for_spike_planted"]:
+    for round, data in rounds.items():
+        for frame_second in data["frames_to_check_for_spike_planted"] + data["frames_to_check_for_spike_stopped"]:
             file_path = f"{folder_path}/{frame_second}.png"
             save_round_timer_image(video_capture, frame_rate, frame_second, file_path)
 
@@ -288,17 +290,28 @@ def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, 
     frame_detections = optical_character_recognition(folder_path)
     spike_round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(spike_round_timeline)
-    
-    # Add a spike planted event on the exact second the timer is no longer visible.
-    for round, round_data in rounds.items():
-        frames_to_check = round_data["frames_to_check_for_spike_planted"]
-        for count, frame_second in enumerate(frames_to_check):
+
+    for round, data in rounds.items():
+        # Add a spike planted event on the exact second the timer is no longer visible.
+        frames_to_check_for_planted = data["frames_to_check_for_spike_planted"]
+        for count, frame_second in enumerate(frames_to_check_for_planted):
             if "round_time_left" not in spike_round_timeline[frame_second]:
-                round_data["events"].append({"name": "spike_planted", "time": frame_second})
+                data["events"].append({"name": "spike_planted", "time": frame_second})
                 break
 
-            if count + 1 == len(frames_to_check):
-                round_data["events"].append({"name": "spike_planted", "time": frames_to_check[-1] + 1})
+            if count + 1 == len(frames_to_check_for_planted):
+                data["events"].append({"name": "spike_planted", "time": frames_to_check_for_planted[-1] + 1})
+
+        # TODO: Fix problem with the timer not being shown immediately after the spike is stopped.
+        # Add a spike stopped event on the exact second the timer is visible again.
+        frames_to_check_for_stopped = data["frames_to_check_for_spike_stopped"]
+        for count, frame_second in enumerate(frames_to_check_for_stopped):
+            if "round_time_left" in spike_round_timeline[frame_second]:
+                data["events"].append({"name": "spike_stopped", "time": frame_second})
+                break
+
+            if count + 1 == len(frames_to_check_for_stopped):
+                data["events"].append({"name": "spike_stopped", "time": frames_to_check_for_stopped[-1] + 1})
 
 
 def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
