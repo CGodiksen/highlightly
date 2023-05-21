@@ -18,14 +18,19 @@ class ValorantHighlighter(Highlighter):
 
     def extract_events(self, game: GameVod) -> list[dict]:
         """Parse through the match to find all significant events that could be included in a highlight."""
+        vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
+        video_capture = cv2.VideoCapture(vod_filepath)
+        frame_rate = get_video_frame_rate(vod_filepath)
+
         logging.info(f"Extracting round timeline from VOD at {game.filename} for {game}.")
-        rounds = extract_round_timeline(game)
+        rounds = extract_round_timeline(game, vod_filepath, frame_rate)
         add_frames_to_check(rounds)
 
         logging.info(f"Finding spike and kill events for {game}.")
         for round, round_data in rounds.items():
-            add_spike_events(round)
-            add_kill_events(round)
+            folder_path = game.match.create_unique_folder_path(f"rounds/round_{round}")
+            add_spike_events(round_data, video_capture, frame_rate, folder_path)
+            add_kill_events(round_data, video_capture, frame_rate, folder_path)
 
         # TODO: If not the last game, remove the part of the VOD related to this game so it is not included in the next.
 
@@ -39,13 +44,10 @@ class ValorantHighlighter(Highlighter):
         pass
 
 
-def extract_round_timeline(game: GameVod) -> dict[int, dict]:
+def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) -> dict[int, dict]:
     """Parse through the VOD to find each round in the game."""
-    vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     folder_path = game.match.create_unique_folder_path("frames")
-
     grouped_frames = get_grouped_frames(vod_filepath)
-    frame_rate = get_video_frame_rate(vod_filepath)
 
     # Save the frames that should be analyzed to disk.
     with Pool(len(grouped_frames)) as p:
@@ -96,12 +98,7 @@ def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: st
     video_capture = cv2.VideoCapture(vod_filepath)
 
     for frame_second in frame_group:
-        video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
-        _res, frame = video_capture.read()
-
-        if frame is not None:
-            cropped_frame = frame[0:70, 910:1010]
-            cv2.imwrite(f"{folder_path}/{frame_second}.png", scale_image(cropped_frame, 300))
+        save_round_timer_image(video_capture, frame_rate, frame_second, f"{folder_path}/{frame_second}.png")
 
 
 def scale_image(image: any, scale_percent) -> any:
@@ -283,11 +280,22 @@ def add_frames_to_check(rounds: dict) -> None:
                            "frames_to_check_for_kills": frames_to_check_for_kills})
 
 
-def add_spike_events(round: dict) -> None:
+def add_spike_events(round_data: dict, video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for spike events and add each found event to the round."""
-    pass
+    for frame_second in round_data["frames_to_check_for_spike_planted"]:
+        save_round_timer_image(video_capture, frame_rate, frame_second, f"{folder_path}/{frame_second}.png")
 
 
-def add_kill_events(round: dict) -> None:
+def add_kill_events(round_data: dict, video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for kill events and add each found event to the round."""
     pass
+
+
+def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str):
+    """Save an image that contains the round number and timer in the given second of the given video capture."""
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
+    _res, frame = video_capture.read()
+
+    if frame is not None:
+        cropped_frame = frame[0:70, 910:1010]
+        cv2.imwrite(file_path, scale_image(cropped_frame, 300))
