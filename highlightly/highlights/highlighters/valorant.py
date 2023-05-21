@@ -252,11 +252,29 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict:
             length = 145 if count + 1 == 12 else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
+        # Find the frames where the spike is planted.
+        timeline_without_leading_none = timeline
+        while timeline_without_leading_none[0]["round_time_left"] is None:
+            del timeline_without_leading_none[0]
+
+        spike_planted_frames = [frame for frame in timeline_without_leading_none if frame["round_time_left"] is None]
+
         print(round)
         print(timeline)
         print(start_time)
         print(estimated_end_time)
+        print(spike_planted_frames)
         print()
+
+        # Find the frames that should be checked for the spike being planted and being defused/exploding/stopping.
+        if len(spike_planted_frames) > 0:
+            spike_planted_start = spike_planted_frames[0]["second"]
+            frames_to_check_for_spike_planted = list(range(spike_planted_start - 9, spike_planted_start))
+
+            spike_planted_end = spike_planted_frames[-1]["second"]
+            frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
+            print(frames_to_check_for_spike_planted)
+            print(frames_to_check_for_spike_stopped)
 
     return rounds
 
