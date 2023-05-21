@@ -27,10 +27,16 @@ class ValorantHighlighter(Highlighter):
         add_frames_to_check(rounds)
 
         logging.info(f"Finding spike and kill events for {game}.")
+        spike_folder_path = game.match.create_unique_folder_path(f"spike")
+        add_spike_events(rounds, video_capture, frame_rate, spike_folder_path)
+
+        kills_folder_path = game.match.create_unique_folder_path(f"kills")
+        add_kill_events(rounds, video_capture, frame_rate, kills_folder_path)
+
         for round, round_data in rounds.items():
-            folder_path = game.match.create_unique_folder_path(f"rounds/round_{round}")
-            add_spike_events(round_data, video_capture, frame_rate, folder_path)
-            add_kill_events(round_data, video_capture, frame_rate, folder_path)
+            print(round)
+            print(round_data)
+            print()
 
         # TODO: If not the last game, remove the part of the VOD related to this game so it is not included in the next.
 
@@ -230,7 +236,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
             length = 145 if count + 1 == 12 else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
-        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline}
+        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
+                         "events": []}
 
     return rounds
 
@@ -269,13 +276,32 @@ def add_frames_to_check(rounds: dict) -> None:
                            "frames_to_check_for_kills": frames_to_check_for_kills})
 
 
-def add_spike_events(round_data: dict, video_capture, frame_rate: float, folder_path: str) -> None:
+def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for spike events and add each found event to the round."""
-    for frame_second in round_data["frames_to_check_for_spike_planted"]:
-        save_round_timer_image(video_capture, frame_rate, frame_second, f"{folder_path}/{frame_second}.png")
+    # Extract the round and timer for each frame to check.
+    for round, round_data in rounds.items():
+        for frame_second in round_data["frames_to_check_for_spike_planted"]:
+            file_path = f"{folder_path}/{frame_second}.png"
+            save_round_timer_image(video_capture, frame_rate, frame_second, file_path)
+
+    # Find the round number and timer in each image.
+    frame_detections = optical_character_recognition(folder_path)
+    spike_round_timeline = create_initial_round_timeline(frame_detections)
+    fill_in_round_timeline_gaps(spike_round_timeline)
+    
+    # Add a spike planted event on the exact second the timer is no longer visible.
+    for round, round_data in rounds.items():
+        frames_to_check = round_data["frames_to_check_for_spike_planted"]
+        for count, frame_second in enumerate(frames_to_check):
+            if "round_time_left" not in spike_round_timeline[frame_second]:
+                round_data["events"].append({"name": "spike_planted", "time": frame_second})
+                break
+
+            if count + 1 == len(frames_to_check):
+                round_data["events"].append({"name": "spike_planted", "time": frames_to_check[-1] + 1})
 
 
-def add_kill_events(round_data: dict, video_capture, frame_rate: float, folder_path: str) -> None:
+def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for kill events and add each found event to the round."""
     pass
 
