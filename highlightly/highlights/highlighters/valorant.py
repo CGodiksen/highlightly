@@ -9,8 +9,9 @@ from multiprocessing import Pool
 
 import cv2
 
-from highlights.highlighters.highlighter import Highlighter
-from highlights.types import SecondData
+from highlights.highlighters.highlighter import Highlighter, group_round_events
+from highlights.models import Highlight
+from highlights.types import SecondData, Event
 from scrapers.models import GameVod
 from videos.editors.editor import get_video_length, get_video_frame_rate
 
@@ -37,7 +38,7 @@ class ValorantHighlighter(Highlighter):
 
         # If not the last game, remove the part of the VOD related to this game, so it is not included in the next.
         if game.game_count < game.match.gamevod_set.count():
-            logging.info(f"Creating new VOD for {game.game_count + 1 } by removing {game.game_count} for {game}.")
+            logging.info(f"Creating new VOD for {game.game_count + 1} by removing {game.game_count} for {game}.")
 
             next_game = GameVod.objects.get(match=game.match, game_count=game.game_count + 1)
             last_round_estimated_end_time = rounds[max(rounds.keys())]["estimated_end_time"]
@@ -58,10 +59,25 @@ class ValorantHighlighter(Highlighter):
 
     def combine_events(self, game: GameVod, rounds: dict[int, dict]) -> None:
         """Combine multiple events happening in close succession together to create highlights."""
-        # TODO: Group the events within each round and create highlights.
-        # TODO: For each group of events, get the value of the group.
-        # TODO: Create a highlight object for each group of events.
-        pass
+        clean_rounds(rounds)
+
+        for round, round_data in rounds.items():
+            if len(round_data["events"]) > 0:
+                # Group the events within each round based on time.
+                grouped_events = group_round_events(round_data["events"], "spike_planted")
+
+                # Create a highlight object for each group of events.
+                for group in grouped_events:
+                    # For each group of events, get the value of the group.
+                    value = get_highlight_value(group)
+
+                    start = group[0]["time"]
+                    end = group[-1]["time"]
+                    events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
+
+                    Highlight.objects.create(game_vod=game, start_time_seconds=start,
+                                             duration_seconds=max(end - start, 1),
+                                             events=events_str, round_number=round, value=value)
 
 
 def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) -> dict[int, dict]:
