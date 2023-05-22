@@ -1,5 +1,6 @@
 import logging
 import re
+import shutil
 import subprocess
 from collections import OrderedDict, defaultdict
 from datetime import timedelta
@@ -17,7 +18,7 @@ from videos.editors.editor import get_video_length, get_video_frame_rate
 class ValorantHighlighter(Highlighter):
     """Highlighter that uses PaddleOCR to extract highlights from Valorant matches."""
 
-    def extract_events(self, game: GameVod) -> list[dict]:
+    def extract_events(self, game: GameVod) -> dict[int, dict]:
         """Parse through the match to find all significant events that could be included in a highlight."""
         vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
         video_capture = cv2.VideoCapture(vod_filepath)
@@ -48,9 +49,14 @@ class ValorantHighlighter(Highlighter):
             next_game.filename = f"game_{game.game_count + 1}.mkv"
             next_game.save()
 
+        # Remove the folders used to save the frames that were analyzed.
+        shutil.rmtree(game.match.create_unique_folder_path("frames"))
+        shutil.rmtree(game.match.create_unique_folder_path("spike"))
+        shutil.rmtree(game.match.create_unique_folder_path("kills"))
+
         return rounds
 
-    def combine_events(self, game: GameVod, events: dict[int, SecondData]) -> None:
+    def combine_events(self, game: GameVod, rounds: dict[int, dict]) -> None:
         """Combine multiple events happening in close succession together to create highlights."""
         # TODO: Group the events within each round and create highlights.
         # TODO: For each group of events, get the value of the group.
