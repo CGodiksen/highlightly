@@ -117,9 +117,6 @@ class CounterStrikeScraper(Scraper):
 
         # For each demo, download the vod for the corresponding game from Twitch.
         vod_urls = html.findAll("img", class_="stream-flag flag")
-        if match.format != Match.Format.BEST_OF_1:
-            vod_urls = [vod_url for vod_url in vod_urls if "Map" in vod_url.parent.text]
-
         results = html.findAll("div", class_="mapholder")
 
         for game_count, demo_file in enumerate(os.listdir(demos_folder_path)):
