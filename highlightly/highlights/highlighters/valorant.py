@@ -249,11 +249,17 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
             elif second_data["round_number"] == current_round + 1 and first_round_found:
                 rounds[current_round] = current_round_timeline
                 current_round += 1
+                # TODO: Maybe add the current data to the new round timeline. This can cause issues.
                 current_round_timeline = []
             elif second_data["round_number"] == 1:
                 # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
                 rounds[current_round] = current_round_timeline
+                current_round_timeline = []
                 break
+
+    # Add the final round to the rounds if it was not already added when reaching round 1 again.
+    if len(current_round_timeline) > 0:
+        rounds[current_round] = current_round_timeline
 
     # Find the starting point and estimated end point of each round.
     for count, (round, timeline) in enumerate(rounds.items()):
@@ -281,7 +287,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
 
 def get_first_frame_in_round(timeline: list[dict]) -> dict:
     """Get the first live frame in the given timeline."""
-    return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 30][0]
+    return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 45][0]
 
 
 def add_frames_to_check(rounds: dict) -> None:
