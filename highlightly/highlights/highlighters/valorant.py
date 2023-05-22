@@ -370,7 +370,7 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
         corresponding_round["events"].extend(frame_events)
 
 
-def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str):
+def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str) -> None:
     """Save an image that contains the round number and timer in the given second of the given video capture."""
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
     _res, frame = video_capture.read()
@@ -397,3 +397,16 @@ def optical_character_recognition(path: str) -> dict:
             frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
 
     return frame_detections
+
+
+def clean_rounds(rounds: dict[int, dict]) -> None:
+    """For each round, sort the events in the round and remove irrelevant spike events."""
+    for round, round_data in rounds.items():
+        round_data["events"] = sorted(round_data["events"], key=lambda event: event["time"])
+
+        if len(round_data["events"]) >= 2:
+            events = round_data["events"]
+
+            # Remove the spike explosion if the CTs are saving and nothing happens between spike plant and explosion.
+            if events[-2]["name"] == "spike_planted" and events[-1]["name"] == "spike_stopped":
+                del round_data["events"][-1]

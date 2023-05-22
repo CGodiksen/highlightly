@@ -13,7 +13,7 @@ from scrapers.models import GameVod
 class CounterStrikeHighlighter(Highlighter):
     """Highlighter that uses GOTV demos to extract highlights from Counter-Strike matches."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.demo_filepath: str | None = None
         self.demo_parser: DemoParser | None = None
 
@@ -84,7 +84,7 @@ def split_events_into_rounds(events: list[Event], demo_parser) -> list[RoundData
     return round_data
 
 
-def handle_round_edge_cases(rounds: list[RoundData]):
+def handle_round_edge_cases(rounds: list[RoundData]) -> None:
     """Handle edge cases such as rounds being replayed, technical pauses, and missing events."""
     # If there is more than one round_freeze_end -> round_end sequence. Overwrite the previous round with the first sequence.
     for count, round in enumerate(rounds):
@@ -110,7 +110,7 @@ def handle_round_edge_cases(rounds: list[RoundData]):
             del round["events"][first_round_freeze_end_index: first_round_end_index + 1]
 
 
-def calibrate_event_times(rounds: list[RoundData]):
+def calibrate_event_times(rounds: list[RoundData]) -> None:
     """Find the first round_freeze_end event and calibrate all event times based on it."""
     first_round_freeze_end = 0
     for round in rounds:
@@ -161,7 +161,7 @@ def extract_round_data(demo_parser: DemoParser) -> list[RoundData]:
 
 
 # TODO: Look into removing rounds where the CTs are saving but get 1-2 meaningless kills.
-def clean_rounds(rounds: list[RoundData]):
+def clean_rounds(rounds: list[RoundData]) -> None:
     """For each round, remove round metadata events and irrelevant non-metadata events."""
     for round in rounds:
         event_types_to_remove = ["round_freeze_end", "round_end"]
@@ -173,7 +173,7 @@ def clean_rounds(rounds: list[RoundData]):
                 del round["events"][-1]
 
 
-def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod):
+def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod) -> None:
     """
     Group events within each round to create individual highlights and assign a value to the highlight to signify
     how "good" the highlight is.
