@@ -267,10 +267,11 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
 
-            # TODO: Fix issue with VCT having longer halftimes with replays in them.
-            # TODO: Fix issue with having replays in timeouts between rounds.
             length = 145 if count + 1 == 12 else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
+
+            # Limit the end time since there might be a long halftime pause, technical pauses, or timeouts.
+            estimated_end_time = min(timeline[-1]["second"] + 15, estimated_end_time)
 
         rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
                          "events": []}
