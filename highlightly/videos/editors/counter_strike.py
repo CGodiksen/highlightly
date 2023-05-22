@@ -11,6 +11,11 @@ from videos.editors.editor import Editor
 class CounterStrikeEditor(Editor):
     """Editor to support editing Counter-Strike VODs into highlight videos and uploading them to YouTube."""
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.second_pistol_round = 16
+        self.final_round = 30
+
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
         detected_timer = None

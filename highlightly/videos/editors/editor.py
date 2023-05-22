@@ -12,13 +12,16 @@ from videos.models import VideoMetadata
 
 
 class Editor:
+    def __init__(self):
+        self.second_pistol_round = None
+        self.final_round = None
+
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
         """Return how many seconds there are in the given VOD before the game starts."""
         raise NotImplementedError
 
-    @staticmethod
-    def select_highlights(game_vod: GameVod) -> list[Highlight]:
+    def select_highlights(self, game_vod: GameVod) -> list[Highlight]:
         """Based on the wanted video length, select the best highlights from the possible highlights."""
         selected_highlights = []
         unsorted_highlights = game_vod.highlight_set.all()
@@ -33,10 +36,10 @@ class Editor:
         logging.info(f"Selecting the best highlights for {wanted_video_length_seconds / 60} minute "
                      f"highlight video of {game_vod}.")
 
-        # Pistol rounds (1, 16), the last round, and, if necessary, the last round of regulation should always be included.
-        rounds_to_include = list({1, 16, round_count})
-        if round_count > 30:
-            rounds_to_include.append(30)
+        # Pistol rounds, the last round, and, if necessary, the last round of regulation should always be included.
+        rounds_to_include = list({1, self.second_pistol_round, round_count})
+        if round_count > self.final_round:
+            rounds_to_include.append(self.final_round)
 
         for round in rounds_to_include:
             best_highlight = next((highlight for highlight in highlights if highlight.round_number == round), None)
