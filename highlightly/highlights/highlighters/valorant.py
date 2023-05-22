@@ -410,3 +410,16 @@ def clean_rounds(rounds: dict[int, dict]) -> None:
             # Remove the spike explosion if the CTs are saving and nothing happens between spike plant and explosion.
             if events[-2]["name"] == "spike_planted" and events[-1]["name"] == "spike_stopped":
                 del round_data["events"][-1]
+
+
+# TODO: Add scaling based on the context.
+def get_highlight_value(events: list[Event]) -> int:
+    """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
+    value = 0
+    event_values = {"player_death": 1, "spike_planted": 2, "spike_stopped": 2}
+
+    # Add the value of the basic events in the highlight.
+    for event in events:
+        value += event_values[event["name"]]
+
+    return value
