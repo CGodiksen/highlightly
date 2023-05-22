@@ -69,7 +69,7 @@ class ValorantHighlighter(Highlighter):
                 # Create a highlight object for each group of events.
                 for group in grouped_events:
                     # For each group of events, get the value of the group.
-                    value = get_highlight_value(group)
+                    value = get_highlight_value(group, round)
 
                     start = group[0]["time"]
                     end = group[-1]["time"]
@@ -428,8 +428,7 @@ def clean_rounds(rounds: dict[int, dict]) -> None:
                 del round_data["events"][-1]
 
 
-# TODO: Add scaling based on the context.
-def get_highlight_value(events: list[Event]) -> int:
+def get_highlight_value(events: list[Event], round) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
     value = 0
     event_values = {"player_death": 1, "spike_planted": 2, "spike_stopped": 2}
@@ -437,5 +436,15 @@ def get_highlight_value(events: list[Event]) -> int:
     # Add the value of the basic events in the highlight.
     for event in events:
         value += event_values[event["name"]]
+
+    # All scaling is applied based on the original event score to avoid scaling already scaled values further.
+    original_event_value = value
+
+    # Add context scaling based on how late in the game the highlight is.
+    round_scaler = 0.01 if round <= 24 else 0.015
+    value += original_event_value * (round_scaler * round)
+
+    # TODO: Add context scaling based on how close the round is in terms of how many players are left alive on each team.
+    # TODO: Add context scaling based on the economy of the teams in the round.
 
     return value
