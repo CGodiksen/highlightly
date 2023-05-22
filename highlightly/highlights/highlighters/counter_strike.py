@@ -4,7 +4,7 @@ from itertools import groupby
 import pandas as pd
 from demoparser import DemoParser
 
-from highlights.highlighters.highlighter import Highlighter
+from highlights.highlighters.highlighter import Highlighter, group_round_events
 from highlights.models import Highlight
 from highlights.types import Event, RoundData
 from scrapers.models import GameVod
@@ -180,7 +180,7 @@ def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod) -> None
     """
     for round in rounds:
         if len(round["events"]) > 0:
-            grouped_events = group_round_events(round["events"])
+            grouped_events = group_round_events(round["events"], "bomb_planted")
 
             for group in grouped_events:
                 value = get_highlight_value(group, round)
@@ -191,28 +191,6 @@ def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod) -> None
 
                 Highlight.objects.create(game_vod=game, start_time_seconds=start, duration_seconds=max(end - start, 1),
                                          events=events_str, round_number=round["number"], value=value)
-
-
-# TODO: Maybe decrease the time between event groups and then make it possible to combine highlights later if they are both kept.
-# TODO: This would remove more individual events while avoiding issues with cutting small breaks.
-def group_round_events(events: list[Event]) -> list[list[Event]]:
-    """Group events within a round into smaller groups based on the time between events."""
-    grouped_events = [[events[0]]]
-    bomb_planted = events[0]["name"] == "bomb_planted"
-
-    for event in events[1:]:
-        last_event = grouped_events[-1][-1]
-
-        if not bomb_planted and event["time"] - last_event["time"] > 20:
-            grouped_events.append([event])
-        else:
-            grouped_events[-1].append(event)
-
-        # If the bomb has been planted, add all future events in the round to the last group.
-        if event["name"] == "bomb_planted":
-            bomb_planted = True
-
-    return grouped_events
 
 
 def get_highlight_value(events: list[Event], round: RoundData) -> int:
