@@ -7,4 +7,5 @@ class ValorantEditor(Editor):
 
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
-        pass
+        """Return 0 since the highlight times are extracted directly from the VOD."""
+        return 0
