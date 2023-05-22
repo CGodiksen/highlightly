@@ -21,6 +21,8 @@ class ValorantHighlighter(Highlighter):
 
     def extract_events(self, game: GameVod) -> dict[int, dict]:
         """Parse through the match to find all significant events that could be included in a highlight."""
+        game.refresh_from_db()
+
         vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
         video_capture = cv2.VideoCapture(vod_filepath)
         frame_rate = get_video_frame_rate(vod_filepath)
@@ -75,9 +77,8 @@ class ValorantHighlighter(Highlighter):
                     end = group[-1]["time"]
                     events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
 
-                    Highlight.objects.create(game_vod=game, start_time_seconds=start,
-                                             duration_seconds=max(end - start, 1),
-                                             events=events_str, round_number=round, value=value)
+                    Highlight.objects.create(game_vod=game, start_time_seconds=start, round_number=round, value=value,
+                                             duration_seconds=max(end - start, 1), events=events_str)
 
 
 def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) -> dict[int, dict]:
@@ -158,7 +159,7 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
             split_timer = detections[1].split(":")
             second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
-        if len(detections) == 2 and "." in detections[1]:
+        if len(detections) == 2 and "." in detections[1] and detections[1].replace(".", "").isdigit():
             second_data["round_time_left"] = timedelta(seconds=int(float(detections[1]))).seconds
 
         round_timeline[frame_second] = second_data
@@ -231,9 +232,11 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
 def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[int, dict]:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
     rounds = OrderedDict()
+    sorted_timeline = dict(sorted(round_timeline.items()))
+
     current_round = 1
     current_round_timeline = []
-    sorted_timeline = dict(sorted(round_timeline.items()))
+    first_round_found = False
 
     # Split the timeline into rounds.
     for second, second_data in sorted_timeline.items():
@@ -242,7 +245,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
 
             if second_data["round_number"] == current_round:
                 current_round_timeline.append(data)
-            elif second_data["round_number"] == current_round + 1:
+                first_round_found = True
+            elif second_data["round_number"] == current_round + 1 and first_round_found:
                 rounds[current_round] = current_round_timeline
                 current_round += 1
                 current_round_timeline = []
