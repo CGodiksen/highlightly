@@ -34,12 +34,19 @@ class ValorantHighlighter(Highlighter):
         kills_folder_path = game.match.create_unique_folder_path(f"kills")
         add_kill_events(rounds, video_capture, frame_rate, kills_folder_path)
 
-        for round, round_data in rounds.items():
-            print(round)
-            print(round_data)
-            print()
+        # If not the last game, remove the part of the VOD related to this game, so it is not included in the next.
+        if game.game_count < game.match.gamevod_set.count():
+            logging.info(f"Creating new VOD for {game.game_count + 1 } by removing {game.game_count} for {game}.")
 
-        # TODO: If not the last game, remove the part of the VOD related to this game so it is not included in the next.
+            next_game = GameVod.objects.get(match=game.match, game_count=game.game_count + 1)
+            last_round_estimated_end_time = rounds[max(rounds.keys())]["estimated_end_time"]
+            next_vod_filepath = f"{game.match.create_unique_folder_path('vods')}/game_{game.game_count + 1}.mkv"
+
+            cmd = f"ffmpeg -ss {timedelta(seconds=last_round_estimated_end_time + 60)} -i {vod_filepath} -c copy {next_vod_filepath}"
+            subprocess.run(cmd, shell=True)
+
+            next_game.filename = f"game_{game.game_count + 1}.mkv"
+            next_game.save()
 
         return rounds
 
@@ -234,6 +241,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
 
+            # TODO: Fix issue with VCT having longer halftimes with replays in them.
+            # TODO: Fix issue with having replays in timeouts between rounds.
             length = 145 if count + 1 == 12 else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
