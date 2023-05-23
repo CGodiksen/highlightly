@@ -183,9 +183,8 @@ table.team-table {
 
 .player-body-shot .body-shot-img {
     position: relative;
-    width: 100%;
     align-self: flex-end;
-    max-width: 400px;
+    width: 400px;
     margin: 0 auto;
     z-index: 4;
 }
