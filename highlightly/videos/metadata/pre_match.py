@@ -129,11 +129,14 @@ def create_team_logo_thumbnail_part(team: Team) -> Image.Image:
     background = Image.new("RGB", (360, 360), background_color)
 
     # Resize the logo, so it fits within the background image.
-    new_height = 250
     logo = Image.open(logo_filepath).convert("RGBA")
-    scale = (new_height / float(logo.size[1]))
-    new_width = int((float(logo.size[0]) * float(scale)))
-    logo = logo.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    longest_side = 0 if logo.size[0] >= logo.size[1] else 1
+
+    new_longest_side = 250
+    scale = (new_longest_side / float(logo.size[longest_side]))
+    new_shortest_side = int((float(logo.size[1 - longest_side]) * float(scale)))
+    logo = logo.resize((new_shortest_side if longest_side == 1 else new_longest_side,
+                        new_longest_side if longest_side == 1 else new_shortest_side), Image.Resampling.LANCZOS)
 
     # Put the logo on top of the background image.
     offset = ((360 - logo.width) // 2, (360 - logo.height) // 2)
