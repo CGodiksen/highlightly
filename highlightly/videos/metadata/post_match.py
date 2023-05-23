@@ -119,7 +119,7 @@ def save_match_frame(match: Match, frame_filepath: str) -> None:
 def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
     """Create an image that contains the statistics for each game and for the total match statistics."""
     # Pass the data of the game into the html file.
-    with open("videos/html/post-match-statistics.html") as html_file:
+    with open(f"videos/html/post-match-statistics-{game.match.team_1.game.lower().replace('_', '')}.html") as html_file:
         team_1_data = get_team_statistics_data(game, game.match.team_1, 1)
         team_2_data = get_team_statistics_data(game, game.match.team_2, 2)
 

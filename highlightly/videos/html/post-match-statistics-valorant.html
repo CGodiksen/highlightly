@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="post-match-statistics.css">
+</head>
+<body>
+
+<div class="parent">
+    <div class="match-info">
+        <b>{match_info:}</b>
+    </div>
+
+    <div class="team-1-logo">
+        <img src="{team_1_logo:}" alt="{team_1_name:}" class="team-logo">
+    </div>
+    <div class="score">
+        <span>
+            <span class="{team_1_result:} team-1-score">{team_1_score:}</span>
+            <span class="{team_2_result:}">{team_2_score:}</span>
+        </span>
+    </div>
+    <div class="team-2-logo">
+        <img src="{team_2_logo:}" alt="{team_2_name:}" class="team-logo">
+    </div>
+
+    <div class="mvp-title">
+        <b>{mvp_title:}</b>
+    </div>
+    <div class="mvp">
+        <div class="player-body-shot">
+            <img src="{mvp_team_logo:}" class="body-shot-logo">
+            <img src="{mvp_profile_picture:}" class="body-shot-img" itemprop="image">
+        </div>
+    </div>
+    <div class="mvp-name">
+        {mvp_name:}
+    </div>
+
+    <div class="team-1-table">
+        <table class="team-table">
+            <tr>
+                <th class="team-name-header">
+                    <img src="{team_1_logo:}" alt="{team_1_name:}" class="table-team-logo">
+                    <span>{team_1_name:}</span>
+                </th>
+                <th>K/D</th>
+                <th>+/-</th>
+                <th>ADR</th>
+                <th>KAST</th>
+                <th>Rating <span class="rating-desc">2.0</span></th>
+            </tr>
+            <tr>
+                <td class="player-name-cell">{team_1_player_1_name:}</td>
+                <td>{team_1_player_1_kd:}</td>
+                <td class={team_1_player_1_sign:}>{team_1_player_1_plus_minus:}</td>
+                <td>{team_1_player_1_adr:}</td>
+                <td>{team_1_player_1_kast:}</td>
+                <td>{team_1_player_1_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_2_name:}</td>
+                <td>{team_1_player_2_kd:}</td>
+                <td class={team_1_player_2_sign:}>{team_1_player_2_plus_minus:}</td>
+                <td>{team_1_player_2_adr:}</td>
+                <td>{team_1_player_2_kast:}</td>
+                <td>{team_1_player_2_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_3_name:}</td>
+                <td>{team_1_player_3_kd:}</td>
+                <td class={team_1_player_3_sign:}>{team_1_player_3_plus_minus:}</td>
+                <td>{team_1_player_3_adr:}</td>
+                <td>{team_1_player_3_kast:}</td>
+                <td>{team_1_player_3_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_4_name:}</td>
+                <td>{team_1_player_4_kd:}</td>
+                <td class={team_1_player_4_sign:}>{team_1_player_4_plus_minus:}</td>
+                <td>{team_1_player_4_adr:}</td>
+                <td>{team_1_player_4_kast:}</td>
+                <td>{team_1_player_4_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_5_name:}</td>
+                <td>{team_1_player_5_kd:}</td>
+                <td class={team_1_player_5_sign:}>{team_1_player_5_plus_minus:}</td>
+                <td>{team_1_player_5_adr:}</td>
+                <td>{team_1_player_5_kast:}</td>
+                <td>{team_1_player_5_rating:}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="team-2-table">
+        <table class="team-table">
+            <tr>
+                <th class="team-name-header">
+                    <img src="{team_2_logo:}" alt="{team_2_name:}" class="table-team-logo">
+                    <span>{team_2_name:}</span>
+                </th>
+                <th>K/D</th>
+                <th>+/-</th>
+                <th>ADR</th>
+                <th>KAST</th>
+                <th>Rating <span class="rating-desc">2.0</span></th>
+            </tr>
+            <tr>
+                <td class="player-name-cell">{team_2_player_1_name:}</td>
+                <td>{team_2_player_1_kd:}</td>
+                <td class={team_2_player_1_sign:}>{team_2_player_1_plus_minus:}</td>
+                <td>{team_2_player_1_adr:}</td>
+                <td>{team_2_player_1_kast:}</td>
+                <td>{team_2_player_1_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_2_name:}</td>
+                <td>{team_2_player_2_kd:}</td>
+                <td class={team_2_player_2_sign:}>{team_2_player_2_plus_minus:}</td>
+                <td>{team_2_player_2_adr:}</td>
+                <td>{team_2_player_2_kast:}</td>
+                <td>{team_2_player_2_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_3_name:}</td>
+                <td>{team_2_player_3_kd:}</td>
+                <td class={team_2_player_3_sign:}>{team_2_player_3_plus_minus:}</td>
+                <td>{team_2_player_3_adr:}</td>
+                <td>{team_2_player_3_kast:}</td>
+                <td>{team_2_player_3_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_4_name:}</td>
+                <td>{team_2_player_4_kd:}</td>
+                <td class={team_2_player_4_sign:}>{team_2_player_4_plus_minus:}</td>
+                <td>{team_2_player_4_adr:}</td>
+                <td>{team_2_player_4_kast:}</td>
+                <td>{team_2_player_4_rating:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_5_name:}</td>
+                <td>{team_2_player_5_kd:}</td>
+                <td class={team_2_player_5_sign:}>{team_2_player_5_plus_minus:}</td>
+                <td>{team_2_player_5_adr:}</td>
+                <td>{team_2_player_5_kast:}</td>
+                <td>{team_2_player_5_rating:}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
