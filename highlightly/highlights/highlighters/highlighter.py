@@ -41,8 +41,9 @@ def group_round_events(events: list[Event], bomb_planted_event_name: str) -> lis
 
     for event in events[1:]:
         last_event = grouped_events[-1][-1]
+        time_between_events = 45 if bomb_planted else 20
 
-        if not bomb_planted and event["time"] - last_event["time"] > 20:
+        if event["time"] - last_event["time"] > time_between_events:
             grouped_events.append([event])
         else:
             grouped_events[-1].append(event)
