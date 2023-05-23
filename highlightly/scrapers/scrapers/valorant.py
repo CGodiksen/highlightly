@@ -127,7 +127,7 @@ class ValorantScraper(Scraper):
 
         vods_folder_path = match.create_unique_folder_path("vods")
         vod_filepath = f"{vods_folder_path}/games.mkv"
-        download_cmd = f"twitch-dl download -q source -s {vod_start} -e {vod_end} -o {vod_filepath} {video['id']}"
+        download_cmd = f"twitch-dl download -q source -s {vod_start} -e {str(vod_end).split('.')[0]} -o {vod_filepath} {video['id']}"
         subprocess.run(download_cmd, shell=True)
 
         # For each game, create a game vod object.
