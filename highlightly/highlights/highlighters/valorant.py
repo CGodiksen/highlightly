@@ -31,7 +31,7 @@ class ValorantHighlighter(Highlighter):
 
         logging.info(f"Extracting round timeline from VOD at {game.filename} for {game}.")
         rounds = extract_round_timeline(game, vod_filepath, frame_rate)
-        add_frames_to_check(rounds)
+        add_frames_to_check(rounds, game)
 
         logging.info(f"Finding spike and kill events for {game}.")
         spike_folder_path = game.match.create_unique_folder_path(f"spike")
@@ -292,8 +292,10 @@ def get_first_frame_in_round(timeline: list[dict]) -> dict:
     return [f for f in timeline if f["round_time_left"] is not None and f["round_time_left"] > 45][0]
 
 
-def add_frames_to_check(rounds: dict) -> None:
+def add_frames_to_check(rounds: dict, game: GameVod) -> None:
     """Add the frames that should be checked for spike events and kills events to each round."""
+    round_spike_info = get_round_spike_info(game)
+
     for round, round_data in rounds.items():
         # Find the frames where the spike is planted.
         timeline_without_leading_none = round_data["timeline"]
@@ -305,13 +307,14 @@ def add_frames_to_check(rounds: dict) -> None:
         frames_to_check_for_spike_planted = []
         frames_to_check_for_spike_stopped = []
 
-        # Find the frames that should be checked for the spike being planted and being defused/exploding/stopping.
+        # Find the frames that should be checked for the spike being planted and being defused/exploding.
         if len(spike_planted_frames) > 0:
             spike_planted_start = spike_planted_frames[0]["second"]
             frames_to_check_for_spike_planted = list(range(spike_planted_start - 9, spike_planted_start))
 
-            spike_planted_end = spike_planted_frames[-1]["second"]
-            frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
+            if round in round_spike_info["spike_defused"] or round in round_spike_info["spike_exploded"]:
+                spike_planted_end = spike_planted_frames[-1]["second"]
+                frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
 
         # Find the frames that should be checked for kills.
         frames_to_check_for_kills = list(range(round_data["start_time"] + 1, round_data["estimated_end_time"]))
