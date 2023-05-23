@@ -37,8 +37,10 @@ class ValorantScraper(Scraper):
             team_names = [team.text.strip() for team in match_row.findAll("div", class_="match-item-vs-team-name")]
             time = match_row.find("div", class_="match-item-time").text.strip()
 
-            # Only add the match if is from an included tournament, both teams are determined, and the time is determined.
-            if tournament_name in self.included_tournaments and "TBD" not in team_names and time != "TBD":
+            is_showmatch = "showmatch" in match_row.find("div", class_="match-item-event-series").text.lower()
+
+            # Only add the match if is from an included tournament, both teams are determined, the time is determined, and it's not a showmatch.
+            if tournament_name in self.included_tournaments and "TBD" not in team_names and time != "TBD" and not is_showmatch:
                 match_data = extract_match_data(team_names, time, match_row)
                 match_data["tournament_name"] = tournament_name
 

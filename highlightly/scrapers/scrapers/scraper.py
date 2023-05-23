@@ -233,7 +233,7 @@ def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | Non
     # Remove potential end parts of the URL that directs to a subpage of the main tournament page.
     if tournament_url is not None:
         suffixes_to_remove = ["Regular_Season", "Showmatch", "Statistics", "Additional_Content", "Group_Stage",
-                              "Play-In_Stage", "Bracket_Stage"]
+                              "Play-In_Stage", "Bracket_Stage", "Last_Chance_Qualifier"]
 
         for suffix in suffixes_to_remove:
             tournament_url = tournament_url.removesuffix(f"/{suffix}")
