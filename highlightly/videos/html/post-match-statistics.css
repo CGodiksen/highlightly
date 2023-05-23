@@ -117,8 +117,12 @@ table.team-table {
     border-bottom: 0;
 }
 
-.player-name-cell {
+.player-name-cell-counter-strike {
     width: 500px;
+}
+
+.player-name-cell-valorant {
+    width: 400px;
 }
 
 .rating-desc {
