@@ -118,10 +118,12 @@ def save_match_frame(match: Match, frame_filepath: str) -> None:
 # TODO: Replace the final map statistics with total match statistics.
 def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
     """Create an image that contains the statistics for each game and for the total match statistics."""
+    game_name = game.match.team_1.game.lower().replace("_", "-").replace(" ", "-")
+
     # Pass the data of the game into the html file.
-    with open(f"videos/html/post-match-statistics-{game.match.team_1.game.lower().replace('_', '')}.html") as html_file:
-        team_1_data = get_team_statistics_data(game, game.match.team_1, 1)
-        team_2_data = get_team_statistics_data(game, game.match.team_2, 2)
+    with open(f"videos/html/post-match-statistics-{game_name}.html") as html_file:
+        team_1_data = get_team_statistics_data(game, game.match.team_1, 1, game_name)
+        team_2_data = get_team_statistics_data(game, game.match.team_2, 2, game_name)
 
         match_info = game.map if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
         mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
@@ -137,7 +139,7 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
         hti.screenshot(html_str=html, css_file="videos/html/post-match-statistics.css", save_as=filename)
 
 
-def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dict:
+def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_name: str) -> dict:
     """Return a dict that can be used to populate the HTML for the post match statistics image."""
     team_logo_filepath = os.path.abspath(f"media/teams/{team.organization.logo_filename}")
 
@@ -153,7 +155,11 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int) -> dic
     statistics_filename = getattr(game, f"team_{team_number}_statistics_filename")
     df = pd.read_csv(f"{game.match.create_unique_folder_path('statistics')}/{statistics_filename}")
 
-    columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
+    if game_name == "counter-strike":
+        columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
+    else:
+        columns = ["name", "r", "acs", "k", "d", "a", "plus_minus", "kast", "adr", "hs_percent"]
+
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
             team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
