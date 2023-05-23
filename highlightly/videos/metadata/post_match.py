@@ -158,11 +158,9 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
     if game_name == "counter-strike":
         columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
     else:
-        columns = ["name", "r", "acs", "k", "d", "plus_minus", "kast", "hs_percent"]
-
-    if game_name == "valorant":
         df = df.drop("A", axis=1)
         df = df.drop("ADR", axis=1)
+        columns = ["name", "r", "acs", "k", "d", "plus_minus", "kast", "hs_percent"]
 
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
