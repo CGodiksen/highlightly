@@ -69,6 +69,7 @@ def get_match_vod_channel_name(match: Match) -> str:
     """Return the channel name of the Twitch channel that streamed the match."""
     split_url = match.gamevod_set.all().first().url.split("&")
     video_id = split_url[0].removeprefix("https://player.twitch.tv/?video=v")
+    video_id = video_id.removeprefix("https://www.twitch.tv/videos/")
 
     helix = twitch.Helix(os.environ["TWITCH_CLIENT_ID"], os.environ["TWITCH_CLIENT_SECRET"])
     return helix.video(int(video_id)).user_name
