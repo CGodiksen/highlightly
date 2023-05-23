@@ -140,22 +140,22 @@ def scale_image(image: any, scale_percent) -> any:
 def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, SecondData]:
     """Use the detections to create the initial round timeline with gaps."""
     round_timeline = {}
-    round_strings = ["ROUND", "RDUND", "RDUNO", "ROVND", "ROUVND", "ROVNO", "ROUNO", "R0UND", "ROUN0"]
     most_recent_number = None
 
     # Use the detections to create the initial round timeline with gaps.
     for frame_second, detections in frame_detections.items():
         second_data = {}
 
-        if len(detections) >= 1 and any(round_string in detections[0] for round_string in round_strings):
+        if len(detections) >= 1 and SequenceMatcher(a="ROUND", b=detections[0]).ratio() > 0.35:
             round_numbers = re.findall(r'\d+', detections[0])
+            round_number = int(round_numbers[-1]) if len(round_numbers) >= 1 else None
 
             if most_recent_number:
-                round_numbers = handle_round_detection_errors(most_recent_number, detections[0], round_numbers)
+                round_number = handle_round_detection_errors(most_recent_number, detections[0], round_number)
 
-            if len(round_numbers) >= 1:
-                most_recent_number = int(round_numbers[0])
-                second_data["round_number"] = int(round_numbers[0])
+            if round_number is not None:
+                most_recent_number = round_number
+                second_data["round_number"] = round_number
 
         if len(detections) == 2 and ":" in detections[1]:
             split_timer = detections[1].split(":")
@@ -169,31 +169,32 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
     return round_timeline
 
 
-def handle_round_detection_errors(most_recent_number: int, round: str, round_numbers: list[int]) -> list[int]:
+def handle_round_detection_errors(most_recent_number: int, round: str, round_number: int | None) -> int | None:
     """Handle common issues with missing number in round number detection."""
-    if most_recent_number == 1 and (round == "ROUND" or round == "ROUNDT" or round == "ROUND T" or round == "ROUNDE"):
-        round_numbers = [1]
-    elif most_recent_number == 7 and (round == "ROUNDT" or round == "ROUND T"):
-        round_numbers = [7]
-    elif most_recent_number == 8 and (round == "ROUND" or round == "ROVNOB" or round == "ROUNDB" or round == "ROUNOB"):
-        round_numbers = [8]
-
-    if "R0UND" in round:
-        round_numbers.remove("0")
+    if most_recent_number == 1 and round.endswith("T"):
+        round_number = 1
+    elif most_recent_number in [1, 2] and round.endswith("Z"):
+        round_number = 2
+    elif most_recent_number in [4, 5] and round.endswith("S"):
+        round_number = 5
+    elif most_recent_number in [6, 7] and round.endswith("T"):
+        round_number = 7
+    elif most_recent_number in [7, 8] and (round.endswith("B")):
+        round_number = 8
 
     most_recent_digits = list(str(most_recent_number))
     if most_recent_number >= 10 and "." in round:
         number = f"{most_recent_digits[0]}.{most_recent_digits[1]}"
-        if round == f"ROUND {number}" or round == f"R0UND {number}":
-            round_numbers = [most_recent_number]
+        if number == round.split(" ")[-1]:
+            round_number = most_recent_number
 
     if most_recent_number >= 20:
-        if round == f"ROUND Z{most_recent_digits[1]}" or round == f"ROUND 1{most_recent_digits[1]}":
-            round_numbers = [most_recent_number]
-        elif most_recent_number == 22 and (round == "ROUND 2Z"):
-            round_numbers = [22]
+        if round.split(" ")[-1] == f"Z{most_recent_digits[1]}" or round.split(" ")[-1] == f"1{most_recent_digits[1]}":
+            round_number = most_recent_number
+        elif most_recent_number == 22 and (round.split(" ")[-1] == "2Z"):
+            round_number = 22
 
-    return round_numbers
+    return round_number
 
 
 def fill_in_round_timeline_gaps(round_timeline: dict[int, SecondData]) -> None:
@@ -231,7 +232,7 @@ def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], f
     return None, None
 
 
-def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[int, dict]:
+def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_count: int) -> dict[int, dict]:
     """Split the given round timeline into rounds and find the starting point and estimated end point of each round."""
     rounds = OrderedDict()
     sorted_timeline = dict(sorted(round_timeline.items()))
@@ -253,7 +254,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData]) -> dict[in
                 current_round += 1
                 # TODO: Maybe add the current data to the new round timeline. This can cause issues.
                 current_round_timeline = []
-            elif second_data["round_number"] == 1:
+            elif second_data["round_number"] == 1 and current_round == round_count:
                 # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
                 rounds[current_round] = current_round_timeline
                 current_round_timeline = []
