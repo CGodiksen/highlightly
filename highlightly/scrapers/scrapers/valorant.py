@@ -175,8 +175,10 @@ class ValorantScraper(Scraper):
             writer = csv.writer(f)
             writer.writerow(headers)
 
-            rows = [[td.text.strip().split("\n")[0] for td in row.findAll("td")] for row in
-                    html_table.select("tbody tr")]
+            rows = [[td.text.strip().split("\n")[0]
+                     if td.text.strip().split("\n")[0] != "/" else td.text.strip().split("\n")[2]
+                     for td in row.findAll("td")] for row in html_table.select("tbody tr")]
+
             for row in rows:
                 row[0] = row[0].strip()
                 del row[1]
