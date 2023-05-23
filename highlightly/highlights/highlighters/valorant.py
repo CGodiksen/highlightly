@@ -8,6 +8,8 @@ from difflib import SequenceMatcher
 from multiprocessing import Pool
 
 import cv2
+import requests
+from bs4 import BeautifulSoup, Tag
 
 from highlights.highlighters.highlighter import Highlighter, group_round_events
 from highlights.models import Highlight
@@ -317,6 +319,32 @@ def add_frames_to_check(rounds: dict) -> None:
         round_data.update({"frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
                            "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
                            "frames_to_check_for_kills": frames_to_check_for_kills})
+
+
+def get_round_spike_info(game: GameVod) -> dict:
+    """Return a dict with a list of rounds where the spike was defused and a list of rounds where the spike exploded."""
+    round_spike_info = {"spike_defused": [], "spike_exploded": []}
+
+    html = requests.get(url=game.match.url).text
+    soup = BeautifulSoup(html, "html.parser")
+
+    game_map = next(map for map in soup.findAll("div", class_="map") if game.map in map.text)
+    game_statistics = game_map.parent.parent
+    round_results = game_statistics.findAll("div", class_="vlr-rounds-row-col")
+
+    for round_result in round_results:
+        round_number_div = round_result.find("div", class_="rnd-num")
+        round_image_img = round_result.find("img")
+
+        if round_number_div is not None and round_image_img is not None:
+            round_number = int(round_number_div.text)
+
+            if "defuse" in round_image_img["src"]:
+                round_spike_info["spike_defused"].append(round_number)
+            elif "boom" in round_image_img["src"]:
+                round_spike_info["spike_exploded"].append(round_number)
+
+    return round_spike_info
 
 
 def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
