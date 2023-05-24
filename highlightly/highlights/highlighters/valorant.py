@@ -210,11 +210,22 @@ def fill_in_round_timeline_gaps(round_timeline: dict[int, SecondData]) -> None:
             else:
                 # If the difference in the time left in the round matches the difference in the frame seconds, set the round number.
                 if previous is not None and "round_time_left" in second_data and "round_time_left" in previous:
-                    if (frame_second - previous_second) == (previous["round_time_left"] - second_data["round_time_left"]):
+                    time_left_difference = previous["round_time_left"] - second_data["round_time_left"]
+                    if (frame_second - previous_second) == time_left_difference:
                         second_data["round_number"] = previous["round_number"]
                 elif next is not None and "round_time_left" in second_data and "round_time_left" in next:
                     if (next_second - frame_second) == (second_data["round_time_left"] - next["round_time_left"]):
                         second_data["round_number"] = next["round_number"]
+
+        # If the difference in the time left between the previous and next frame matches, set the time left of the frame.
+        if "round_time_left" not in second_data:
+            previous_frame = round_timeline.get(frame_second - 10, None)
+            next_frame = round_timeline.get(frame_second + 10, None)
+
+            if previous_frame is not None and next_frame is not None:
+                if previous_frame.get("round_number") == next_frame.get("round_number", 999):
+                    if previous_frame.get("round_time_left") == next_frame.get("round_time_left", 999) + 20:
+                        second_data["round_time_left"] = previous_frame["round_time_left"] - 10
 
 
 def get_closest_frame_with_round_number(round_timeline: dict[int, SecondData], frame_second: int,
