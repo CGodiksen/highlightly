@@ -93,6 +93,9 @@ class ValorantScraper(Scraper):
     @staticmethod
     def download_match_files(match: Match, html: BeautifulSoup) -> None:
         """Download a VOD for each game in the match."""
+        # Retrieve the tournament logo and tournament context of the match.
+        extract_match_page_tournament_data(match, html)
+
         # Find the best stream url for the match.
         stream_divs = html.findAll("div", class_="match-streams-btn")
         stream_url = stream_divs[0].find("a")["href"]
@@ -224,3 +227,21 @@ def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict
     # TODO: Find the actual format and tier.
     return {"game": Game.VALORANT, "team_1": team_1, "team_2": team_2, "start_datetime": start_datetime,
             "format": Match.Format.BEST_OF_3, "tier": 1, "url": match_url}
+
+
+def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> None:
+    """Extract the tournament logo and tournament context of the match from the match page HTML."""
+    Path("media/tournaments").mkdir(parents=True, exist_ok=True)
+    logo_filename = f"{match.tournament.name.replace(' ', '_')}.png"
+
+    # Only download the tournament logo if it does not already exist.
+    if match.tournament.logo_filename is None:
+        tournament_logo_img = html.find("a", class_="match-header-event", href=True).find("img")
+        urllib.request.urlretrieve(f"https:{tournament_logo_img['src']}", f"media/tournaments/{logo_filename}")
+
+        match.tournament.logo_filename = logo_filename
+        match.tournament.save()
+
+    tournament_context = html.find("div", class_="match-header-event-series").text.strip()
+    match.tournament_context = " ".join(tournament_context.split())
+    match.save()
