@@ -9,7 +9,7 @@ from multiprocessing import Pool
 
 import cv2
 import requests
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 from highlights.highlighters.highlighter import Highlighter, group_round_events
 from highlights.models import Highlight
@@ -299,11 +299,8 @@ def add_frames_to_check(rounds: dict, game: GameVod) -> None:
 
     for round, round_data in rounds.items():
         # Find the frames where the spike is planted.
-        timeline_without_leading_none = round_data["timeline"]
-        while timeline_without_leading_none[0]["round_time_left"] is None:
-            del timeline_without_leading_none[0]
-
-        spike_planted_frames = [frame for frame in timeline_without_leading_none if frame["round_time_left"] is None]
+        live_frames = [frame for frame in round_data["timeline"] if frame["second"] > round_data["start_time"]]
+        spike_planted_frames = [frame for frame in live_frames if frame["round_time_left"] is None]
 
         frames_to_check_for_spike_planted = []
         frames_to_check_for_spike_stopped = []
@@ -442,7 +439,7 @@ def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, 
 def optical_character_recognition(path: str) -> dict:
     """Perform optical character recognition on the given image/images using PaddleOCR."""
     cmd = f"paddleocr --image_dir {path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
-          f"--use_mp true --show_log false --use_dilation true"
+          f"--use_mp true --show_log false --use_dilation true --det_db_score_mode slow"
 
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
 
