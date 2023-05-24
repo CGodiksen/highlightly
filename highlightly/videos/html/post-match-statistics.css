@@ -134,8 +134,8 @@ table.team-table {
 }
 
 .team-logo {
-    width: 200px;
-    height: 200px;
+    max-width: 200px;
+    max-height: 200px;
 }
 
 .table-team-logo {
