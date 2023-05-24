@@ -271,16 +271,16 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
 
         # We can only estimate the end time since there could be pauses between rounds.
         if count + 1 == len(rounds.keys()):
-            estimated_end_time = timeline[-1]["second"] + 15
+            estimated_end_time = timeline[-1]["second"] + 10
         else:
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
 
-            length = 145 if count + 1 == 12 else 130
+            length = 145 if count + 1 == 12 or (count + 1 == 24 and round_count > 24) else 130
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
             # Limit the end time since there might be a long halftime pause, technical pauses, or timeouts.
-            estimated_end_time = min(timeline[-1]["second"] + 15, estimated_end_time)
+            estimated_end_time = min(timeline[-1]["second"] + 10, estimated_end_time)
 
         rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
                          "events": []}
@@ -414,7 +414,7 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
             for kill in kills:
                 kill_info = f"{kill[0]} - {kill[1]}"
 
-                if all([SequenceMatcher(a=k, b=kill_info).ratio() < 0.85 for k in recent_kills]):
+                if all([SequenceMatcher(a=k, b=kill_info).ratio() < 0.9 for k in recent_kills]):
                     event = {"name": "player_death", "time": frame_second, "info": kill_info}
                     events[frame_second].append(event)
 

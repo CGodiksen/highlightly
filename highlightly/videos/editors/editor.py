@@ -36,6 +36,7 @@ class Editor:
         logging.info(f"Selecting the best highlights for {wanted_video_length_seconds / 60} minute "
                      f"highlight video of {game_vod}.")
 
+        # TODO: For valorant maybe include all overtime since there are fewer.
         # Pistol rounds, the last round, and, if necessary, the last round of regulation should always be included.
         rounds_to_include = list({1, self.second_pistol_round, round_count})
         if round_count > self.final_round:
