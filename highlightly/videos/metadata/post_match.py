@@ -9,7 +9,7 @@ import twitch
 from PIL import Image
 from html2image import Html2Image
 
-from scrapers.models import Match, GameVod, Team
+from scrapers.models import Match, GameVod, Team, Game
 from videos.metadata.util import create_match_frame_part
 from videos.models import VideoMetadata
 
@@ -31,8 +31,8 @@ def add_post_match_video_metadata(match: Match):
     team_1_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_1_statistics_filename}")
     team_2_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_2_statistics_filename}")
 
-    team_1_in_game_names = get_team_in_game_names(team_1_statistics)
-    team_2_in_game_names = get_team_in_game_names(team_2_statistics)
+    team_1_in_game_names = get_team_in_game_names(team_1_statistics, match.team_1.game)
+    team_2_in_game_names = get_team_in_game_names(team_2_statistics, match.team_2.game)
 
     # Add the tournament context to the description and tags.
     new_description = new_description.replace("TOURNAMENT_CONTEXT", match.tournament_context)
@@ -56,11 +56,15 @@ def add_post_match_video_metadata(match: Match):
     video_metadata.save()
 
 
-def get_team_in_game_names(team_statistics: pd.DataFrame) -> list[str]:
+def get_team_in_game_names(team_statistics: pd.DataFrame, game: Game) -> list[str]:
     """Given a dataframe with the team statistics, extract the in-game names for all the players."""
     player_names: pd.Series = team_statistics.iloc[:, 0]
-    extract_in_game_name = lambda match: re.search("'(.*?)'", match.group()).group().strip("'")
-    in_game_names: pd.Series = player_names.str.replace("[\s\S]+", extract_in_game_name, regex=True)
+
+    if game == Game.COUNTER_STRIKE:
+        extract_in_game_name = lambda match: re.search("'(.*?)'", match.group()).group().strip("'")
+        in_game_names: pd.Series = player_names.str.replace("[\s\S]+", extract_in_game_name, regex=True)
+    else:
+        in_game_names = player_names
 
     return in_game_names.tolist()
 
@@ -91,7 +95,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     os.remove(frame_filepath)
 
     # Add the tournament logo in the bottom right of the thumbnail.
-    tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}")
+    tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}").convert("RGBA")
     tournament_logo.resize((150, 150))
     thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
 
