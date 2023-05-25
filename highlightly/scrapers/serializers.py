@@ -56,8 +56,7 @@ class MatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Match
         fields = ["id", "team_1", "team_2", "tournament", "tournament_context", "format", "tier", "url", "created_at",
-                  "start_datetime", "estimated_end_datetime", "create_video", "finished", "highlighted",
-                  "video_metadata"]
+                  "start_datetime", "estimated_end_datetime", "create_video", "finished", "video_metadata"]
 
     @staticmethod
     def get_video_metadata(match: Match) -> dict:

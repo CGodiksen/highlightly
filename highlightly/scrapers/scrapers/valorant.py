@@ -143,10 +143,17 @@ class ValorantScraper(Scraper):
             round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
 
             # Persist the location of the files and other needed information about the vods to the database.
-            GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
-                                   host=GameVod.Host.TWITCH, language="english", filename="games.mkv",
-                                   team_1_round_count=round_count[0], team_2_round_count=round_count[1],
-                                   start_datetime=datetime.now())
+            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
+                                              host=GameVod.Host.TWITCH, language="english", filename="games.mkv",
+                                              team_1_round_count=round_count[0], team_2_round_count=round_count[1],
+                                              start_datetime=datetime.now())
+
+            if game_count + 1 == len(games):
+                match.finished = True
+                match.save()
+
+            game_vod.finished = True
+            game_vod.save(update_fields=["finished"])
 
     @staticmethod
     def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:

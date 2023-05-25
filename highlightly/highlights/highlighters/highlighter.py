@@ -23,8 +23,6 @@ class Highlighter:
         self.combine_events(game, events)
         logging.info(f"Combined {len(events)} events for {game} into {game.highlight_set.count()} highlights.")
 
-        logging.info(f"{game} is fully highlighted and ready for further processing.")
-
         game.highlighted = True
         game.save(update_fields=["highlighted"])
 

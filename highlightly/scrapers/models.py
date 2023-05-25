@@ -101,7 +101,6 @@ class Match(models.Model):
 
     create_video = models.BooleanField()
     finished = models.BooleanField(default=False)
-    highlighted = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f"{self.team_1} VS. {self.team_2}"
@@ -143,6 +142,7 @@ class GameVod(models.Model):
 
     start_datetime = models.DateTimeField()
     finished = models.BooleanField(default=False)
+    highlighted = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"
