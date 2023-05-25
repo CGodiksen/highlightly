@@ -141,6 +141,7 @@ table.team-table {
 .table-team-logo {
     position: relative;
     height: 70%;
+    max-width: 100px;
     top: 5px;
     padding-right: 7px;
 }
