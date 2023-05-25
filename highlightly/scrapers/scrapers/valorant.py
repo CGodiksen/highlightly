@@ -90,8 +90,7 @@ class ValorantScraper(Scraper):
 
         return soup if status == "final" else None
 
-    @staticmethod
-    def download_match_files(match: Match, html: BeautifulSoup) -> None:
+    def download_match_files(self, match: Match, html: BeautifulSoup) -> None:
         """Download a VOD for each game in the match."""
         # Retrieve the tournament logo and tournament context of the match.
         extract_match_page_tournament_data(match, html)
@@ -151,6 +150,9 @@ class ValorantScraper(Scraper):
             if game_count + 1 == len(games):
                 match.finished = True
                 match.save()
+
+            logging.info(f"Extracting game statistics for {game_vod}.")
+            self.extract_game_statistics(game_vod, html)
 
             game_vod.finished = True
             game_vod.save(update_fields=["finished"])

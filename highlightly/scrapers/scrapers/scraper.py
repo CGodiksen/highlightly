@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup, Tag
 from django_celery_beat.models import PeriodicTask
 from serpapi import GoogleSearch
 
-from scrapers.models import Match, Tournament, Team, Game, Organization, Player
+from scrapers.models import Match, Tournament, Team, Game, Organization, Player, GameVod
 from scrapers.types import TournamentData, TeamData
 
 
@@ -155,42 +155,38 @@ class Scraper:
         """Retrieve information about the player from the given URL and create a player object."""
         raise NotImplementedError
 
-    def extract_match_statistics(self, match: Match, html: BeautifulSoup) -> None:
+    def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
         """
-        Extract and save per-game statistics for the entire match. Also determine the MVP based on the statistics
+        Extract and save per-game statistics for the game. Also determine the MVP based on the statistics
         and extract the players photo and advanced statistics if possible.
         """
-        statistics_folder_path = match.create_unique_folder_path("statistics")
-        table_groups = self.get_statistics_table_groups(html)
+        statistics_folder_path = game.match.create_unique_folder_path("statistics")
+        table_group = self.get_statistics_table_groups(html)[game.game_count]
 
-        # Convert the HTML tables into CSV and save the filename on the relevant object.
-        object_to_update = None
-        for count, table_group in enumerate(table_groups):
-            html_tables = self.get_statistics_tables(table_group)
+        # Convert the HTML tables into CSV and save the filename on the game object.
+        html_tables = self.get_statistics_tables(table_group)
 
-            for (html_table, team) in zip(html_tables, [match.team_1, match.team_2]):
-                team_name = team.organization.name.lower().replace(' ', '_')
-                filename = f"all_maps_{team_name}.csv" if count == 0 else f"map_{count}_{team_name}.csv"
+        for (html_table, team) in zip(html_tables, [game.match.team_1, game.match.team_2]):
+            team_name = team.organization.name.lower().replace(' ', '_')
+            filename = f"map_{game.game_count}_{team_name}.csv"
 
-                self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}", team.organization.name)
+            self.save_html_table_to_csv(html_table, f"{statistics_folder_path}/{filename}", team.organization.name)
 
-                object_to_update = match if count == 0 else match.gamevod_set.get(game_count=count)
-                field_to_update = "team_1_statistics_filename" if match.team_1 == team else "team_2_statistics_filename"
+            field_to_update = "team_1_statistics_filename" if game.match.team_1 == team else "team_2_statistics_filename"
+            setattr(game, field_to_update, filename)
+            game.save()
 
-                setattr(object_to_update, field_to_update, filename)
-                object_to_update.save()
+        # Find the MVP of the game and, if necessary, extract information about the player.
+        player_url = self.get_mvp_url(table_group)
 
-            # Find the MVP of the game and, if necessary, extract information about the player.
-            player_url = self.get_mvp_url(table_group)
+        if not Player.objects.filter(url=player_url).exists():
+            mvp = self.extract_player_data(player_url)
+        else:
+            mvp = Player.objects.get(url=player_url)
 
-            if not Player.objects.filter(url=player_url).exists():
-                mvp = self.extract_player_data(player_url)
-            else:
-                mvp = Player.objects.get(url=player_url)
-
-            if mvp and object_to_update:
-                setattr(object_to_update, "mvp", mvp)
-                object_to_update.save()
+        if mvp:
+            game.mvp = mvp
+            game.save()
 
     def scrape_finished_match(self, match: Match) -> None:
         """
@@ -205,8 +201,6 @@ class Scraper:
             PeriodicTask.objects.filter(name=f"Scrape {match} if finished").delete()
 
             self.download_match_files(match, html)
-            logging.info(f"Extracting per-game and total match statistics for {match}.")
-            self.extract_match_statistics(match, html)
 
             logging.info(f"All data required for processing {match} has been scraped.")
 
