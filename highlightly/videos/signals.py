@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from scrapers.models import Match, Game, Team, Organization
+from scrapers.models import Match, Game, Organization, GameVod
 from videos.editors.counter_strike import CounterStrikeEditor
 from videos.editors.league_of_legends import LeagueOfLegendsEditor
 from videos.editors.valorant import ValorantEditor
@@ -15,21 +15,22 @@ from videos.models import VideoMetadata
 
 
 @receiver(post_save, sender=Match)
-def create_match_video_metadata(instance: Match, created: bool, update_fields: frozenset, **_kwargs) -> None:
+def create_match_video_metadata(instance: Match, created: bool, **_kwargs) -> None:
     if created:
         create_pre_match_video_metadata(instance)
-    elif update_fields is not None:
-        if "finished" in update_fields and instance.finished:
-            add_post_match_video_metadata(instance)
-        elif "highlighted" in update_fields and instance.highlighted:
-            if instance.team_1.game == Game.COUNTER_STRIKE:
-                editor = CounterStrikeEditor()
-            elif instance.team_1.game == Game.VALORANT:
-                editor = ValorantEditor()
-            else:
-                editor = LeagueOfLegendsEditor()
 
-            editor.edit_and_upload_video(instance)
+
+@receiver(post_save, sender=GameVod)
+def create_game_highlight_video(instance: GameVod, update_fields: frozenset, **_kwargs) -> None:
+    if update_fields is not None and "highlighted" in update_fields and instance.highlighted:
+        if instance.match.team_1.game == Game.COUNTER_STRIKE:
+            editor = CounterStrikeEditor()
+        elif instance.match.team_1.game == Game.VALORANT:
+            editor = ValorantEditor()
+        else:
+            editor = LeagueOfLegendsEditor()
+
+        editor.edit_and_upload_video(instance)
 
 
 @receiver(post_save, sender=Organization)
