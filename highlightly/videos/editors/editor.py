@@ -7,7 +7,7 @@ from pathlib import Path
 
 from highlights.models import Highlight
 from scrapers.models import Match, GameVod
-from videos.metadata.post_match import create_game_statistics_image
+from videos.metadata.post_match import create_game_statistics_image, add_post_match_video_metadata
 from videos.models import VideoMetadata
 
 
@@ -115,35 +115,36 @@ class Editor:
         # TODO: Maybe also look into if it will be necessary to request for more quota for uploading (currently only 6 videos a day).
         pass
 
-    def edit_and_upload_video(self, match: Match):
+    def edit_and_upload_video(self, game: GameVod):
         """Using the highlights edit the full VODs into a highlight video and upload it to YouTube."""
-        folder_path = match.create_unique_folder_path()
+        folder_path = game.match.create_unique_folder_path()
         Path(f"{folder_path}/highlights").mkdir(parents=True, exist_ok=True)
-        logging.info(f"Creating a highlight video for {match} at {folder_path}/highlights.")
+        logging.info(f"Creating a highlight video for {game} at {folder_path}/highlights.")
 
         with open(f"{folder_path}/highlights/highlights.txt", "a+") as highlights_txt:
-            for game_vod in match.gamevod_set.all():
-                logging.info(f"Creating a highlight video for {game_vod}.")
-                offset = self.find_game_starting_point(game_vod)
-                game_vod.game_start_offset = offset
-                game_vod.save()
+            logging.info(f"Creating a highlight video for {game}.")
+            offset = self.find_game_starting_point(game)
+            game.game_start_offset = offset
+            game.save()
 
-                highlights = self.select_highlights(game_vod)
-                highlight_video_filename = game_vod.filename.replace(".mkv", "_highlights.mp4")
-                self.create_highlight_video(highlights, game_vod, highlight_video_filename, offset, folder_path)
+            highlights = self.select_highlights(game)
+            highlight_video_filename = game.filename.replace(".mkv", "_highlights.mp4")
+            self.create_highlight_video(highlights, game, highlight_video_filename, offset, folder_path)
 
-                highlights_txt.write(f"file '{highlight_video_filename}'\n")
+            highlights_txt.write(f"file '{highlight_video_filename}'\n")
 
         # Combine the highlight video for each game VOD into a single full highlight video.
-        cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mp4"
-        subprocess.run(cmd, shell=True)
+        if game.match.finished:
+            cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mp4"
+            subprocess.run(cmd, shell=True)
 
-        logging.info(f"Combined {match.gamevod_set.count()} highlight videos into a single full "
-                     f"highlight video for {match}.")
+            logging.info(f"Combined {game.match.gamevod_set.count()} highlight videos into a single full "
+                         f"highlight video for {game.match}.")
 
-        shutil.rmtree(f"{folder_path}/highlights")
+            shutil.rmtree(f"{folder_path}/highlights")
 
-        self.upload_highlight_video(f"{folder_path}/highlights.mp4", match.videometadata)
+            add_post_match_video_metadata(game.match)
+            self.upload_highlight_video(f"{folder_path}/highlights.mp4", game.match.videometadata)
 
 
 def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: Highlight | None,
