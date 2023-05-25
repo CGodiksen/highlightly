@@ -145,7 +145,8 @@ class ValorantScraper(Scraper):
             # Persist the location of the files and other needed information about the vods to the database.
             GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
                                    host=GameVod.Host.TWITCH, language="english", filename="games.mkv",
-                                   team_1_round_count=round_count[0], team_2_round_count=round_count[1])
+                                   team_1_round_count=round_count[0], team_2_round_count=round_count[1],
+                                   start_datetime=datetime.now())
 
     @staticmethod
     def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:

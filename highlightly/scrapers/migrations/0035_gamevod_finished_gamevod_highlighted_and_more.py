@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='gamevod',
             name='start_datetime',
-            field=models.DateTimeField(default=1),
+            field=models.DateTimeField(default="2022-10-10 00:00"),
             preserve_default=False,
         ),
         migrations.AlterField(
