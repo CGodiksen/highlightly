@@ -56,18 +56,28 @@ def scrape_finished_league_of_legends_match(scheduled_match_id: int) -> None:
 def check_match_status(match_id: int) -> None:
     """Check the current match status."""
     match = Match.objects.get(id=match_id)
+    logging.info(f"Checking the match status of {match}.")
 
     if not match.finished:
         html = requests.get(url=match.url).text
         soup = BeautifulSoup(html, "html.parser")
 
-        is_live = soup.find("span", class_="match-header-vs-note mod-live")
-        if is_live is not None:
-            score_spans = soup.find("div", class_="match-header-vs-score").findAll("span")
-            game_counts = [int(span.text.strip()) for span in score_spans if span.text.strip().isdigit()]
-            game_count = sum(game_counts)
+        # If it is the last game of the match, mark the match as finished.
+        if "final" in soup.find("div", class_="match-header-vs-note").text:
+            logging.info(f"{match} is finished.")
 
-            logging.info(f"Checking if game {match.gamevod_set.count() + 1} of {match} is finished.")
-            # TODO: If a new game has started, create an object for the game.
-            # TODO: If the current game is finished, start the highlighting process.
-            # TODO: If it is the last game of the match, mark the match as finished.
+        # Find the current number of finished games.
+        score_spans = soup.find("div", class_="match-header-vs-score").findAll("span")
+        game_counts = [int(span.text.strip()) for span in score_spans if span.text.strip().isdigit()]
+        finished_game_count = sum(game_counts)
+
+        # If a new game has started, create an object for the game.
+        is_live = soup.find("span", class_="match-header-vs-note mod-live")
+        if is_live is not None and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
+            logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
+
+        # Check if the most recently finished game has been marked as finished.
+        if match.gamevod_set.filter(game_count=finished_game_count).exists():
+            finished_game = match.gamevod_set.get(game_count=finished_game_count)
+            if not finished_game.finished:
+                logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
