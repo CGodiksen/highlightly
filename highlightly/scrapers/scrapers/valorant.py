@@ -222,7 +222,7 @@ def extract_match_data(team_names: list[str], time: str, match_row: Tag) -> dict
 
     date = match_row.parent.find_previous_sibling().text.strip()
     date = date.replace("\n", "").replace("\t", "").replace("Today", "").strip()
-    start_datetime = datetime.strptime(f"{date} {time}", "%a, %b %d, %Y %I:%M %p")
+    start_datetime = datetime.strptime(f"{date} {time}", "%a, %B %d, %Y %I:%M %p")
 
     # TODO: Find the actual format and tier.
     return {"game": Game.VALORANT, "team_1": team_1, "team_2": team_2, "start_datetime": start_datetime,
