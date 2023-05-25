@@ -157,7 +157,7 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
                 most_recent_number = round_number
                 second_data["round_number"] = round_number
 
-        if len(detections) == 2 and ":" in detections[1]:
+        if len(detections) == 2 and ":" in detections[1] and detections[1].replace(":", "").isdigit():
             split_timer = detections[1].split(":")
             second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
@@ -173,14 +173,28 @@ def handle_round_detection_errors(most_recent_number: int, round: str, round_num
     """Handle common issues with missing number in round number detection."""
     if most_recent_number == 1 and round.endswith("T"):
         round_number = 1
+    elif most_recent_number in [10, 11] and round.endswith("T"):
+        round_number = 11
+    elif most_recent_number in [20, 21] and round.endswith("T"):
+        round_number = 21
     elif most_recent_number in [1, 2] and round.endswith("Z"):
         round_number = 2
+    elif most_recent_number in [11, 12] and round.endswith("Z"):
+        round_number = 12
+    elif most_recent_number in [21, 22] and round.endswith("Z"):
+        round_number = 22
     elif most_recent_number in [4, 5] and round.endswith("S"):
         round_number = 5
+    elif most_recent_number in [14, 15] and round.endswith("S"):
+        round_number = 15
     elif most_recent_number in [6, 7] and round.endswith("T"):
         round_number = 7
+    elif most_recent_number in [16, 17] and round.endswith("T"):
+        round_number = 17
     elif most_recent_number in [7, 8] and (round.endswith("B")):
         round_number = 8
+    elif most_recent_number in [17, 18] and (round.endswith("B")):
+        round_number = 18
 
     most_recent_digits = list(str(most_recent_number))
     if most_recent_number >= 10 and "." in round:
@@ -281,8 +295,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
         start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
 
         # We can only estimate the end time since there could be pauses between rounds.
-        if count + 1 == len(rounds.keys()):
-            estimated_end_time = timeline[-1]["second"] + 10
+        if count + 1 == round_count:
+            estimated_end_time = timeline[-1]["second"] + 15
         else:
             next_round_timeline = list(rounds.values())[count + 1]
             next_first_live_frame = get_first_frame_in_round(next_round_timeline)
@@ -291,7 +305,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
             # Limit the end time since there might be a long halftime pause, technical pauses, or timeouts.
-            estimated_end_time = min(timeline[-1]["second"] + 10, estimated_end_time)
+            estimated_end_time = min(timeline[-1]["second"] + 11, estimated_end_time)
 
         rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
                          "events": []}
