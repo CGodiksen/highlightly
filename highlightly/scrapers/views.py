@@ -20,6 +20,14 @@ from videos.metadata.post_match import finish_video_thumbnail
 T = TypeVar("T", bound=ModelSerializer)
 
 
+# TODO: Change the structure to start highlighting when a game is created. When a single game is highlighted the editor should start.
+# TODO: When the final game is created, the match should be marked as finished. When editing, if the match is finished, create the full video.
+
+# TODO: Create a background task to periodically check if the current game is finished.
+# TODO: If game is finished, download the game files and create the game vod object. This should start the highlighting and editing.
+# TODO: If both game and entire match is finished, do the same but also mark the match as finished. This should create the full video when done editing.
+
+
 class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_serializer_class(self) -> Type[T]:
         if self.action == "update":
