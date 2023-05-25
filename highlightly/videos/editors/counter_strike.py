@@ -16,11 +16,12 @@ class CounterStrikeEditor(Editor):
         self.second_pistol_round = 16
         self.final_round = 30
 
+    # TODO: Use PaddleOCR instead of external Google API.
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
         detected_timer = None
-        current_offset = 30
-        initial_offset = 30
+        current_offset = 20
+        initial_offset = 20
         max_attempts = 10
 
         vod_filepath = f"{game_vod.match.create_unique_folder_path('vods')}/{game_vod.filename}"
@@ -41,7 +42,7 @@ class CounterStrikeEditor(Editor):
 
             # Use OCR to get the characters in the image and find the timer. If not found, try again with a new frame.
             detected_text = detect_text(cv2.imencode(".png", cropped_frame)[1].tobytes())
-            detected_timer = next((text for text in detected_text if ":" in text and (len(text) == 4 or len(text) == 5)), None)
+            detected_timer = next((text for text in detected_text if ":" in text and text.replace(":", "").isdigit()), None)
 
             if detected_timer is not None:
                 break
