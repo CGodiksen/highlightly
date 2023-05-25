@@ -1,7 +1,7 @@
 import logging
 
 from highlights.types import Event
-from scrapers.models import Match, GameVod
+from scrapers.models import GameVod
 
 
 class Highlighter:
@@ -13,23 +13,20 @@ class Highlighter:
         """Combine multiple events happening in close succession together to create highlights."""
         raise NotImplementedError
 
-    def highlight(self, match: Match) -> None:
-        """Extract events from the match and combine events to find match highlights."""
-        logging.info(f"Creating highlights for {match}.")
+    def highlight(self, game: GameVod) -> None:
+        """Extract events from the game and combine events to find match highlights."""
+        logging.info(f"Creating highlights for {game}.")
 
-        for game in match.gamevod_set.all():
-            logging.info(f"Creating highlights for {game}.")
+        events = self.extract_events(game)
+        logging.info(f"Found {len(events)} events for {game}.")
 
-            events = self.extract_events(game)
-            logging.info(f"Found {len(events)} events for {game}.")
+        self.combine_events(game, events)
+        logging.info(f"Combined {len(events)} events for {game} into {game.highlight_set.count()} highlights.")
 
-            self.combine_events(game, events)
-            logging.info(f"Combined {len(events)} events for {game} into {game.highlight_set.count()} highlights.")
+        logging.info(f"{game} is fully highlighted and ready for further processing.")
 
-        logging.info(f"{match} is fully highlighted and ready for further processing.")
-
-        match.highlighted = True
-        match.save(update_fields=["highlighted"])
+        game.highlighted = True
+        game.save(update_fields=["highlighted"])
 
 
 # TODO: Maybe decrease the time between event groups and then make it possible to combine highlights later if they are both kept.
