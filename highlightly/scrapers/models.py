@@ -143,7 +143,6 @@ class GameVod(models.Model):
 
     start_datetime = models.DateTimeField()
     finished = models.BooleanField(default=False)
-    highlighted = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"
