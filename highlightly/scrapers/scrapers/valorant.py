@@ -117,60 +117,40 @@ class ValorantScraper(Scraper):
                 finished_game.finished = True
                 finished_game.save(update_fields=["finished"])
 
-        for stream_div in stream_divs:
-            stream_flag = stream_div.find("i", class_="flag")
-            stream_div_url = stream_div.find("a")["href"]
+    @staticmethod
+    def download_game_files(game_vod: GameVod, html: BeautifulSoup) -> None:
+        """Download the VOD for the game and update the game vod object with the VOD data."""
+        video = get_twitch_video(html)
 
-            # Only allow stream urls from english speaking streams and non-banned streams.
-            if stream_flag["class"][1] in valid_stream_languages and stream_div_url not in banned_streams:
-                stream_url = stream_div_url
-                break
-
-        # Find the latest video from the stream which should be the video with the VOD for each game.
-        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
-        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        video = json.loads(result.stdout.decode())["videos"][0]
+        # Retrieve the tournament logo and tournament context of the match.
+        extract_match_page_tournament_data(game_vod.match, html)
 
         # Find the start time of the game in the full VOD.
         tz = pytz.timezone("Europe/Copenhagen")
         vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        vod_match_start_offset = match.start_datetime.replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
+        vod_match_start_offset = game_vod.start_datetime.replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
+        vod_start = vod_match_start_offset - timedelta(minutes=5)
 
         # Download the entire Twitch video from the start offset to now.
-        logging.info(f"Downloading VOD for all games of {match} from {video['id']}.")
+        logging.info(f"Downloading VOD for {game_vod} from {video['id']}.")
+        vods_folder_path = game_vod.match.create_unique_folder_path("vods")
+        vod_filepath = f"{vods_folder_path}/game_{game_vod.game_count}.mkv"
 
-        vod_start = vod_match_start_offset - timedelta(minutes=5)
-        vod_end = datetime.now(tz=tz).replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
-
-        vods_folder_path = match.create_unique_folder_path("vods")
-        vod_filepath = f"{vods_folder_path}/games.mkv"
-        download_cmd = f"twitch-dl download -q source -s {vod_start} -e {str(vod_end).split('.')[0]} -o {vod_filepath} {video['id']}"
+        download_cmd = f"twitch-dl download -q source -s {vod_start} -o {vod_filepath} {video['id']}"
         subprocess.run(download_cmd, shell=True)
 
-        # For each game, create a game vod object.
-        games = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[1:]
-        for game_count, game in enumerate(games):
-            game_stats = html.find("div", class_="vm-stats-game", attrs={"data-game-id": game["data-game-id"]})
+        # Update the game vod object with the post game data.
+        game = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[game_vod.game_count]
+        game_stats = html.find("div", class_="vm-stats-game", attrs={"data-game-id": game["data-game-id"]})
 
-            vod_url = f"https://www.twitch.tv/videos/{video['id']}"
-            map = game_stats.find("div", class_="map").find("span").text.replace("PICK", "").strip()
-            round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
+        vod_url = f"https://www.twitch.tv/videos/{video['id']}"
+        map = game_stats.find("div", class_="map").find("span").text.replace("PICK", "").strip()
+        round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
 
-            # Persist the location of the files and other needed information about the vods to the database.
-            game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
-                                              host=GameVod.Host.TWITCH, language="english", filename="games.mkv",
-                                              team_1_round_count=round_count[0], team_2_round_count=round_count[1],
-                                              start_datetime=datetime.now())
-
-            if game_count + 1 == len(games):
-                match.finished = True
-                match.save()
-
-            logging.info(f"Extracting game statistics for {game_vod}.")
-            self.extract_game_statistics(game_vod, html)
-
-            game_vod.finished = True
-            game_vod.save(update_fields=["finished"])
+        # Persist the location of the files and other needed information about the vods to the database.
+        game_filter = GameVod.objects.filter(id=game_vod.id)
+        game_filter.update(map=map, url=vod_url, filename=f"game_{game_vod.game_count}.mkv",
+                           team_1_round_count=round_count[0], team_2_round_count=round_count[1])
 
     @staticmethod
     def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:
