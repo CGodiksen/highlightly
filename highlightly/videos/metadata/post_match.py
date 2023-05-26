@@ -28,8 +28,9 @@ def add_post_match_video_metadata(match: Match):
 
     # Extract the statistics for each time into a dataframe.
     statistics_folder_path = match.create_unique_folder_path("statistics")
-    team_1_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_1_statistics_filename}")
-    team_2_statistics = pd.read_csv(f"{statistics_folder_path}/{match.team_2_statistics_filename}")
+    game_1 = match.gamevod_set.first()
+    team_1_statistics = pd.read_csv(f"{statistics_folder_path}/{game_1.team_1_statistics_filename}")
+    team_2_statistics = pd.read_csv(f"{statistics_folder_path}/{game_1.team_2_statistics_filename}")
 
     team_1_in_game_names = get_team_in_game_names(team_1_statistics, match.team_1.game)
     team_2_in_game_names = get_team_in_game_names(team_2_statistics, match.team_2.game)
