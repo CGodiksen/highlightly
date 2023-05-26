@@ -115,12 +115,12 @@ class ValorantScraper(Scraper):
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
                 # Sleep to account for the Twitch video delay.
-                sleep(30)
+                sleep(180)
 
                 self.download_game_files(finished_game, soup)
 
                 logging.info(f"Extracting game statistics for {finished_game}.")
-                self.extract_game_statistics(finished_game, html)
+                self.extract_game_statistics(finished_game, soup)
 
                 finished_game.finished = True
                 finished_game.save(update_fields=["finished"])
