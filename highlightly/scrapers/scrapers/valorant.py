@@ -80,6 +80,38 @@ class ValorantScraper(Scraper):
 
         return {"url": team_url, "nationality": nationality, "ranking": ranking}
 
+    @staticmethod
+    def check_match_status(match: Match):
+        """Check the current match status and start the highlighting process if a game is finished."""
+        html = requests.get(url=match.url).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # If it is the last game of the match, mark the match as finished.
+        if "final" in soup.find("div", class_="match-header-vs-note").text:
+            logging.info(f"{match} is finished.")
+            match.finished = True
+            match.save()
+
+        # Find the current number of finished games.
+        score_spans = soup.find("div", class_="match-header-vs-score").findAll("span")
+        game_counts = [int(span.text.strip()) for span in score_spans if span.text.strip().isdigit()]
+        finished_game_count = sum(game_counts)
+
+        # If a new game has started, create an object for the game.
+        is_live = soup.find("span", class_="match-header-vs-note mod-live")
+        if is_live is not None and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
+            logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
+            # TODO: Create a game vod object and set the start datetime.
+
+        # Check if the most recently finished game has been marked as finished.
+        if match.gamevod_set.filter(game_count=finished_game_count).exists():
+            finished_game = match.gamevod_set.get(game_count=finished_game_count)
+            if not finished_game.finished:
+                logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+                # TODO: Call function to download the match files for the game.
+                # TODO: Call function to extract game statistics for the game.
+                # TODO: Set the game vod to finished to start the highlighting process.
+
     # TODO: Change this so it downloads from a single game.
     def download_match_files(self, match: Match, html: BeautifulSoup) -> None:
         """Download a VOD for each game in the match."""
