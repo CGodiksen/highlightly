@@ -80,16 +80,7 @@ class ValorantScraper(Scraper):
 
         return {"url": team_url, "nationality": nationality, "ranking": ranking}
 
-    @staticmethod
-    def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
-        """Return the page HTML if the match is finished and ready for further processing. Otherwise, return None."""
-        html = requests.get(url=scheduled_match.url).text
-        soup = BeautifulSoup(html, "html.parser")
-
-        status = soup.find("div", class_="match-header-vs-note").text.strip()
-
-        return soup if status == "final" else None
-
+    # TODO: Change this so it downloads from a single game.
     def download_match_files(self, match: Match, html: BeautifulSoup) -> None:
         """Download a VOD for each game in the match."""
         # Retrieve the tournament logo and tournament context of the match.
