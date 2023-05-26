@@ -97,8 +97,8 @@ class ValorantScraper(Scraper):
         finished_game_count = sum(game_counts)
 
         # If a new game has started, create an object for the game.
-        is_live = soup.find("span", class_="match-header-vs-note mod-live")
-        if is_live is not None and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
+        is_live = soup.find("span", class_="match-header-vs-note mod-live") is not None
+        if is_live and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,

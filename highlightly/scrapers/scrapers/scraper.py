@@ -202,11 +202,6 @@ class Scraper:
 
             self.download_match_files(match, html)
 
-            logging.info(f"All data required for processing {match} has been scraped.")
-
-            match.finished = True
-            match.save(update_fields=["finished"])
-
 
 def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | None:
     """
