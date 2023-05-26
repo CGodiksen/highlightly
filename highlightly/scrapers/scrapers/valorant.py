@@ -80,8 +80,7 @@ class ValorantScraper(Scraper):
 
         return {"url": team_url, "nationality": nationality, "ranking": ranking}
 
-    @staticmethod
-    def check_match_status(match: Match):
+    def check_match_status(self, match: Match):
         """Check the current match status and start the highlighting process if a game is finished."""
         html = requests.get(url=match.url).text
         soup = BeautifulSoup(html, "html.parser")
@@ -101,29 +100,22 @@ class ValorantScraper(Scraper):
         is_live = soup.find("span", class_="match-header-vs-note mod-live")
         if is_live is not None and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
-            # TODO: Create a game vod object and set the start datetime.
+
+            GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
+                                   language="english", start_datetime=datetime.now())
 
         # Check if the most recently finished game has been marked as finished.
         if match.gamevod_set.filter(game_count=finished_game_count).exists():
             finished_game = match.gamevod_set.get(game_count=finished_game_count)
             if not finished_game.finished:
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
-                # TODO: Call function to download the match files for the game.
-                # TODO: Call function to extract game statistics for the game.
-                # TODO: Set the game vod to finished to start the highlighting process.
+                self.download_game_files(finished_game, soup)
 
-    # TODO: Change this so it downloads from a single game.
-    def download_match_files(self, match: Match, html: BeautifulSoup) -> None:
-        """Download a VOD for each game in the match."""
-        # Retrieve the tournament logo and tournament context of the match.
-        extract_match_page_tournament_data(match, html)
+                logging.info(f"Extracting game statistics for {finished_game}.")
+                self.extract_game_statistics(finished_game, html)
 
-        # Find the best stream url for the match.
-        stream_divs = html.findAll("div", class_="match-streams-btn")
-        stream_url = stream_divs[0].find("a")["href"]
-
-        valid_stream_languages = ["mod-un", "mod-eu", "mod-us", "mod-au"]
-        banned_streams = ["https://www.twitch.tv/valorant"]
+                finished_game.finished = True
+                finished_game.save(update_fields=["finished"])
 
         for stream_div in stream_divs:
             stream_flag = stream_div.find("i", class_="flag")
