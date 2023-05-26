@@ -5,7 +5,6 @@ import subprocess
 from collections import OrderedDict, defaultdict
 from datetime import timedelta
 from difflib import SequenceMatcher
-from multiprocessing import Pool
 
 import cv2
 import requests
@@ -72,11 +71,11 @@ class ValorantHighlighter(Highlighter):
 def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) -> dict[int, dict]:
     """Parse through the VOD to find each round in the game."""
     folder_path = game.match.create_unique_folder_path("frames")
-    grouped_frames = get_grouped_frames(vod_filepath)
+    total_seconds = get_video_length(vod_filepath)
+    frames = range(0, int(total_seconds) + 1, 10)
 
     # Save the frames that should be analyzed to disk.
-    with Pool(len(grouped_frames)) as p:
-        p.starmap(save_video_frames, [(vod_filepath, group, folder_path, frame_rate) for group in grouped_frames])
+    save_video_frames(vod_filepath, frames, folder_path, frame_rate)
 
     # Perform optical character recognition on the saved frames to find potential text.
     frame_detections = optical_character_recognition(folder_path)
@@ -89,25 +88,6 @@ def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) 
     rounds = split_timeline_into_rounds(round_timeline, game.team_1_round_count + game.team_2_round_count)
 
     return rounds
-
-
-def get_grouped_frames(vod_filepath: str) -> list[list[int]]:
-    """Find 10-minute groups of frames that need to be extracted from the given vod filepath."""
-    grouped_frames = []
-    total_seconds = get_video_length(vod_filepath)
-
-    current_second = 0
-    second_limit = 0
-
-    while second_limit <= total_seconds:
-        second_limit += 600
-        grouped_frames.append([])
-
-        for i in range(current_second, min(int(total_seconds), second_limit) + 1, 10):
-            grouped_frames[-1].append(current_second)
-            current_second += 10
-
-    return grouped_frames
 
 
 def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: str, frame_rate: float) -> None:
