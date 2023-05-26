@@ -40,20 +40,6 @@ class ValorantHighlighter(Highlighter):
         kills_folder_path = game.match.create_unique_folder_path(f"kills")
         add_kill_events(rounds, video_capture, frame_rate, kills_folder_path)
 
-        # If not the last game, remove the part of the VOD related to this game, so it is not included in the next.
-        if game.game_count < game.match.gamevod_set.count():
-            logging.info(f"Creating new VOD for {game.game_count + 1} by removing {game.game_count} for {game}.")
-
-            next_game = GameVod.objects.get(match=game.match, game_count=game.game_count + 1)
-            last_round_estimated_end_time = rounds[max(rounds.keys())]["estimated_end_time"]
-            next_vod_filepath = f"{game.match.create_unique_folder_path('vods')}/game_{game.game_count + 1}.mkv"
-
-            cmd = f"ffmpeg -ss {timedelta(seconds=last_round_estimated_end_time + 60)} -i {vod_filepath} -c copy {next_vod_filepath}"
-            subprocess.run(cmd, shell=True)
-
-            next_game.filename = f"game_{game.game_count + 1}.mkv"
-            next_game.save()
-
         # Remove the folders used to save the frames that were analyzed.
         shutil.rmtree(game.match.create_unique_folder_path("frames"))
         shutil.rmtree(game.match.create_unique_folder_path("spike"))
