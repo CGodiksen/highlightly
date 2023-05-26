@@ -97,8 +97,7 @@ class CounterStrikeScraper(Scraper):
 
         return None
 
-    @staticmethod
-    def download_match_files(match: Match, html: BeautifulSoup) -> None:
+    def download_match_files(self, match: Match, html: BeautifulSoup) -> None:
         demos_folder_path = match.create_unique_folder_path("demos")
         vods_folder_path = match.create_unique_folder_path("vods")
 
@@ -144,6 +143,16 @@ class CounterStrikeScraper(Scraper):
                                               start_datetime=datetime.now())
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
+
+            if game_count + 1 == len(os.listdir(demos_folder_path)):
+                match.finished = True
+                match.save()
+
+            logging.info(f"Extracting game statistics for {game_vod}.")
+            self.extract_game_statistics(game_vod, html)
+
+            game_vod.finished = True
+            game_vod.save(update_fields=["finished"])
 
     @staticmethod
     def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:
