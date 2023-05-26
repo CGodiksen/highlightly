@@ -123,15 +123,15 @@ class GameVod(models.Model):
     game_count = models.IntegerField(validators=[MinValueValidator(1)])
     map = models.CharField(max_length=64, blank=True, null=True)
 
-    url = models.URLField(max_length=128)
+    url = models.URLField(max_length=128, blank=True, null=True)
     host = models.CharField(max_length=16, choices=Host.choices)
     language = models.CharField(max_length=64)
 
     filename = models.CharField(max_length=256, blank=True, null=True)
     team_1_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
-    team_1_round_count = models.IntegerField(validators=[MinValueValidator(0)])
+    team_1_round_count = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
     team_2_statistics_filename = models.CharField(max_length=128, blank=True, null=True)
-    team_2_round_count = models.IntegerField(validators=[MinValueValidator(0)])
+    team_2_round_count = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
 
     mvp = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
     game_start_offset = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
