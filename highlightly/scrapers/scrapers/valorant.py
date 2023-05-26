@@ -5,6 +5,7 @@ import subprocess
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
+from time import sleep
 
 import pytz
 import requests
@@ -101,14 +102,21 @@ class ValorantScraper(Scraper):
         if is_live and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
+            tz = pytz.timezone("Europe/Copenhagen")
+            start_datetime = datetime.now(tz=tz).replace(tzinfo=None)
+
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                   language="english", start_datetime=datetime.now())
+                                   language="english", start_datetime=start_datetime)
 
         # Check if the most recently finished game has been marked as finished.
         if match.gamevod_set.filter(game_count=finished_game_count).exists():
             finished_game = match.gamevod_set.get(game_count=finished_game_count)
             if not finished_game.finished:
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+
+                # Sleep to account for the Twitch video delay.
+                sleep(30)
+
                 self.download_game_files(finished_game, soup)
 
                 logging.info(f"Extracting game statistics for {finished_game}.")
