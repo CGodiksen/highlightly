@@ -144,7 +144,7 @@ class ValorantScraper(Scraper):
         vods_folder_path = game_vod.match.create_unique_folder_path("vods")
         vod_filepath = f"{vods_folder_path}/game_{game_vod.game_count}.mkv"
 
-        download_cmd = f"twitch-dl download -q source -s {vod_start} -o {vod_filepath} {video['id']}"
+        download_cmd = f"twitch-dl download -q source -s {str(vod_start).split('.')[0]} -o {vod_filepath} {video['id']}"
         subprocess.run(download_cmd, shell=True)
 
         # Update the game vod object with the post game data.
@@ -156,9 +156,12 @@ class ValorantScraper(Scraper):
         round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
 
         # Persist the location of the files and other needed information about the vods to the database.
-        game_filter = GameVod.objects.filter(id=game_vod.id)
-        game_filter.update(map=map, url=vod_url, filename=f"game_{game_vod.game_count}.mkv",
-                           team_1_round_count=round_count[0], team_2_round_count=round_count[1])
+        game_vod.map = map
+        game_vod.url = vod_url
+        game_vod.filename = f"game_{game_vod.game_count}.mkv"
+        game_vod.team_1_round_count = round_count[0]
+        game_vod.team_2_round_count = round_count[1]
+        game_vod.save()
 
     @staticmethod
     def get_statistics_table_groups(html: BeautifulSoup) -> list[BeautifulSoup]:
