@@ -79,11 +79,11 @@ def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) 
 
     # Perform optical character recognition on the saved frames to find potential text.
     frame_detections = optical_character_recognition(folder_path)
-    logging.debug(f"Detected text in round timer images: {dict(sorted(frame_detections.items()))}")
+    logging.info(f"Detected text in round timer images: {dict(sorted(frame_detections.items()))}")
 
     round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(round_timeline)
-    logging.debug(f"Converted detected text to round timeline: {dict(sorted(round_timeline.items()))}")
+    logging.info(f"Converted detected text to round timeline: {dict(sorted(round_timeline.items()))}")
 
     rounds = split_timeline_into_rounds(round_timeline, game.team_1_round_count + game.team_2_round_count)
 
@@ -260,7 +260,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
 
     # Find the starting point and estimated end point of each round.
     for count, (round, timeline) in enumerate(rounds.items()):
-        logging.debug(f"Finding starting point and estimated end point of round {round} using timeline: {timeline}")
+        logging.info(f"Finding starting point and estimated end point of round {round} using timeline: {timeline}")
 
         first_live_frame = get_first_frame_in_round(timeline)
         start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
