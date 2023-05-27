@@ -19,9 +19,7 @@ class CounterStrikeEditor(Editor):
     # TODO: Use PaddleOCR instead of external Google API.
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
-        detected_timer = None
-        current_offset = 20
-        initial_offset = 20
+        initial_offset = 30
         max_attempts = 10
 
         vod_filepath = f"{game_vod.match.create_unique_folder_path('vods')}/{game_vod.filename}"
@@ -45,18 +43,16 @@ class CounterStrikeEditor(Editor):
             detected_timer = next((text for text in detected_text if ":" in text and text.replace(":", "").isdigit()), None)
 
             if detected_timer is not None:
-                break
+                logging.info(f"Detected {detected_timer} timer {current_offset} seconds into {game_vod}.")
 
-        logging.info(f"Detected {detected_timer} timer {current_offset} seconds into {game_vod}.")
+                # Convert the time on the timer to an offset for when the game starts compared to when the video starts.
+                split_timer = detected_timer.split(":")
+                minutes = int(split_timer[0]) if len(split_timer[0]) == 1 else int(split_timer[0][1])
 
-        # Convert the time on the timer to an offset for when the game starts compared to when the video starts.
-        split_timer = detected_timer.split(":")
-        minutes = int(split_timer[0]) if len(split_timer[0]) == 1 else int(split_timer[0][1])
+                seconds_left_in_round = timedelta(minutes=minutes, seconds=int(split_timer[1])).seconds
+                seconds_since_round_started = 115 - seconds_left_in_round
 
-        seconds_left_in_round = timedelta(minutes=minutes, seconds=int(split_timer[1])).seconds
-        seconds_since_round_started = 115 - seconds_left_in_round
-
-        return int(current_offset - seconds_since_round_started)
+                return int(current_offset - seconds_since_round_started)
 
 
 def detect_text(image_content: bytes):
