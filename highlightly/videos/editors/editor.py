@@ -1,12 +1,12 @@
-import logging
 import math
+import logging
 import shutil
 import subprocess
 from datetime import timedelta
 from pathlib import Path
 
 from highlights.models import Highlight
-from scrapers.models import Match, GameVod
+from scrapers.models import GameVod
 from videos.metadata.post_match import create_game_statistics_image, add_post_match_video_metadata
 from videos.models import VideoMetadata
 
@@ -128,14 +128,17 @@ class Editor:
             game.save()
 
             highlights = self.select_highlights(game)
-            highlight_video_filename = game.filename.replace(".mkv", "_highlights.mp4")
+            highlight_video_filename = game.filename.replace(".mkv", "_highlights.mkv")
             self.create_highlight_video(highlights, game, highlight_video_filename, offset, folder_path)
 
             highlights_txt.write(f"file '{highlight_video_filename}'\n")
 
         # Combine the highlight video for each game VOD into a single full highlight video.
         if game.match.finished:
-            cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mp4"
+            cmd = f"ffmpeg -f concat -i {folder_path}/highlights/highlights.txt -codec copy {folder_path}/highlights.mkv"
+            subprocess.run(cmd, shell=True)
+
+            cmd = f"ffmpeg -i {folder_path}/highlights.mkv -codec copy -movflags +faststart {folder_path}/highlights.mp4"
             subprocess.run(cmd, shell=True)
 
             logging.info(f"Combined {game.match.gamevod_set.count()} highlight videos into a single full "
@@ -144,7 +147,7 @@ class Editor:
             shutil.rmtree(f"{folder_path}/highlights")
 
             add_post_match_video_metadata(game.match)
-            self.upload_highlight_video(f"{folder_path}/highlights.mp4", game.match.videometadata)
+            self.upload_highlight_video(f"{folder_path}/highlights.mkv", game.match.videometadata)
 
 
 def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: Highlight | None,
@@ -200,7 +203,7 @@ def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_du
 
             # Combine the clips in the group into a single highlight video file.
             clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in group_file_ids])
-            group_video_filename = target_filename.replace('.mp4', f'_{group}.mp4')
+            group_video_filename = target_filename.replace('.mkv', f'_{group}.mkv')
             cmd = f"ffmpeg {clips_part} -filter_complex 'afade=t=in:ss=0:d=1[0:a], {'; '.join(group_video_filters)}; " \
                   f"{'; '.join(group_audio_filters)}, afade=t=out:st={fade_offset + clip_durations[group_file_ids[-1]] - 2}:d=2' " \
                   f"-preset superfast -crf 27 -movflags +faststart {folder_path}/highlights/groups/{group_video_filename}"

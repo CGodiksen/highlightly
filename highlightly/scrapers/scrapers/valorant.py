@@ -299,6 +299,6 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
         wanted_video_length = (now - vod_started_at.replace(tzinfo=None)).total_seconds()
         current_video_length = video["lengthSeconds"]
 
-        logging.info(f"Found {current_video_length} second Twitch video. Needed {wanted_video_length} seconds.")
+        logging.info(f"Need {wanted_video_length} second video. Found {current_video_length} second video: {video}.")
 
     return video
