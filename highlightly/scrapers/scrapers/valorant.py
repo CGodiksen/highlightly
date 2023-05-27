@@ -114,9 +114,6 @@ class ValorantScraper(Scraper):
             if not finished_game.finished:
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                # Sleep to account for the Twitch video delay.
-                sleep(180)
-
                 self.download_game_files(finished_game, soup)
 
                 logging.info(f"Extracting game statistics for {finished_game}.")
@@ -129,6 +126,7 @@ class ValorantScraper(Scraper):
     def download_game_files(game_vod: GameVod, html: BeautifulSoup) -> None:
         """Download the VOD for the game and update the game vod object with the VOD data."""
         video = get_twitch_video(html)
+        logging.info(f"Found Twitch video for game: {video}.")
 
         # Retrieve the tournament logo and tournament context of the match.
         extract_match_page_tournament_data(game_vod.match, html)
@@ -281,8 +279,26 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
             stream_url = stream_div_url
             break
 
-    # Find the latest video from the stream which should be the video with the for the game.
-    list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
-    result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    tz = pytz.timezone("Europe/Copenhagen")
+    now = datetime.now(tz=tz).replace(tzinfo=None)
 
-    return json.loads(result.stdout.decode())["videos"][0]
+    wanted_video_length = None
+    current_video_length = None
+    video = None
+
+    # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
+    while wanted_video_length is None or current_video_length is None or current_video_length < wanted_video_length:
+        sleep(60)
+
+        # Find the latest video from the stream which should be the video with the for the game.
+        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
+        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        video = json.loads(result.stdout.decode())["videos"][0]
+
+        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
+        wanted_video_length = (now - vod_started_at.replace(tzinfo=None)).total_seconds()
+        current_video_length = video["lengthSeconds"]
+
+        logging.info(f"Found {current_video_length} second Twitch video. Needed {wanted_video_length} seconds.")
+
+    return video
