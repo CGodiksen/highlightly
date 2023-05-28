@@ -50,7 +50,7 @@ def add_post_match_video_metadata(match: Match):
     new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
 
     # Add a frame from the match and the tournament logo to the thumbnail.
-    finish_video_thumbnail(match, video_metadata)
+    finish_video_thumbnail(match, video_metadata, None)
 
     video_metadata.description = new_description
     video_metadata.tags = new_tags
@@ -81,14 +81,14 @@ def get_match_vod_channel_name(match: Match) -> str:
 
 
 # TODO: Generate some eye catching text based on the context of the match and put it in the top of the match frame.
-def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
+def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, match_frame_time: float | None) -> None:
     """Replace the previous video thumbnail with a new file that has a match frame and the tournament logo added."""
     thumbnail_folder = match.create_unique_folder_path()
     thumbnail = Image.open(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
 
     # Retrieve a frame right before a kill in the first game in the match.
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
-    save_match_frame(match, frame_filepath)
+    save_match_frame(match, frame_filepath, match_frame_time)
 
     # Add the frame from the match to the right 3/5 of the thumbnail.
     match_frame_part = create_match_frame_part(frame_filepath, 360 + 160, match.team_1.game)
@@ -104,17 +104,19 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata) -> None:
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
-def save_match_frame(match: Match, frame_filepath: str) -> None:
+def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None) -> None:
     """Retrieve a frame right before a kill in the first game in the match and save it to the given filepath."""
     # Select a random highlight from the highlights.
-    first_game: GameVod = match.gamevod_set.first()
-    highlight = random.choice(first_game.highlight_set.all())
-    highlight_second = highlight.start_time_seconds + first_game.game_start_offset
+    if frame_time is None:
+        first_game: GameVod = match.gamevod_set.first()
+        highlight = random.choice(first_game.highlight_set.all())
+        highlight_second = highlight.start_time_seconds + first_game.game_start_offset
+        frame_time = highlight_second + random.randint(0, highlight.duration_seconds)
 
     # Extract the frame from the VOD and save it.
     vod_filepath = f"{match.create_unique_folder_path('vods')}/{match.gamevod_set.first().filename}"
     video_capture = cv2.VideoCapture(vod_filepath)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * (highlight_second + random.randint(0, highlight.duration_seconds)))
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, 60 * frame_time)
 
     _res, frame = video_capture.read()
     cv2.imwrite(frame_filepath, frame)
