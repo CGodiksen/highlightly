@@ -288,7 +288,7 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
 
     # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
     while wanted_video_length is None or current_video_length is None or current_video_length < wanted_video_length:
-        sleep(60)
+        sleep(120)
 
         # Find the latest video from the stream which should be the video with the for the game.
         list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"

@@ -160,9 +160,9 @@ def handle_round_detection_errors(most_recent_number: int, round: str, round_num
         round_number = 7
     elif most_recent_number in [16, 17] and round.endswith("T"):
         round_number = 17
-    elif most_recent_number in [7, 8] and (round.endswith("B")):
+    elif most_recent_number in [7, 8] and (round.endswith("B") or round.endswith("0")):
         round_number = 8
-    elif most_recent_number in [17, 18] and (round.endswith("B")):
+    elif most_recent_number in [17, 18] and (round.endswith("B") or round.endswith("0")):
         round_number = 18
 
     most_recent_digits = list(str(most_recent_number))
@@ -246,8 +246,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
             elif second_data["round_number"] == current_round + 1 and first_round_found:
                 rounds[current_round] = current_round_timeline
                 current_round += 1
-                # TODO: Maybe add the current data to the new round timeline. This can cause issues.
-                current_round_timeline = []
+                # TODO: Test if this causes issues.
+                current_round_timeline = [data]
             elif second_data["round_number"] == 1 and current_round == round_count:
                 # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
                 rounds[current_round] = current_round_timeline
@@ -276,7 +276,7 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
             estimated_end_time = next_first_live_frame["second"] - (length - next_first_live_frame["round_time_left"])
 
             # Limit the end time since there might be a long halftime pause, technical pauses, or timeouts.
-            estimated_end_time = min(timeline[-1]["second"] + 11, estimated_end_time)
+            estimated_end_time = min(timeline[-1]["second"] + 10, estimated_end_time)
 
         rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
                          "events": []}
@@ -310,8 +310,15 @@ def add_frames_to_check(rounds: dict, game: GameVod) -> None:
                 spike_planted_end = spike_planted_frames[-1]["second"]
                 frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
 
-        # Find the frames that should be checked for kills.
-        frames_to_check_for_kills = list(range(round_data["start_time"] + 1, round_data["estimated_end_time"]))
+        # Find the frames that should be checked for kills. If it is the last round, check more frequently to ensure
+        # kills that happen when the game is finished and the broadcast cuts to the players are also included.
+        start = round_data["start_time"] + 1
+        end = round_data["estimated_end_time"]
+
+        if max(rounds.keys()) == round:
+            frames_to_check_for_kills = list(range(start, end))
+        else:
+            frames_to_check_for_kills = list(range(start, end, 2))
 
         round_data.update({"frames_to_check_for_spike_planted": frames_to_check_for_spike_planted,
                            "frames_to_check_for_spike_stopped": frames_to_check_for_spike_stopped,
@@ -384,7 +391,7 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
     """Check the seconds for kill events and add each found event to the round."""
     # Extract the kill feed for each frame to check.
     for round, data in rounds.items():
-        for frame_second in data["frames_to_check_for_kills"][::2]:
+        for frame_second in data["frames_to_check_for_kills"]:
             file_path = f"{folder_path}/{frame_second}.png"
 
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
