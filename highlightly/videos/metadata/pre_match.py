@@ -77,7 +77,7 @@ def create_video_tags(scheduled_match: Match) -> list[str]:
             scheduled_match.get_format_display()]
 
     if scheduled_match.team_1.game == Game.COUNTER_STRIKE:
-        tags.extend(["csgo", "global offensive", "blast", "paris major", "csgo major", "csgo paris major", "blast tv"])
+        tags.extend(["csgo", "global offensive"])
 
     return tags
 
