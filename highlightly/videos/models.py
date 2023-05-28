@@ -12,7 +12,7 @@ class VideoMetadata(models.Model):
     tags = models.JSONField()
 
     thumbnail_filename = models.CharField(max_length=256)
-    thumbnail_match_frame_time = models.IntegerField(validators=[MinValueValidator(1)], blank=True, null=True)
+    thumbnail_match_frame_time = models.FloatField(validators=[MinValueValidator(1)], blank=True, null=True)
 
     language = models.CharField(max_length=256, default="english")
     category_id = models.IntegerField(default=20)

@@ -88,8 +88,10 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, match_fr
 
     # Retrieve a frame right before a kill in the first game in the match.
     frame_filepath = f"{thumbnail_folder}/{video_metadata.thumbnail_filename.replace('.png', '_frame.png')}"
-    save_match_frame(match, frame_filepath, match_frame_time)
-
+    match_frame_time: float = save_match_frame(match, frame_filepath, match_frame_time)
+    video_metadata.thumbnail_match_frame_time = match_frame_time
+    video_metadata.save()
+    
     # Add the frame from the match to the right 3/5 of the thumbnail.
     match_frame_part = create_match_frame_part(frame_filepath, 360 + 160, match.team_1.game)
     thumbnail.paste(match_frame_part, (360 + 160, 0))
@@ -104,7 +106,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, match_fr
     logging.info(f"Added match frame and tournament logo to thumbnail at {video_metadata.thumbnail_filename}.")
 
 
-def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None) -> None:
+def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None) -> float:
     """Retrieve a frame right before a kill in the first game in the match and save it to the given filepath."""
     # Select a random highlight from the highlights.
     if frame_time is None:
@@ -120,6 +122,8 @@ def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None
 
     _res, frame = video_capture.read()
     cv2.imwrite(frame_filepath, frame)
+
+    return frame_time
 
 
 # TODO: Add flags to team names in table.
