@@ -9,7 +9,8 @@ class VideoMetadataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VideoMetadata
-        fields = ["id", "match", "title", "description", "tags", "thumbnail", "language", "category_id"]
+        fields = ["id", "match", "title", "description", "tags", "thumbnail", "thumbnail_match_frame_time", "language",
+                  "category_id"]
 
     @staticmethod
     def get_thumbnail(video_metadata: VideoMetadata) -> str:
