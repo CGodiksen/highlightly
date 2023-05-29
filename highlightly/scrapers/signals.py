@@ -1,11 +1,14 @@
+import json
 import logging
 import os
 import shutil
+from datetime import timedelta
 
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django_celery_beat.models import IntervalSchedule, MINUTES, PeriodicTask
 
-from scrapers.models import Tournament, Match, GOTVDemo, GameVod, Organization
+from scrapers.models import Tournament, Match, GOTVDemo, GameVod, Organization, Game
 
 
 @receiver(post_delete, sender=Tournament)
@@ -72,3 +75,18 @@ def delete_match_data(instance: Match, **_kwargs) -> None:
             shutil.rmtree(tournament_folder_path)
     except OSError:
         pass
+
+
+@receiver(post_save, sender=Match)
+def create_check_match_status_periodic_task(instance: Match, created: bool, **_kwargs) -> None:
+    """Create a periodic task that starts checking the match status after the game is started."""
+    # TODO: Also create a task for Counter-Strike and League of Legends matches.
+    if created and instance.team_1.game == Game.VALORANT:
+        logging.info(f"{instance} created. Creating periodic task to check the match status when it is started.")
+
+        schedule, _ = IntervalSchedule.objects.get_or_create(every=5, period=MINUTES)
+        task = f"scrapers.tasks.check_match_status"
+        start_time = instance.start_datetime + timedelta(minutes=30)
+
+        PeriodicTask.objects.create(name=f"Check {instance} status", kwargs=json.dumps({"match_id": instance.id}),
+                                    interval=schedule, task=task, start_time=start_time)
