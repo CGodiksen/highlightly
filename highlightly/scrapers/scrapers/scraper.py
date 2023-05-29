@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup, Tag
-from django_celery_beat.models import PeriodicTask
 from serpapi import GoogleSearch
 
 from scrapers.models import Match, Tournament, Team, Game, Organization, Player, GameVod
@@ -198,8 +197,6 @@ class Scraper:
 
         if html is not None:
             logging.info(f"{match} is ready for post-match scraping.")
-            PeriodicTask.objects.filter(name=f"Scrape {match} if finished").delete()
-
             self.download_match_files(match, html)
 
 
