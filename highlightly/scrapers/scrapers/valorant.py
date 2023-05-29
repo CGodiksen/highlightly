@@ -10,6 +10,7 @@ from time import sleep
 import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
+from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization, GameVod, Player, Team
 from scrapers.scrapers.scraper import Scraper
@@ -86,9 +87,12 @@ class ValorantScraper(Scraper):
         html = requests.get(url=match.url).text
         soup = BeautifulSoup(html, "html.parser")
 
-        # If it is the last game of the match, mark the match as finished.
+        # If it is the last game of the match, mark the match as finished and delete the related periodic task.
         if "final" in soup.find("div", class_="match-header-vs-note").text:
-            logging.info(f"{match} is finished.")
+            logging.info(f"{match} is finished. Deleting the periodic task.")
+
+            PeriodicTask.objects.filter(name=f"Check {match} status").delete()
+
             match.finished = True
             match.save()
 
@@ -104,6 +108,10 @@ class ValorantScraper(Scraper):
 
             tz = pytz.timezone("Europe/Copenhagen")
             start_datetime = datetime.now(tz=tz).replace(tzinfo=None)
+
+            # Since we assume the game has just started, delay the task to check the match status.
+            new_task_start_time = datetime.now() + timedelta(minutes=30)
+            PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
                                    language="english", start_datetime=start_datetime)

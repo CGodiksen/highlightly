@@ -86,7 +86,6 @@ def create_check_match_status_periodic_task(instance: Match, created: bool, **_k
 
         schedule, _ = IntervalSchedule.objects.get_or_create(every=5, period=MINUTES)
         task = f"scrapers.tasks.check_match_status"
-        start_time = instance.start_datetime + timedelta(minutes=30)
 
         PeriodicTask.objects.create(name=f"Check {instance} status", kwargs=json.dumps({"match_id": instance.id}),
-                                    interval=schedule, task=task, start_time=start_time)
+                                    interval=schedule, task=task, start_time=instance.start_datetime)
