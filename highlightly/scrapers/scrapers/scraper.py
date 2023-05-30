@@ -231,7 +231,11 @@ def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | Non
 def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
     """Given the HTML for the tournaments liquipedia wiki page, extract the data for the tournament."""
     start_date = datetime.strptime(get_tournament_table_data(html, "Start Date:"), "%Y-%m-%d").date()
-    end_date = datetime.strptime(get_tournament_table_data(html, "End Date:"), "%Y-%m-%d").date()
+
+    try:
+        end_date = datetime.strptime(get_tournament_table_data(html, "End Date:"), "%Y-%m-%d").date()
+    except ValueError:
+        end_date = None
 
     prize_pool = get_tournament_table_data(html, "Prize Pool:").split("\xa0")[0]
     location = get_tournament_table_data(html, "Location:").strip()
