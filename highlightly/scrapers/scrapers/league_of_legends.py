@@ -1,10 +1,12 @@
 import json
+import logging
 import urllib.request
 from datetime import datetime
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.scraper import Scraper
@@ -71,8 +73,17 @@ class LeagueOfLegendsScraper(Scraper):
         game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
         finished_game_count = sum(game_counts)
 
-        print(game_counts)
-        print(finished_game_count)
+        # If it is the last game of the match, mark the match as finished and delete the related periodic task.
+        bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
+        bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
+        bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
+        if bo1_finished or bo3_finished or bo5_finished:
+            logging.info(f"{match} is finished. Deleting the periodic task.")
+
+            PeriodicTask.objects.filter(name=f"Check {match} status").delete()
+
+            match.finished = True
+            match.save()
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
     """Convert the given number to the corresponding match format."""
