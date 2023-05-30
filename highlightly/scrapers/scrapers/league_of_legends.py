@@ -4,7 +4,6 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
-from bs4 import BeautifulSoup
 
 from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.scraper import Scraper
@@ -60,14 +59,6 @@ class LeagueOfLegendsScraper(Scraper):
             organization.save()
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
-
-    @staticmethod
-    def is_match_finished(scheduled_match: Match) -> BeautifulSoup | None:
-        pass
-
-    @staticmethod
-    def download_match_files(match: Match, html: BeautifulSoup) -> None:
-        pass
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
