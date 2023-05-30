@@ -89,7 +89,7 @@ class LeagueOfLegendsScraper(Scraper):
         if finished_game_count > 0 and not match.gamevod_set.filter(game_count=finished_game_count).exists():
             logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-            finished_game = self.download_game_files(soup)
+            finished_game = self.download_game_files(match, soup, finished_game_count)
 
             logging.info(f"Extracting game statistics for {finished_game}.")
             self.extract_game_statistics(finished_game, soup)
@@ -98,9 +98,19 @@ class LeagueOfLegendsScraper(Scraper):
             finished_game.save(update_fields=["finished"])
 
     @staticmethod
-    def download_game_files(html: BeautifulSoup) -> GameVod:
-        """Download the VOD for the game and update the game vod object with the VOD data."""
-        pass
+    def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
+        """Download the VOD for the game and create game vod object."""
+        # Use the graphql endpoint to retrieve the finished game data.
+        with open("../data/graphql/op_gg_match.json") as file:
+            data = json.load(file)
+            data["variables"]["matchId"] = match.url.split("/")[-1]
+            data["variables"]["set"] = game_count
+
+            response = requests.post("https://esports.op.gg/matches/graphql", json=data)
+            content = json.loads(response.content)
+
+            print(content)
+
 
     def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
