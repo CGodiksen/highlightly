@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import requests
+from bs4 import BeautifulSoup
 
 from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.scraper import Scraper
@@ -60,6 +61,18 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
+    def check_match_status(self, match: Match):
+        """Check the current match status and start the highlighting process if a game is finished."""
+        html = requests.get(url=match.url).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Find the current number of finished games.
+        score_divs = soup.findAll("div", class_="m-1 flex items-center justify-center h-9 w-9")
+        game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
+        finished_game_count = sum(game_counts)
+
+        print(game_counts)
+        print(finished_game_count)
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
     """Convert the given number to the corresponding match format."""
