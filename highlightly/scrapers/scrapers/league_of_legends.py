@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
-from scrapers.models import Match, Game, Organization
+from scrapers.models import Match, Game, Organization, GameVod
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -84,6 +84,28 @@ class LeagueOfLegendsScraper(Scraper):
 
             match.finished = True
             match.save()
+
+        # Check if the most recently finished game exists and if not, create a game vod and start highlighting.
+        if finished_game_count > 0 and not match.gamevod_set.filter(game_count=finished_game_count).exists():
+            logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+
+            finished_game = self.download_game_files(soup)
+
+            logging.info(f"Extracting game statistics for {finished_game}.")
+            self.extract_game_statistics(finished_game, soup)
+
+            finished_game.finished = True
+            finished_game.save(update_fields=["finished"])
+
+    @staticmethod
+    def download_game_files(html: BeautifulSoup) -> GameVod:
+        """Download the VOD for the game and update the game vod object with the VOD data."""
+        pass
+
+    def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
+        """Extract and save statistics for the game. Also extract the MVP and the players photo."""
+        pass
+
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
     """Convert the given number to the corresponding match format."""
