@@ -1,12 +1,16 @@
 import json
 import logging
+import subprocess
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from time import sleep
 
+import pytz
 import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
+from twitch.helix import Video
 
 from scrapers.models import Match, Game, Organization, GameVod
 from scrapers.scrapers.scraper import Scraper
@@ -110,12 +114,18 @@ class LeagueOfLegendsScraper(Scraper):
 
             response = requests.post("https://esports.op.gg/matches/graphql", json=data)
             content = json.loads(response.content)
+            match_data = content["data"]["gameByMatch"]
 
-        if content["data"]["gameByMatch"] is None:
+        if match_data is None or not match_data["finished"]:
             return None
 
-        # TODO: Get the Twitch channel from the match page html.
-        # TODO: Download the Twitch video using the starting time and end time in the graphql response.
+        # Get the Twitch channel from the match page html.
+        match_data = json.loads(html.find("script", id="__NEXT_DATA__").contents[0])["props"]["pageProps"]["match"]
+        stream_url = match_data["streams"][0]["rawUrl"]
+
+        # Download the Twitch video using the starting time and end time in the graphql response.
+        video = get_twitch_video(match_data)
+
         # TODO: Create a game vod object using the data in the graphql response.
 
 
@@ -132,3 +142,28 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_3
     else:
         return Match.Format.BEST_OF_5
+
+
+def get_twitch_video(match_data: dict, stream_url) -> Video:
+    """Return the Twitch video related to the game."""
+    tz = pytz.timezone("Europe/Copenhagen")
+    datetime_format = "%Y-%m-%dT%H:%M:%SZ"
+
+    match_end_datetime = datetime.strptime(match_data["endAt"], datetime_format)
+
+    # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
+    for _ in range(10):
+        # Find the latest video from the stream which should be the video with the for the game.
+        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
+        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        video = json.loads(result.stdout.decode())["videos"][0]
+
+        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
+        vod_ended_at = vod_started_at + timedelta(seconds=int(video["lengthSeconds"]))
+
+        logging.info(f"Game ended at {match_end_datetime}. Found Twitch video that ends at {vod_ended_at}: {video}.")
+
+        if vod_ended_at > match_end_datetime:
+            return video
+        else:
+            sleep(60)
