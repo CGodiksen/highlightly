@@ -159,38 +159,3 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_3
     else:
         return Match.Format.BEST_OF_5
-
-
-def get_twitch_video(match_data: dict, stream_url: str, datetime_format: str) -> dict:
-    """Return the Twitch video related to the game."""
-    tz = pytz.timezone("Europe/Copenhagen")
-
-    match_end_datetime = datetime.strptime(str(match_data["endAt"]).split(".")[0], datetime_format)
-
-    # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
-    for _ in range(10):
-        # Find the latest video from the stream which should be the video with the for the game.
-        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
-        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        video = json.loads(result.stdout.decode())["videos"][0]
-
-        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        vod_ended_at = vod_started_at + timedelta(seconds=int(video["lengthSeconds"]))
-
-        logging.info(f"Game ended at {match_end_datetime}. Found Twitch video that ends at {vod_ended_at}: {video}.")
-
-        if vod_ended_at > match_end_datetime:
-            return video
-        else:
-            sleep(60)
-
-
-def get_youtube_stream_url(channel_name: str):
-    """Return the YouTube URL related to the livestream of the game."""
-    api_key = os.environ["YOUTUBE_API_KEY"]
-    base_url = "https://youtube.googleapis.com/youtube/v3/search"
-    query = f"{channel_name} league of legends"
-
-    response = requests.get(f"{base_url}?part=snippet&eventType=live&maxResults=5&q={query}&type=video&key={api_key}")
-
-    return f"https://www.youtube.com/watch?v={json.loads(response.content)['items'][0]['id']['videoId']}"
