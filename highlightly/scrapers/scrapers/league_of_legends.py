@@ -106,6 +106,8 @@ class LeagueOfLegendsScraper(Scraper):
     @staticmethod
     def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
         """Download the VOD for the game and create game vod object."""
+        datetime_format = "%Y-%m-%dT%H:%M:%S"
+
         # Use the graphql endpoint to retrieve the finished game data.
         with open("../data/graphql/op_gg_match.json") as file:
             data = json.load(file)
@@ -119,12 +121,24 @@ class LeagueOfLegendsScraper(Scraper):
         if match_data is None or not match_data["finished"]:
             return None
 
+        # TODO: Retrieve the tournament logo and tournament context of the match.
+
         # Get the Twitch channel from the match page html.
         match_data = json.loads(html.find("script", id="__NEXT_DATA__").contents[0])["props"]["pageProps"]["match"]
         stream_url = match_data["streams"][0]["rawUrl"]
 
         # Download the Twitch video using the starting time and end time in the graphql response.
-        video = get_twitch_video(match_data)
+        video = get_twitch_video(match_data, stream_url, datetime_format)
+
+        logging.info(f"Downloading VOD for game {game_count} of {match} from {video['id']}.")
+        vods_folder_path = match.create_unique_folder_path("vods")
+        vod_filepath = f"{vods_folder_path}/game_{game_count}.mkv"
+
+        match_start = datetime.strptime(str(match_data["beginAt"]).split(".")[0], datetime_format)
+        match_end = datetime.strptime(str(match_data["endAt"]).split(".")[0], datetime_format)
+
+        print(match_start)
+        print(match_end)
 
         # TODO: Create a game vod object using the data in the graphql response.
 
@@ -144,12 +158,11 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_5
 
 
-def get_twitch_video(match_data: dict, stream_url) -> Video:
+def get_twitch_video(match_data: dict, stream_url: str, datetime_format: str) -> dict:
     """Return the Twitch video related to the game."""
     tz = pytz.timezone("Europe/Copenhagen")
-    datetime_format = "%Y-%m-%dT%H:%M:%SZ"
 
-    match_end_datetime = datetime.strptime(match_data["endAt"], datetime_format)
+    match_end_datetime = datetime.strptime(str(match_data["endAt"]).split(".")[0], datetime_format)
 
     # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
     for _ in range(10):
