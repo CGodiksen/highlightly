@@ -92,11 +92,12 @@ class LeagueOfLegendsScraper(Scraper):
 
                 finished_game = self.download_game_files(match, soup, finished_game_count)
 
-                logging.info(f"Extracting game statistics for {finished_game}.")
-                self.extract_game_statistics(finished_game, soup)
+                if finished_game is not None:
+                    logging.info(f"Extracting game statistics for {finished_game}.")
+                    self.extract_game_statistics(finished_game, soup)
 
-                finished_game.finished = True
-                finished_game.save(update_fields=["finished"])
+                    finished_game.finished = True
+                    finished_game.save(update_fields=["finished"])
 
     @staticmethod
     def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
@@ -109,6 +110,9 @@ class LeagueOfLegendsScraper(Scraper):
 
             response = requests.post("https://esports.op.gg/matches/graphql", json=data)
             content = json.loads(response.content)
+
+        if content["data"]["gameByMatch"] is None:
+            return None
 
         # TODO: Get the Twitch channel from the match page html.
         # TODO: Download the Twitch video using the starting time and end time in the graphql response.
