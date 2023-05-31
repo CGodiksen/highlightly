@@ -34,8 +34,7 @@ ENV PATH="${PATH}:/root/.local/bin"
 RUN pipx install twitch-dl
 RUN pipx ensurepath
 
-# Install youtubedl to support downloading videos from YouTube.
-RUN wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl
-RUN chmod a+rx /usr/local/bin/youtube-dl
+# Install streamlink to support downloading streams while they are live.
+RUN pip install --user -U streamlink
 
 WORKDIR /usr/src/app/highlightly
