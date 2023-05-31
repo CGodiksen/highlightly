@@ -73,29 +73,30 @@ class LeagueOfLegendsScraper(Scraper):
         game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
         finished_game_count = sum(game_counts)
 
-        # If it is the last game of the match, mark the match as finished and delete the related periodic task.
-        bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
-        bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
-        bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
-        if bo1_finished or bo3_finished or bo5_finished:
-            logging.info(f"{match} is finished. Deleting the periodic task.")
+        if finished_game_count > 0:
+            # If it is the last game of the match, mark the match as finished and delete the related periodic task.
+            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
+            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
+            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
+            if bo1_finished or bo3_finished or bo5_finished:
+                logging.info(f"{match} is finished. Deleting the periodic task.")
 
-            PeriodicTask.objects.filter(name=f"Check {match} status").delete()
+                PeriodicTask.objects.filter(name=f"Check {match} status").delete()
 
-            match.finished = True
-            match.save()
+                match.finished = True
+                match.save()
 
-        # Check if the most recently finished game exists and if not, create a game vod and start highlighting.
-        if finished_game_count > 0 and not match.gamevod_set.filter(game_count=finished_game_count).exists():
-            logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+            # Check if the most recently finished game exists and if not, create a game vod and start highlighting.
+            if not match.gamevod_set.filter(game_count=finished_game_count).exists():
+                logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-            finished_game = self.download_game_files(match, soup, finished_game_count)
+                finished_game = self.download_game_files(match, soup, finished_game_count)
 
-            logging.info(f"Extracting game statistics for {finished_game}.")
-            self.extract_game_statistics(finished_game, soup)
+                logging.info(f"Extracting game statistics for {finished_game}.")
+                self.extract_game_statistics(finished_game, soup)
 
-            finished_game.finished = True
-            finished_game.save(update_fields=["finished"])
+                finished_game.finished = True
+                finished_game.save(update_fields=["finished"])
 
     @staticmethod
     def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
@@ -109,7 +110,9 @@ class LeagueOfLegendsScraper(Scraper):
             response = requests.post("https://esports.op.gg/matches/graphql", json=data)
             content = json.loads(response.content)
 
-            print(content)
+        # TODO: Get the Twitch channel from the match page html.
+        # TODO: Download the Twitch video using the starting time and end time in the graphql response.
+        # TODO: Create a game vod object using the data in the graphql response.
 
 
     def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
