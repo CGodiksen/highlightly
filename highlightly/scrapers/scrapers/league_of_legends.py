@@ -77,12 +77,14 @@ class LeagueOfLegendsScraper(Scraper):
         game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
         finished_game_count = sum(game_counts)
 
-        if finished_game_count > 0:
+        if len(game_counts) == 2:
             # If it is the last game of the match, mark the match as finished and delete the related periodic task.
             bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
             bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
             bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
-            if bo1_finished or bo3_finished or bo5_finished:
+            match_finished = bo1_finished or bo3_finished or bo5_finished
+
+            if match_finished:
                 logging.info(f"{match} is finished. Deleting the periodic task.")
 
                 PeriodicTask.objects.filter(name=f"Check {match} status").delete()
@@ -90,18 +92,31 @@ class LeagueOfLegendsScraper(Scraper):
                 match.finished = True
                 match.save()
 
-            # Check if the most recently finished game exists and if not, create a game vod and start highlighting.
-            if not match.gamevod_set.filter(game_count=finished_game_count).exists():
-                logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+            # If a new game has started, create an object for the game.
+            if not match_finished and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
+                logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
-                finished_game = self.download_game_files(match, soup, finished_game_count)
+                # Since we assume the game has just started, delay the task to check the match status.
+                new_task_start_time = datetime.now() + timedelta(minutes=30)
+                PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
-                if finished_game is not None:
-                    logging.info(f"Extracting game statistics for {finished_game}.")
-                    self.extract_game_statistics(finished_game, soup)
+                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
+                                       language="english")
 
-                    finished_game.finished = True
-                    finished_game.save(update_fields=["finished"])
+            # Check if the most recently finished game has been marked as finished.
+            if match.gamevod_set.filter(game_count=finished_game_count).exists():
+                finished_game = match.gamevod_set.get(game_count=finished_game_count)
+                if not finished_game.finished:
+                    logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+
+                    finished_game = self.download_game_files(match, soup, finished_game_count)
+
+                    if finished_game is not None:
+                        logging.info(f"Extracting game statistics for {finished_game}.")
+                        self.extract_game_statistics(finished_game, soup)
+
+                        finished_game.finished = True
+                        finished_game.save(update_fields=["finished"])
 
     @staticmethod
     def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
