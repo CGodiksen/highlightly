@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import subprocess
 import urllib.request
 from datetime import datetime, timedelta
@@ -10,7 +11,6 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
-from twitch.helix import Video
 
 from scrapers.models import Match, Game, Organization, GameVod
 from scrapers.scrapers.scraper import Scraper
@@ -123,22 +123,10 @@ class LeagueOfLegendsScraper(Scraper):
 
         # TODO: Retrieve the tournament logo and tournament context of the match.
 
-        # Get the Twitch channel from the match page html.
-        match_data = json.loads(html.find("script", id="__NEXT_DATA__").contents[0])["props"]["pageProps"]["match"]
-        stream_url = match_data["streams"][0]["rawUrl"]
+        # Find the URL of the current YouTube livestream related to the game.
+        stream_url = get_youtube_stream_url("lpl")
 
-        # Download the Twitch video using the starting time and end time in the graphql response.
-        video = get_twitch_video(match_data, stream_url, datetime_format)
-
-        logging.info(f"Downloading VOD for game {game_count} of {match} from {video['id']}.")
-        vods_folder_path = match.create_unique_folder_path("vods")
-        vod_filepath = f"{vods_folder_path}/game_{game_count}.mkv"
-
-        match_start = datetime.strptime(str(match_data["beginAt"]).split(".")[0], datetime_format)
-        match_end = datetime.strptime(str(match_data["endAt"]).split(".")[0], datetime_format)
-
-        print(match_start)
-        print(match_end)
+        # TODO: Download the full game from the stream using youtube-dl.
 
         # TODO: Create a game vod object using the data in the graphql response.
 
@@ -180,3 +168,14 @@ def get_twitch_video(match_data: dict, stream_url: str, datetime_format: str) ->
             return video
         else:
             sleep(60)
+
+
+def get_youtube_stream_url(channel_name: str):
+    """Return the YouTube URL related to the livestream of the game."""
+    api_key = os.environ["YOUTUBE_API_KEY"]
+    base_url = "https://youtube.googleapis.com/youtube/v3/search"
+    query = f"{channel_name} league of legends"
+
+    response = requests.get(f"{base_url}?part=snippet&eventType=live&maxResults=5&q={query}&type=video&key={api_key}")
+
+    return f"https://www.youtube.com/watch?v={json.loads(response.content)['items'][0]['id']['videoId']}"
