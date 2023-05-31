@@ -109,9 +109,9 @@ class LeagueOfLegendsScraper(Scraper):
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                    finished_game = self.download_game_files(match, soup, finished_game_count)
+                    game_vod_updated = self.add_post_game_data(finished_game, soup, finished_game_count)
 
-                    if finished_game is not None:
+                    if game_vod_updated:
                         logging.info(f"Extracting game statistics for {finished_game}.")
                         self.extract_game_statistics(finished_game, soup)
 
@@ -119,14 +119,15 @@ class LeagueOfLegendsScraper(Scraper):
                         finished_game.save(update_fields=["finished"])
 
     @staticmethod
-    def download_game_files(match: Match, html: BeautifulSoup, game_count: int) -> GameVod:
-        """Download the VOD for the game and create game vod object."""
-        datetime_format = "%Y-%m-%dT%H:%M:%S"
-
+    def add_post_game_data(game_vod: GameVod, html: BeautifulSoup, game_count: int) -> bool:
+        """
+        Extract match tournament data and update the game vod object with the post game data. If the post match
+        data could not be found, return False, otherwise return True.
+        """
         # Use the graphql endpoint to retrieve the finished game data.
         with open("../data/graphql/op_gg_match.json") as file:
             data = json.load(file)
-            data["variables"]["matchId"] = match.url.split("/")[-1]
+            data["variables"]["matchId"] = game_vod.match.url.split("/")[-1]
             data["variables"]["set"] = game_count
 
             response = requests.post("https://esports.op.gg/matches/graphql", json=data)
@@ -134,17 +135,12 @@ class LeagueOfLegendsScraper(Scraper):
             match_data = content["data"]["gameByMatch"]
 
         if match_data is None or not match_data["finished"]:
-            return None
+            return False
 
         # TODO: Retrieve the tournament logo and tournament context of the match.
+        # TODO: Update the game vod object using the data in the graphql response.
 
-        # Find the URL of the current YouTube livestream related to the game.
-        stream_url = get_youtube_stream_url("lpl")
-
-        # TODO: Download the full game from the stream using youtube-dl.
-
-        # TODO: Create a game vod object using the data in the graphql response.
-
+        return True
 
     def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
