@@ -136,7 +136,7 @@ class GameVod(models.Model):
     mvp = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
     game_start_offset = models.IntegerField(validators=[MinValueValidator(0)], blank=True, null=True)
 
-    start_datetime = models.DateTimeField()
+    start_datetime = models.DateTimeField(blank=True, null=True)
     finished = models.BooleanField(default=False)
     highlighted = models.BooleanField(default=False)
 
