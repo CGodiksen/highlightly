@@ -117,7 +117,7 @@ table.team-table {
     border-bottom: 0;
 }
 
-.player-name-cell-counter-strike {
+.player-name-cell-counter-strike, .player-name-cell-league-of-legends {
     width: 500px;
 }
 
