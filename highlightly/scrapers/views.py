@@ -55,7 +55,7 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             tasks.scrape_valorant_matches()
             matches = Match.objects.filter(team_1__game=Game.VALORANT)
 
-        return Response(MatchSerializer(matches, many=True).data, status=status.HTTP_200_OK)
+        return Response(MatchSerializer(matches.order_by("start_datetime"), many=True).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["POST"])
     def scrape_finished_match(self, request: Request, pk: int) -> Response:

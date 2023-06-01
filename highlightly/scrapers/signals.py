@@ -73,6 +73,9 @@ def delete_match_data(instance: Match, **_kwargs) -> None:
         tournament_folder_path = "/".join(folder_path.split("/")[:-1])
         if len(os.listdir(tournament_folder_path)) == 0:
             shutil.rmtree(tournament_folder_path)
+
+        # Also delete the related periodic task.
+        PeriodicTask.objects.filter(name=f"Check {instance} status").delete()
     except OSError:
         pass
 
