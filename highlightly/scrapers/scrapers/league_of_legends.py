@@ -137,7 +137,7 @@ class LeagueOfLegendsScraper(Scraper):
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                    self.add_post_game_data(finished_game, soup, finished_game_count)
+                    self.add_post_game_data(finished_game)
 
                     # Stop the download of the livestream related to the game.
                     os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
@@ -149,13 +149,24 @@ class LeagueOfLegendsScraper(Scraper):
                     finished_game.save()
 
     @staticmethod
-    def add_post_game_data(game_vod: GameVod, html: BeautifulSoup, game_count: int) -> None:
-        """Extract match tournament data and update the game vod object with the post game data."""
-        match_data = retrieve_game_data(game_vod.match, game_count)
+    def add_post_game_data(game_vod: GameVod) -> None:
+        """Update the game vod object with the post game data."""
+        match_data = retrieve_game_data(game_vod.match, game_vod.game_count)
 
-        # TODO: Update the game vod object using the data in the graphql response.
+        # Set the winner of the match.
+        if match_data["winner"]["name"] == game_vod.match.team_1.organization.name:
+            game_vod.team_1_round_count = 1
+            game_vod.team_2_round_count = 0
+        else:
+            game_vod.team_1_round_count = 0
+            game_vod.team_2_round_count = 1
 
-    def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
+        # Set the actual start datetime of the game.
+        begin_at = datetime.strptime(str(match_data["beginAt"]).split(".")[0], "%Y-%m-%dT%H:%M:%S")
+        begin_at = pytz.utc.localize(begin_at)
+        game_vod.start_datetime = begin_at.astimezone(pytz.timezone("Europe/Copenhagen"))
+
+    def extract_game_statistics(self, game_vod: GameVod, html: BeautifulSoup) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
         pass
 
