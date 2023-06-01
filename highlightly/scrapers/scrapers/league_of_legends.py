@@ -12,7 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
-from scrapers.models import Match, Game, Organization, GameVod
+from scrapers.models import Match, Game, Organization, GameVod, Tournament
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -50,8 +50,6 @@ class LeagueOfLegendsScraper(Scraper):
                         match["team_2"] = match.pop("awayTeam")
 
                         match["game"] = Game.LEAGUE_OF_LEGENDS
-                        match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
-                        match["tournament_short_name"] = short_name
                         match["start_datetime"] = start_datetime
 
                         match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
@@ -60,6 +58,12 @@ class LeagueOfLegendsScraper(Scraper):
 
                         stream = next((stream for stream in match["streams"] if stream["language"] == "en"), None)
                         match["stream_url"] = stream["rawUrl"] if stream else None
+
+                        # Extract information about the tournament of the match.
+                        match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
+                        match["tournament_context"] = match["tournament"]["name"]
+                        match["tournament_short_name"] = short_name
+                        match["tournament_logo_filename"] = save_tournament_logo(match)
 
                         upcoming_matches.append(match)
 
@@ -141,15 +145,14 @@ class LeagueOfLegendsScraper(Scraper):
                     logging.info(f"Extracting game statistics for {finished_game}.")
                     self.extract_game_statistics(finished_game, soup)
 
-                    # finished_game.finished = True
-                    # finished_game.save(update_fields=["finished"])
+                    finished_game.finished = True
+                    finished_game.save()
 
     @staticmethod
     def add_post_game_data(game_vod: GameVod, html: BeautifulSoup, game_count: int) -> None:
         """Extract match tournament data and update the game vod object with the post game data."""
         match_data = retrieve_game_data(game_vod.match, game_count)
 
-        # TODO: Retrieve the tournament logo and tournament context of the match.
         # TODO: Update the game vod object using the data in the graphql response.
 
     def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
@@ -165,6 +168,19 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_3
     else:
         return Match.Format.BEST_OF_5
+
+
+def save_tournament_logo(match_data: dict) -> str:
+    """if the tournament of the match does not already have a logo, save the logo and return the filename."""
+    Path("media/tournaments").mkdir(parents=True, exist_ok=True)
+    logo_filename = f"{match_data['tournament_name'].replace(' ', '_')}.png"
+
+    # Only download the tournament logo if it does not already exist.
+    if Tournament.objects.filter(name=match_data["tournament_name"], logo_filename=logo_filename) is None:
+        image_url = match_data["tournament"]["serie"]["league"]["imageUrl"]
+        urllib.request.urlretrieve(image_url, f"media/tournaments/{logo_filename}")
+
+    return logo_filename
 
 
 def get_youtube_stream_url(channel_name: str):

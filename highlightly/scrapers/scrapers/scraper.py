@@ -49,7 +49,8 @@ class Scraper:
                                                    end_date=data["end_date"], prize_pool_us_dollars=data["prize_pool"],
                                                    first_place_prize_us_dollars=data["first_place_prize"],
                                                    location=data["location"], tier=data["tier"], type=data["type"],
-                                                   short_name=match.get("tournament_short_name", None))
+                                                   short_name=match.get("tournament_short_name", None),
+                                                   logo_filename=match.get("tournament_logo_filename", None))
 
         return tournament
 
@@ -96,6 +97,7 @@ class Scraper:
         Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
                              create_video=create_video, estimated_end_datetime=estimated_end_datetime,
+                             tournament_context=match.get("tournament_context", None),
                              stream_url=match.get("stream_url", None))
 
     def scrape_upcoming_matches(self) -> None:
