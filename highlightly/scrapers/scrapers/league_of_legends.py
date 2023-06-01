@@ -161,3 +161,14 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_3
     else:
         return Match.Format.BEST_OF_5
+
+
+def get_youtube_stream_url(channel_name: str):
+    """Return the YouTube URL related to the livestream of the game."""
+    api_key = os.environ["YOUTUBE_API_KEY"]
+    base_url = "https://youtube.googleapis.com/youtube/v3/search"
+    query = f"{channel_name} league of legends"
+
+    response = requests.get(f"{base_url}?part=snippet&eventType=live&maxResults=5&q={query}&type=video&key={api_key}")
+
+    return f"https://www.youtube.com/watch?v={json.loads(response.content)['items'][0]['id']['videoId']}"
