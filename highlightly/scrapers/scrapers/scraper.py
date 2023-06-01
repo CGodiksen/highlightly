@@ -94,7 +94,8 @@ class Scraper:
         logging.info(f"Creating scheduled match for {team_1.organization.name} VS. {team_2.organization.name}.")
         Match.objects.create(team_1=team_1, team_2=team_2, tournament=tournament, format=match["format"],
                              tier=match["tier"], url=match["url"], start_datetime=match["start_datetime"],
-                             create_video=create_video, estimated_end_datetime=estimated_end_datetime)
+                             create_video=create_video, estimated_end_datetime=estimated_end_datetime,
+                             stream_url=match.get("stream_url", None))
 
     def scrape_upcoming_matches(self) -> None:
         """

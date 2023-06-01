@@ -50,6 +50,9 @@ class LeagueOfLegendsScraper(Scraper):
                         match["url"] = f"https://esports.op.gg/matches/{match['id']}"
                         match["tier"] = 1
 
+                        stream = next((stream for stream in match["streams"] if stream["language"] == "en"), None)
+                        match["stream_url"] = stream["rawUrl"] if stream else None
+
                         upcoming_matches.append(match)
 
         return upcoming_matches
