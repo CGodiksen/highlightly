@@ -18,6 +18,7 @@ class Tournament(models.Model):
 
     game = models.CharField(max_length=32, choices=Game.choices)
     name = models.CharField(max_length=128)
+    short_name = models.CharField(max_length=32, blank=True, null=True)
 
     url = models.URLField(max_length=128, blank=True, null=True)
 
