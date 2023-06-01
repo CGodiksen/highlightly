@@ -48,7 +48,8 @@ class Scraper:
                                                    url=tournament_url, start_date=data["start_date"],
                                                    end_date=data["end_date"], prize_pool_us_dollars=data["prize_pool"],
                                                    first_place_prize_us_dollars=data["first_place_prize"],
-                                                   location=data["location"], tier=data["tier"], type=data["type"])
+                                                   location=data["location"], tier=data["tier"], type=data["type"],
+                                                   short_name=match.get("tournament_short_name", None))
 
         return tournament
 

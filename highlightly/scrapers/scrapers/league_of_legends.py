@@ -44,6 +44,7 @@ class LeagueOfLegendsScraper(Scraper):
 
                         match["game"] = Game.LEAGUE_OF_LEGENDS
                         match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
+                        match["tournament_short_name"] = short_name
                         match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
 
                         match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
