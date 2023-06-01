@@ -35,3 +35,6 @@ def check_match_status(match_id: int) -> None:
         if match.team_1.game == Game.VALORANT:
             scraper = ValorantScraper()
             scraper.check_match_status(match)
+        elif match.team_1.game == Game.LEAGUE_OF_LEGENDS:
+            scraper = LeagueOfLegendsScraper()
+            scraper.check_match_status(match)

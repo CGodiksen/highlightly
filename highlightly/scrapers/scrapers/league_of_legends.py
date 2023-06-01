@@ -1,5 +1,8 @@
 import json
 import logging
+import os
+import signal
+import subprocess
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -83,11 +86,14 @@ class LeagueOfLegendsScraper(Scraper):
         game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
         finished_game_count = sum(game_counts)
 
-        if len(game_counts) == 2:
+        live_span = soup.find("span", class_="font-bold text-red-500")
+        is_live = live_span is not None and live_span.text.strip().lower() == "live"
+
+        if len(game_counts) == 2 or is_live:
             # If it is the last game of the match, mark the match as finished and delete the related periodic task.
-            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
-            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
-            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
+            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts, default=0) == 1
+            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts, default=0) == 2
+            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts, default=0) == 3
             match_finished = bo1_finished or bo3_finished or bo5_finished
 
             if match_finished:
@@ -102,12 +108,19 @@ class LeagueOfLegendsScraper(Scraper):
             if not match_finished and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
                 logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
+                # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
+                stream_url = get_youtube_stream_url(match.tournament.short_name)
+
+                vod_filepath = f"{match.create_unique_folder_path('vods')}/game_{finished_game_count + 1}.mkv"
+                download_cmd = f"streamlink {stream_url} best -o {vod_filepath}"
+                process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+
                 # Since we assume the game has just started, delay the task to check the match status.
-                new_task_start_time = datetime.now() + timedelta(minutes=30)
+                new_task_start_time = datetime.now() + timedelta(minutes=20)
                 PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
                 GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                       language="english")
+                                       language="english", process_id=process.pid)
 
             # Check if the most recently finished game has been marked as finished.
             if match.gamevod_set.filter(game_count=finished_game_count).exists():
@@ -118,6 +131,9 @@ class LeagueOfLegendsScraper(Scraper):
                     game_vod_updated = self.add_post_game_data(finished_game, soup, finished_game_count)
 
                     if game_vod_updated:
+                        # Stop the download of the livestream related to the game.
+                        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+
                         logging.info(f"Extracting game statistics for {finished_game}.")
                         self.extract_game_statistics(finished_game, soup)
 
