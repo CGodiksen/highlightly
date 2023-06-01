@@ -82,18 +82,17 @@ class LeagueOfLegendsScraper(Scraper):
         soup = BeautifulSoup(html, "html.parser")
 
         # Find the current number of finished games.
-        score_divs = soup.findAll("div", class_="m-1 flex items-center justify-center h-9 w-9")
-        game_counts = [int(div.text.strip()) for div in score_divs if div.text.strip().isdigit()]
+        game_counts = get_finished_games(match)
         finished_game_count = sum(game_counts)
 
         live_span = soup.find("span", class_="font-bold text-red-500")
         is_live = live_span is not None and live_span.text.strip().lower() == "live"
 
-        if len(game_counts) == 2 or is_live:
+        if finished_game_count > 0 or is_live:
             # If it is the last game of the match, mark the match as finished and delete the related periodic task.
-            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts, default=0) == 1
-            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts, default=0) == 2
-            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts, default=0) == 3
+            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
+            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
+            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
             match_finished = bo1_finished or bo3_finished or bo5_finished
 
             if match_finished:
@@ -130,41 +129,24 @@ class LeagueOfLegendsScraper(Scraper):
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                    game_vod_updated = self.add_post_game_data(finished_game, soup, finished_game_count)
+                    self.add_post_game_data(finished_game, soup, finished_game_count)
 
-                    if game_vod_updated:
-                        # Stop the download of the livestream related to the game.
-                        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+                    # Stop the download of the livestream related to the game.
+                    os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
 
-                        logging.info(f"Extracting game statistics for {finished_game}.")
-                        self.extract_game_statistics(finished_game, soup)
+                    logging.info(f"Extracting game statistics for {finished_game}.")
+                    self.extract_game_statistics(finished_game, soup)
 
-                        finished_game.finished = True
-                        finished_game.save(update_fields=["finished"])
+                    # finished_game.finished = True
+                    # finished_game.save(update_fields=["finished"])
 
     @staticmethod
-    def add_post_game_data(game_vod: GameVod, html: BeautifulSoup, game_count: int) -> bool:
-        """
-        Extract match tournament data and update the game vod object with the post game data. If the post match
-        data could not be found, return False, otherwise return True.
-        """
-        # Use the graphql endpoint to retrieve the finished game data.
-        with open("../data/graphql/op_gg_match.json") as file:
-            data = json.load(file)
-            data["variables"]["matchId"] = game_vod.match.url.split("/")[-1]
-            data["variables"]["set"] = game_count
-
-            response = requests.post("https://esports.op.gg/matches/graphql", json=data)
-            content = json.loads(response.content)
-            match_data = content["data"]["gameByMatch"]
-
-        if match_data is None or not match_data["finished"]:
-            return False
+    def add_post_game_data(game_vod: GameVod, html: BeautifulSoup, game_count: int) -> None:
+        """Extract match tournament data and update the game vod object with the post game data."""
+        match_data = retrieve_game_data(game_vod.match, game_count)
 
         # TODO: Retrieve the tournament logo and tournament context of the match.
         # TODO: Update the game vod object using the data in the graphql response.
-
-        return True
 
     def extract_game_statistics(self, game: GameVod, html: BeautifulSoup) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
@@ -190,3 +172,32 @@ def get_youtube_stream_url(channel_name: str):
     response = requests.get(f"{base_url}?part=snippet&eventType=live&maxResults=5&q={query}&type=video&key={api_key}")
 
     return f"https://www.youtube.com/watch?v={json.loads(response.content)['items'][0]['id']['videoId']}"
+
+
+def get_finished_games(match: Match) -> tuple[int, int]:
+    """Return a tuple with the format (team_1_wins, team_2_wins)."""
+    finished_games = match.gamevod_set.filter(finished=True)
+    team_1_game_count = finished_games.filter(team_1_round_count=1).count()
+    team_2_game_count = finished_games.filter(team_2_round_count=1).count()
+
+    next_game_data = retrieve_game_data(match, finished_games.count() + 1)
+    if next_game_data is not None and next_game_data["finished"]:
+        if next_game_data["winner"]["name"] == match.team_1.organization.name:
+            team_1_game_count += 1
+        else:
+            team_2_game_count += 1
+
+    return team_1_game_count, team_2_game_count
+
+
+def retrieve_game_data(match: Match, game_count: int) -> dict:
+    """Use the graphql endpoint to retrieve the finished game data."""
+    with open("../data/graphql/op_gg_match.json") as file:
+        data = json.load(file)
+        data["variables"]["matchId"] = match.url.split("/")[-1]
+        data["variables"]["set"] = game_count
+
+        response = requests.post("https://esports.op.gg/matches/graphql", json=data)
+        content = json.loads(response.content)
+
+        return content["data"]["gameByMatch"]
