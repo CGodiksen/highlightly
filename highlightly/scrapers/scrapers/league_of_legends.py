@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import os
@@ -172,8 +173,10 @@ class LeagueOfLegendsScraper(Scraper):
     def extract_game_statistics(game_vod: GameVod, match_data: dict) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
         team_data = defaultdict(list)
-        header = ["position", "name", "kills", "deaths", "assists", "cs", "damage", "sight", "level", "gold"]
+        statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
+        headers = ["position", "name", "kills", "deaths", "assists", "cs", "damage", "sight", "level", "gold"]
 
+        # Extract the player data from the match data.
         for player in match_data["players"]:
             name = f"{player['player']['firstName']} '{player['player']['nickName']}' {player['player']['lastName']}"
 
@@ -183,7 +186,19 @@ class LeagueOfLegendsScraper(Scraper):
                                                       player["visionWardsBought"], player["level"],
                                                       player["goldEarned"]])
 
-        print(team_data)
+        # For each team, save a CSV file with the player data for the game.
+        for team in [game_vod.match.team_1, game_vod.match.team_2]:
+            team_name = team.organization.name.lower().replace(' ', '_')
+            filename = f"map_{game_vod.game_count}_{team_name}.csv"
+
+            with open(f"{statistics_folder_path}/{filename}", "w") as f:
+                writer = csv.writer(f)
+                writer.writerow(headers)
+                writer.writerows(team_data[team.organization.name])
+
+            field_to_update = "team_1_statistics_filename" if game_vod.match.team_1 == team else "team_2_statistics_filename"
+            setattr(game_vod, field_to_update, filename)
+            game_vod.save()
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
