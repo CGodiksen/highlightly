@@ -149,7 +149,7 @@ class LeagueOfLegendsScraper(Scraper):
                     self.extract_game_statistics(finished_game, match_data)
 
                     finished_game.finished = True
-                    finished_game.save()
+                    finished_game.save(update_fields=["finished"])
 
     @staticmethod
     def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:

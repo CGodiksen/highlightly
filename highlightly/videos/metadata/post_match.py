@@ -91,7 +91,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, match_fr
     match_frame_time: float = save_match_frame(match, frame_filepath, match_frame_time)
     video_metadata.thumbnail_match_frame_time = match_frame_time
     video_metadata.save()
-    
+
     # Add the frame from the match to the right 3/5 of the thumbnail.
     match_frame_part = create_match_frame_part(frame_filepath, 360 + 160, match.team_1.game)
     thumbnail.paste(match_frame_part, (360 + 160, 0))
@@ -138,7 +138,11 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
         team_2_data = get_team_statistics_data(game, game.match.team_2, 2, game_name)
 
         match_info = game.map if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
-        mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} MVP"
+        match_info = f"Game {game.game_count}" if game_name == "league-of-legends" else match_info
+
+        mvp_title_prefix = "Game" if game_name == "league-of-legends" else "Map"
+        mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"{mvp_title_prefix} {game.game_count} MVP"
+
         mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
         general_data = {"match_info": match_info, "mvp_title": mvp_title,
@@ -169,10 +173,13 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
 
     if game_name == "counter-strike":
         columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
-    else:
+    elif game_name == "valorant":
         df = df.drop("A", axis=1)
         df = df.drop("ADR", axis=1)
         columns = ["name", "r", "acs", "k", "d", "plus_minus", "kast", "hs_percent"]
+    else:
+        df = df.drop("position", axis=1)
+        columns = ["name", "kills", "deaths", "assists", "cs", "damage", "sight", "level", "gold"]
 
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
