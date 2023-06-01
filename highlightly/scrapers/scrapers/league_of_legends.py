@@ -7,6 +7,7 @@ import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytz
 import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
@@ -39,7 +40,10 @@ class LeagueOfLegendsScraper(Scraper):
                 if match["homeTeam"] is not None and match["awayTeam"] is not None:
                     # Only include the match if it is in one of the supported tournaments and takes place today.
                     short_name = match["tournament"]["serie"]["league"]["shortName"]
+
                     begin_at = datetime.strptime(str(match["beginAt"]).split(".")[0], "%Y-%m-%dT%H:%M:%S")
+                    begin_at = pytz.utc.localize(begin_at)
+                    start_datetime = begin_at.astimezone(pytz.timezone("Europe/Copenhagen"))
 
                     if short_name in self.included_tournaments and begin_at.date() == datetime.today().date():
                         match["team_1"] = match.pop("homeTeam")
@@ -48,7 +52,7 @@ class LeagueOfLegendsScraper(Scraper):
                         match["game"] = Game.LEAGUE_OF_LEGENDS
                         match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
                         match["tournament_short_name"] = short_name
-                        match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
+                        match["start_datetime"] = start_datetime
 
                         match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
                         match["url"] = f"https://esports.op.gg/matches/{match['id']}"

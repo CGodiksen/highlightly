@@ -83,8 +83,8 @@ def delete_match_data(instance: Match, **_kwargs) -> None:
 @receiver(post_save, sender=Match)
 def create_check_match_status_periodic_task(instance: Match, created: bool, **_kwargs) -> None:
     """Create a periodic task that starts checking the match status after the game is started."""
-    # TODO: Also create a task for Counter-Strike and League of Legends matches.
-    if created and instance.team_1.game == Game.VALORANT:
+    # TODO: Also create a task for Counter-Strike matches.
+    if created and (instance.team_1.game == Game.VALORANT or instance.team_1.game == Game.LEAGUE_OF_LEGENDS):
         logging.info(f"{instance} created. Creating periodic task to check the match status when it is started.")
 
         schedule, _ = IntervalSchedule.objects.get_or_create(every=5, period=MINUTES)
