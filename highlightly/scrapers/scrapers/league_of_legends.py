@@ -111,7 +111,8 @@ class LeagueOfLegendsScraper(Scraper):
                 # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
                 stream_url = get_youtube_stream_url(match.tournament.short_name)
 
-                vod_filepath = f"{match.create_unique_folder_path('vods')}/game_{finished_game_count + 1}.mkv"
+                vod_filename = f"game_{finished_game_count + 1}.mkv"
+                vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
                 download_cmd = f"streamlink {stream_url} best -o {vod_filepath}"
                 process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
@@ -119,8 +120,9 @@ class LeagueOfLegendsScraper(Scraper):
                 new_task_start_time = datetime.now() + timedelta(minutes=20)
                 PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
-                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                       language="english", process_id=process.pid)
+                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.YOUTUBE,
+                                       language="english", process_id=process.pid, filename=vod_filename,
+                                       map="Summoner's Rift", url=stream_url)
 
             # Check if the most recently finished game has been marked as finished.
             if match.gamevod_set.filter(game_count=finished_game_count).exists():
