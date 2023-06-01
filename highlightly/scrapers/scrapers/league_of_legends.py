@@ -194,7 +194,13 @@ class LeagueOfLegendsScraper(Scraper):
             with open(f"{statistics_folder_path}/{filename}", "w") as f:
                 writer = csv.writer(f)
                 writer.writerow(headers)
-                writer.writerows(team_data[team.organization.name])
+
+                rows = team_data[team.organization.name]
+                rows = [next(row for row in rows if row[0] == "top"), next(row for row in rows if row[0] == "jun"),
+                        next(row for row in rows if row[0] == "mid"), next(row for row in rows if row[0] == "adc"),
+                        next(row for row in rows if row[0] == "sup")]
+
+                writer.writerows(rows)
 
             field_to_update = "team_1_statistics_filename" if game_vod.match.team_1 == team else "team_2_statistics_filename"
             setattr(game_vod, field_to_update, filename)
