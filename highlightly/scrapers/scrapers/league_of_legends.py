@@ -4,6 +4,7 @@ import os
 import signal
 import subprocess
 import urllib.request
+from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -136,23 +137,22 @@ class LeagueOfLegendsScraper(Scraper):
                 finished_game = match.gamevod_set.get(game_count=finished_game_count)
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
+                    match_data = retrieve_game_data(finished_game.match, finished_game.game_count)
 
-                    self.add_post_game_data(finished_game)
+                    self.add_post_game_data(match_data, finished_game)
 
                     # Stop the download of the livestream related to the game.
                     os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
 
                     logging.info(f"Extracting game statistics for {finished_game}.")
-                    self.extract_game_statistics(finished_game, soup)
+                    self.extract_game_statistics(finished_game, match_data)
 
                     finished_game.finished = True
                     finished_game.save()
 
     @staticmethod
-    def add_post_game_data(game_vod: GameVod) -> None:
+    def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:
         """Update the game vod object with the post game data."""
-        match_data = retrieve_game_data(game_vod.match, game_vod.game_count)
-
         # Set the winner of the match.
         if match_data["winner"]["name"] == game_vod.match.team_1.organization.name:
             game_vod.team_1_round_count = 1
@@ -166,9 +166,24 @@ class LeagueOfLegendsScraper(Scraper):
         begin_at = pytz.utc.localize(begin_at)
         game_vod.start_datetime = begin_at.astimezone(pytz.timezone("Europe/Copenhagen"))
 
-    def extract_game_statistics(self, game_vod: GameVod, html: BeautifulSoup) -> None:
+        game_vod.save()
+
+    @staticmethod
+    def extract_game_statistics(game_vod: GameVod, match_data: dict) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
-        pass
+        team_data = defaultdict(list)
+        header = ["position", "name", "kills", "deaths", "assists", "cs", "damage", "sight", "level", "gold"]
+
+        for player in match_data["players"]:
+            name = f"{player['player']['firstName']} '{player['player']['nickName']}' {player['player']['lastName']}"
+
+            team_data[player["team"]["name"]].append([player["position"], name, player["kills"], player["deaths"],
+                                                      player["assists"], player["creepScore"],
+                                                      player["totalDamageDealtToChampions"],
+                                                      player["visionWardsBought"], player["level"],
+                                                      player["goldEarned"]])
+
+        print(team_data)
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
