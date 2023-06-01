@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="post-match-statistics.css">
+</head>
+<body>
+
+<div class="parent">
+    <div class="match-info">
+        <b>{match_info:}</b>
+    </div>
+
+    <div class="team-1-logo">
+        <img src="{team_1_logo:}" alt="{team_1_name:}" class="team-logo">
+    </div>
+    <div class="score">
+        <span>
+            <span class="{team_1_result:} team-1-score">{team_1_score:}</span>
+            <span class="{team_2_result:}">{team_2_score:}</span>
+        </span>
+    </div>
+    <div class="team-2-logo">
+        <img src="{team_2_logo:}" alt="{team_2_name:}" class="team-logo">
+    </div>
+
+    <div class="mvp-title">
+        <b>{mvp_title:}</b>
+    </div>
+    <div class="mvp">
+        <div class="player-body-shot">
+            <img src="{mvp_team_logo:}" class="body-shot-logo">
+            <img src="{mvp_profile_picture:}" class="body-shot-img" itemprop="image">
+        </div>
+    </div>
+    <div class="mvp-name">
+        {mvp_name:}
+    </div>
+    <div class="team-1-table">
+        <table class="team-table">
+            <tr>
+                <th class="team-name-header">
+                    <img src="{team_1_logo:}" alt="{team_1_name:}" class="table-team-logo">
+                    <span>{team_1_name:}</span>
+                </th>
+                <th>KDA</th>
+                <th>CS</th>
+                <th>Damage</th>
+                <th>Sight</th>
+                <th>Gold</th>
+                <th>Level</th>
+            </tr>
+            <tr>
+                <td>{team_1_player_1_name:}</td>
+                <td>{team_1_player_1_kills:}/{team_1_player_1_deaths:}/{team_1_player_1_assists:}</td>
+                <td>{team_1_player_1_cs:}</td>
+                <td>{team_1_player_1_damage:}</td>
+                <td>{team_1_player_1_sight:}</td>
+                <td>{team_1_player_1_gold:}</td>
+                <td>{team_1_player_1_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_2_name:}</td>
+                <td>{team_1_player_2_kills:}/{team_1_player_2_deaths:}/{team_1_player_2_assists:}</td>
+                <td>{team_1_player_2_cs:}</td>
+                <td>{team_1_player_2_damage:}</td>
+                <td>{team_1_player_2_sight:}</td>
+                <td>{team_1_player_2_gold:}</td>
+                <td>{team_1_player_2_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_3_name:}</td>
+                <td>{team_1_player_3_kills:}/{team_1_player_3_deaths:}/{team_1_player_3_assists:}</td>
+                <td>{team_1_player_3_cs:}</td>
+                <td>{team_1_player_3_damage:}</td>
+                <td>{team_1_player_3_sight:}</td>
+                <td>{team_1_player_3_gold:}</td>
+                <td>{team_1_player_3_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_4_name:}</td>
+                <td>{team_1_player_4_kills:}/{team_1_player_4_deaths:}/{team_1_player_4_assists:}</td>
+                <td>{team_1_player_4_cs:}</td>
+                <td>{team_1_player_4_damage:}</td>
+                <td>{team_1_player_4_sight:}</td>
+                <td>{team_1_player_4_gold:}</td>
+                <td>{team_1_player_4_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_1_player_5_name:}</td>
+                <td>{team_1_player_5_kills:}/{team_1_player_5_deaths:}/{team_1_player_5_assists:}</td>
+                <td>{team_1_player_5_cs:}</td>
+                <td>{team_1_player_5_damage:}</td>
+                <td>{team_1_player_5_sight:}</td>
+                <td>{team_1_player_5_gold:}</td>
+                <td>{team_1_player_5_level:}</td>
+            </tr>
+        </table>
+    </div>
+    <div class="team-2-table">
+        <table class="team-table">
+            <tr>
+                <th class="team-name-header">
+                    <img src="{team_2_logo:}" alt="{team_2_name:}" class="table-team-logo">
+                    <span>{team_2_name:}</span>
+                </th>
+                <th>KDA</th>
+                <th>CS</th>
+                <th>Damage</th>
+                <th>Sight</th>
+                <th>Gold</th>
+                <th>Level</th>
+            </tr>
+            <tr>
+                <td>{team_2_player_1_name:}</td>
+                <td>{team_2_player_1_kills:}/{team_2_player_1_deaths:}/{team_2_player_1_assists:}</td>
+                <td>{team_2_player_1_cs:}</td>
+                <td>{team_2_player_1_damage:}</td>
+                <td>{team_2_player_1_sight:}</td>
+                <td>{team_2_player_1_gold:}</td>
+                <td>{team_2_player_1_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_2_name:}</td>
+                <td>{team_2_player_2_kills:}/{team_2_player_2_deaths:}/{team_2_player_2_assists:}</td>
+                <td>{team_2_player_2_cs:}</td>
+                <td>{team_2_player_2_damage:}</td>
+                <td>{team_2_player_2_sight:}</td>
+                <td>{team_2_player_2_gold:}</td>
+                <td>{team_2_player_2_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_3_name:}</td>
+                <td>{team_2_player_3_kills:}/{team_2_player_3_deaths:}/{team_2_player_3_assists:}</td>
+                <td>{team_2_player_3_cs:}</td>
+                <td>{team_2_player_3_damage:}</td>
+                <td>{team_2_player_3_sight:}</td>
+                <td>{team_2_player_3_gold:}</td>
+                <td>{team_2_player_3_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_4_name:}</td>
+                <td>{team_2_player_4_kills:}/{team_2_player_4_deaths:}/{team_2_player_4_assists:}</td>
+                <td>{team_2_player_4_cs:}</td>
+                <td>{team_2_player_4_damage:}</td>
+                <td>{team_2_player_4_sight:}</td>
+                <td>{team_2_player_4_gold:}</td>
+                <td>{team_2_player_4_level:}</td>
+            </tr>
+            <tr>
+                <td>{team_2_player_5_name:}</td>
+                <td>{team_2_player_5_kills:}/{team_2_player_5_deaths:}/{team_2_player_5_assists:}</td>
+                <td>{team_2_player_5_cs:}</td>
+                <td>{team_2_player_5_damage:}</td>
+                <td>{team_2_player_5_sight:}</td>
+                <td>{team_2_player_5_gold:}</td>
+                <td>{team_2_player_5_level:}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>
