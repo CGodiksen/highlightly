@@ -106,15 +106,13 @@ class ValorantScraper(Scraper):
         if is_live and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
-            tz = pytz.timezone("Europe/Copenhagen")
-            start_datetime = datetime.now(tz=tz).replace(tzinfo=None)
-
             # Since we assume the game has just started, delay the task to check the match status.
             new_task_start_time = datetime.now() + timedelta(minutes=30)
             PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
+            tz = pytz.timezone("Europe/Copenhagen")
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                   language="english", start_datetime=start_datetime)
+                                   language="english", start_datetime=datetime.now(tz=tz))
 
         # Check if the most recently finished game has been marked as finished.
         if match.gamevod_set.filter(game_count=finished_game_count).exists():
@@ -142,7 +140,7 @@ class ValorantScraper(Scraper):
         # Find the start time of the game in the full VOD.
         tz = pytz.timezone("Europe/Copenhagen")
         vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        vod_match_start_offset = game_vod.start_datetime.replace(tzinfo=None) - vod_started_at.replace(tzinfo=None)
+        vod_match_start_offset = game_vod.start_datetime - vod_started_at
         vod_start = vod_match_start_offset - timedelta(minutes=5)
 
         # Download the entire Twitch video from the start offset to now.
@@ -288,8 +286,7 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
             break
 
     tz = pytz.timezone("Europe/Copenhagen")
-    now = datetime.now(tz=tz).replace(tzinfo=None)
-
+    now = datetime.now(tz=tz)
     wanted_video_length = None
     current_video_length = None
     video = None
@@ -304,7 +301,7 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
         video = json.loads(result.stdout.decode())["videos"][0]
 
         vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        wanted_video_length = (now - vod_started_at.replace(tzinfo=None)).total_seconds()
+        wanted_video_length = (now - vod_started_at).total_seconds()
         current_video_length = video["lengthSeconds"]
 
         logging.info(f"Need {wanted_video_length} second video. Found {current_video_length} second video: {video}.")
