@@ -14,7 +14,7 @@ import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
 
-from scrapers.models import Match, Game, Organization, GameVod, Tournament
+from scrapers.models import Match, Game, Organization, GameVod, Tournament, Player
 from scrapers.scrapers.scraper import Scraper
 from scrapers.types import TeamData
 
@@ -206,6 +206,19 @@ class LeagueOfLegendsScraper(Scraper):
             setattr(game_vod, field_to_update, filename)
             game_vod.save()
 
+        # Extract the MVP and save the player photo.
+        mvp_data = next(player for player in match_data["players"] if player["mvpPoint"] == 1)
+        player_url = f"https://esports.op.gg/players/{mvp_data['player']['id']}"
+
+        if not Player.objects.filter(url=player_url).exists():
+            mvp = extract_player_data(mvp_data, player_url)
+        else:
+            mvp = Player.objects.get(url=player_url)
+
+        if mvp:
+            game_vod.mvp = mvp
+            game_vod.save()
+
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
     """Convert the given number to the corresponding match format."""
@@ -268,3 +281,18 @@ def retrieve_game_data(match: Match, game_count: int) -> dict:
         content = json.loads(response.content)
 
         return content["data"]["gameByMatch"]
+
+
+def extract_player_data(mvp_data: dict, url: str) -> Player:
+    """Retrieve information about the player from the given URL and create a player object."""
+    logging.info(f"Player in {url} does not already exist. Creating new player.")
+
+    team = Organization.objects.get(name=mvp_data["team"]["name"]).teams.get(game=Game.LEAGUE_OF_LEGENDS)
+    tag = mvp_data["player"]["nickName"]
+    name = f"{mvp_data['player']['firstName']} {mvp_data['player']['lastName']}"
+
+    profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
+    urllib.request.urlretrieve(mvp_data["player"]["imageUrl"], f"media/players/{profile_picture_filename}")
+
+    return Player.objects.create(nationality=mvp_data["player"]["nationality"], tag=tag, name=name, url=url,
+                                 team=team, profile_picture_filename=profile_picture_filename)
