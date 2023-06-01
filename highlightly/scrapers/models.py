@@ -140,6 +140,9 @@ class GameVod(models.Model):
     finished = models.BooleanField(default=False)
     highlighted = models.BooleanField(default=False)
 
+    # Used to control the process to download the livestream of the VOD.
+    process_id = models.IntegerField(blank=True, null=True)
+
     def __str__(self) -> str:
         return f"Map {self.game_count} VOD of {self.match}"
 
