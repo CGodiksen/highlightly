@@ -1,13 +1,9 @@
 import json
 import logging
-import os
-import subprocess
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import sleep
 
-import pytz
 import requests
 from bs4 import BeautifulSoup
 from django_celery_beat.models import PeriodicTask
@@ -20,8 +16,9 @@ from scrapers.types import TeamData
 class LeagueOfLegendsScraper(Scraper):
     """Webscraper that scrapes op.gg for upcoming League of Legends matches."""
 
-    @staticmethod
-    def list_upcoming_matches() -> list[dict]:
+    included_tournaments = ["LEC", "LPL", "LCK", "LCS"]
+
+    def list_upcoming_matches(self) -> list[dict]:
         """Use GraphQL to retrieve the upcoming matches from op.gg."""
         upcoming_matches: list[dict] = []
 
@@ -37,18 +34,23 @@ class LeagueOfLegendsScraper(Scraper):
             # For each match in the response, extract data related to the match.
             for match in content["data"]["pagedAllMatches"]:
                 if match["homeTeam"] is not None and match["awayTeam"] is not None:
-                    match["team_1"] = match.pop("homeTeam")
-                    match["team_2"] = match.pop("awayTeam")
+                    # Only include the match if it is in one of the supported tournaments and takes place today.
+                    short_name = match["tournament"]["serie"]["league"]["shortName"]
+                    begin_at = datetime.strptime(str(match["beginAt"]).split(".")[0], "%Y-%m-%dT%H:%M:%S")
 
-                    match["game"] = Game.LEAGUE_OF_LEGENDS
-                    match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
-                    match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
+                    if short_name in self.included_tournaments and begin_at.date() == datetime.today().date():
+                        match["team_1"] = match.pop("homeTeam")
+                        match["team_2"] = match.pop("awayTeam")
 
-                    match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
-                    match["url"] = f"https://esports.op.gg/matches/{match['id']}"
-                    match["tier"] = 1
+                        match["game"] = Game.LEAGUE_OF_LEGENDS
+                        match["tournament_name"] = match["tournament"]["serie"]["league"]["name"]
+                        match["start_datetime"] = datetime.strptime(match.pop("scheduledAt")[:-5], "%Y-%m-%dT%H:%M:%S")
 
-                    upcoming_matches.append(match)
+                        match["format"] = convert_number_of_games_to_format(match["numberOfGames"])
+                        match["url"] = f"https://esports.op.gg/matches/{match['id']}"
+                        match["tier"] = 1
+
+                        upcoming_matches.append(match)
 
         return upcoming_matches
 
