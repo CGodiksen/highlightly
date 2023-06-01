@@ -157,6 +157,8 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
 
 def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_name: str) -> dict:
     """Return a dict that can be used to populate the HTML for the post match statistics image."""
+    statistics_filename = getattr(game, f"team_{team_number}_statistics_filename")
+    df = pd.read_csv(f"{game.match.create_unique_folder_path('statistics')}/{statistics_filename}")
     team_logo_filepath = os.path.abspath(f"media/teams/{team.organization.logo_filename}")
 
     if team_number == 1:
@@ -164,12 +166,9 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
     else:
         result = "winner" if game.team_2_round_count > game.team_1_round_count else "loser"
 
-    score = getattr(game, f"team_{team_number}_round_count")
+    score = df["kills"].sum() if game_name == "league-of-legends" else getattr(game, f"team_{team_number}_round_count")
     team_data = {f"team_{team_number}_name": team.organization.name, f"team_{team_number}_score": score,
                  f"team_{team_number}_result": result, f"team_{team_number}_logo": team_logo_filepath}
-
-    statistics_filename = getattr(game, f"team_{team_number}_statistics_filename")
-    df = pd.read_csv(f"{game.match.create_unique_folder_path('statistics')}/{statistics_filename}")
 
     if game_name == "counter-strike":
         columns = ["name", "kd", "plus_minus", "adr", "kast", "rating"]
