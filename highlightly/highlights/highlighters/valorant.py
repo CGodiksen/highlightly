@@ -1,7 +1,6 @@
 import logging
 import re
 import shutil
-import subprocess
 from collections import OrderedDict, defaultdict
 from datetime import timedelta
 from difflib import SequenceMatcher
@@ -11,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from highlights.highlighters.highlighter import Highlighter, group_round_events
-from highlights.highlighters.util import scale_image
+from highlights.highlighters.util import scale_image, optical_character_recognition
 from highlights.models import Highlight
 from highlights.types import SecondData, Event
 from scrapers.models import GameVod
@@ -430,25 +429,6 @@ def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, 
     if frame is not None:
         cropped_frame = frame[0:70, 910:1010]
         cv2.imwrite(file_path, scale_image(cropped_frame, 300))
-
-
-def optical_character_recognition(path: str) -> dict:
-    """Perform optical character recognition on the given image/images using PaddleOCR."""
-    cmd = f"paddleocr --image_dir {path} --use_angle_cls false --lang en --use_gpu false --enable_mkldnn true " \
-          f"--use_mp true --show_log false --use_dilation true --det_db_score_mode slow"
-
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-
-    # For each analyzed frame, save the detections in the frame.
-    frame_detections = {}
-    for detection in result.stdout.decode().split(f"**********{path}/"):
-        split_detection = detection.replace("**********", "").split("\n")
-        frame_second: str = split_detection[0].replace('.png', '')
-
-        if frame_second.isdigit():
-            frame_detections[int(frame_second)] = re.findall(r"'(.*?)'", detection, re.DOTALL)
-
-    return frame_detections
 
 
 def clean_rounds(rounds: dict[int, dict]) -> None:
