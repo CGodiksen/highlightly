@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from highlights.highlighters.highlighter import Highlighter, group_round_events
+from highlights.highlighters.util import scale_image
 from highlights.models import Highlight
 from highlights.types import SecondData, Event
 from scrapers.models import GameVod
@@ -96,14 +97,6 @@ def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: st
 
     for frame_second in frame_group:
         save_round_timer_image(video_capture, frame_rate, frame_second, f"{folder_path}/{frame_second}.png")
-
-
-def scale_image(image: any, scale_percent) -> any:
-    """Scale the given image while keeping the aspect ratio."""
-    width = int(image.shape[1] * scale_percent / 100)
-    height = int(image.shape[0] * scale_percent / 100)
-
-    return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
 
 
 def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, SecondData]:
