@@ -286,24 +286,17 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
             break
 
     now = timezone.localtime(timezone.now())
-    wanted_video_length = None
-    current_video_length = None
-    video = None
 
-    # Since Twitch videos have a delay compared to the livestream, keep checking until the video is updated.
-    while wanted_video_length is None or current_video_length is None or current_video_length < wanted_video_length:
-        sleep(120)
+    # Find the latest video from the stream which should be the video with the for the game.
+    list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
+    result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    video = json.loads(result.stdout.decode())["videos"][0]
 
-        # Find the latest video from the stream which should be the video with the for the game.
-        list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
-        result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        video = json.loads(result.stdout.decode())["videos"][0]
+    tz = pytz.timezone("Europe/Copenhagen")
+    vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
+    wanted_video_length = (now - vod_started_at).total_seconds()
+    current_video_length = video["lengthSeconds"]
 
-        tz = pytz.timezone("Europe/Copenhagen")
-        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        wanted_video_length = (now - vod_started_at).total_seconds()
-        current_video_length = video["lengthSeconds"]
-
-        logging.info(f"Need {wanted_video_length} second video. Found {current_video_length} second video: {video}.")
+    logging.info(f"Need {wanted_video_length} second video. Found {current_video_length} second video: {video}.")
 
     return video
