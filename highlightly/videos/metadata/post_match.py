@@ -28,7 +28,7 @@ def add_post_match_video_metadata(match: Match):
 
     # Extract the statistics for each time into a dataframe.
     statistics_folder_path = match.create_unique_folder_path("statistics")
-    game_1 = match.gamevod_set.first()
+    game_1: GameVod = match.gamevod_set.first()
     team_1_statistics = pd.read_csv(f"{statistics_folder_path}/{game_1.team_1_statistics_filename}")
     team_2_statistics = pd.read_csv(f"{statistics_folder_path}/{game_1.team_2_statistics_filename}")
 
@@ -46,7 +46,8 @@ def add_post_match_video_metadata(match: Match):
     new_tags.extend(team_2_in_game_names)
 
     # Add credit to where the VOD is from to the description.
-    channel_name = get_match_vod_channel_name(match)
+    short_name = match.tournament.short_name
+    channel_name = get_match_vod_channel_name(match) if game_1.host == GameVod.Host.TWITCH else short_name
     new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
 
     # Add a frame from the match and the tournament logo to the thumbnail.
@@ -61,7 +62,7 @@ def get_team_in_game_names(team_statistics: pd.DataFrame, game: Game) -> list[st
     """Given a dataframe with the team statistics, extract the in-game names for all the players."""
     player_names: pd.Series = team_statistics.iloc[:, 0]
 
-    if game == Game.COUNTER_STRIKE:
+    if game == Game.COUNTER_STRIKE or game == Game.LEAGUE_OF_LEGENDS:
         extract_in_game_name = lambda match: re.search("'(.*?)'", match.group()).group().strip("'")
         in_game_names: pd.Series = player_names.str.replace("[\s\S]+", extract_in_game_name, regex=True)
     else:
