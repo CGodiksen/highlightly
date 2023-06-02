@@ -15,18 +15,24 @@ class LeagueOfLegendsHighlighter(Highlighter):
     """Highlighter that uses the PaddleOCR and template matching to extract highlights from League of Legends matches."""
 
     # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
+    # TODO: Handle issue with multiple games being present in a single VOD.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
-        # TODO: Handle issue with multiple games being present in a single VOD.
+
+        vod_filepath = f"{game_vod.match.create_unique_folder_path('vods')}/{game_vod.filename}"
+        video_capture = cv2.VideoCapture(vod_filepath)
+        frame_rate = get_video_frame_rate(vod_filepath)
+        total_seconds = get_video_length(vod_filepath)
+
         # Use PaddleOCR to find the segment of the VOD that contains the live game itself.
-        timeline = extract_game_timeline(game_vod)
+        timeline = extract_game_timeline(game_vod, video_capture, frame_rate, total_seconds)
+        logging.info(f"Found timeline in {game_vod}: {timeline}")
 
         # Find the frames that should be checked within the live game segment.
         start_second = get_game_start_second(timeline)
-        end_second = get_game_end_second(timeline)
+        end_second = get_game_end_second(game_vod, timeline, video_capture, frame_rate)
 
         logging.info(f"{game_vod} starts at {start_second} and ends at {end_second} in {game_vod.filename}.")
-
         frames_to_check = range(start_second, end_second + 1, 4)
 
         # TODO: Use template matching or color thresholding to find the events within the frames.
@@ -38,18 +44,13 @@ class LeagueOfLegendsHighlighter(Highlighter):
         pass
 
 
-def extract_game_timeline(game_vod: GameVod) -> dict[int, int]:
+def extract_game_timeline(game_vod: GameVod, video_capture, frame_rate: float, total_seconds: float) -> dict[int, int]:
     """
     Return the timeline of the game within the full VOD using PaddleOCR. Return it as a dict from the frame second
     to the time in the match at the frame.
     """
     logging.info(f"Extracting game timeline from VOD at {game_vod.filename} for {game_vod}.")
 
-    vod_filepath = f"{game_vod.match.create_unique_folder_path('vods')}/{game_vod.filename}"
-    video_capture = cv2.VideoCapture(vod_filepath)
-    frame_rate = get_video_frame_rate(vod_filepath)
-
-    total_seconds = get_video_length(vod_filepath)
     frames = range(0, int(total_seconds) + 1, 60)
 
     # Save a frame for each minute in the full VOD.
@@ -67,7 +68,7 @@ def extract_game_timeline(game_vod: GameVod) -> dict[int, int]:
     for frame_second, detections in frame_detections.items():
         detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
 
-        if detected_timer:
+        if detected_timer is not None:
             split_timer = detected_timer.split(":")
             timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
@@ -94,6 +95,23 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
     return max(start_times, key=start_times.get)
 
 
-def get_game_end_second(timeline: dict[int, int]) -> int:
+def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
     """Using the given timeline, extract frames near the end of the timeline to find the exact end second."""
-    return timeline[max(timeline.keys())] + 60
+    frames_to_check = range(max(timeline.keys()), max(timeline.keys()) + 61)
+    frame_folder_path = game_vod.match.create_unique_folder_path("last_frames")
+
+    for frame_second in frames_to_check:
+        save_timer_image(video_capture, frame_rate, frame_second, f"{frame_folder_path}/{frame_second}.png")
+
+    frame_detections = optical_character_recognition(frame_folder_path)
+    logging.info(f"Detected text in timer images: {dict(sorted(frame_detections.items()))}")
+
+    # Get the last frame second that includes a timer.
+    frames_with_timer = []
+    for frame_second, detections in frame_detections.items():
+        detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
+
+        if detected_timer is not None:
+            frames_with_timer.append(frame_second)
+
+    return max(frames_with_timer)
