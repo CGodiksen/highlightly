@@ -10,6 +10,7 @@ from time import sleep
 import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
+from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization, GameVod, Player, Team
@@ -107,12 +108,11 @@ class ValorantScraper(Scraper):
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
             # Since we assume the game has just started, delay the task to check the match status.
-            new_task_start_time = datetime.now() + timedelta(minutes=30)
+            new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=30)
             PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
-            tz = pytz.timezone("Europe/Copenhagen")
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                   language="english", start_datetime=datetime.now(tz=tz))
+                                   language="english", start_datetime=timezone.localtime(timezone.now()))
 
         # Check if the most recently finished game has been marked as finished.
         if match.gamevod_set.filter(game_count=finished_game_count).exists():
@@ -285,8 +285,7 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
             stream_url = stream_div_url
             break
 
-    tz = pytz.timezone("Europe/Copenhagen")
-    now = datetime.now(tz=tz)
+    now = timezone.localtime(timezone.now())
     wanted_video_length = None
     current_video_length = None
     video = None
@@ -300,6 +299,7 @@ def get_twitch_video(html: BeautifulSoup) -> dict:
         result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         video = json.loads(result.stdout.decode())["videos"][0]
 
+        tz = pytz.timezone("Europe/Copenhagen")
         vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
         wanted_video_length = (now - vod_started_at).total_seconds()
         current_video_length = video["lengthSeconds"]

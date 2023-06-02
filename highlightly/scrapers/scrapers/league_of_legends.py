@@ -12,6 +12,7 @@ from pathlib import Path
 import pytz
 import requests
 from bs4 import BeautifulSoup
+from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization, GameVod, Tournament, Player
@@ -31,8 +32,8 @@ class LeagueOfLegendsScraper(Scraper):
         # Use the graphql endpoint to retrieve the current scheduled match data.
         with open("../data/graphql/op_gg_upcoming_matches.json") as file:
             data = json.load(file)
-            data["variables"]["year"] = datetime.now().year
-            data["variables"]["month"] = datetime.now().month
+            data["variables"]["year"] = timezone.localtime(timezone.now()).year
+            data["variables"]["month"] = timezone.localtime(timezone.now()).month
 
             response = requests.post("https://esports.op.gg/matches/graphql", json=data)
             content = json.loads(response.content)
@@ -126,7 +127,7 @@ class LeagueOfLegendsScraper(Scraper):
                 process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
                 # Since we assume the game has just started, delay the task to check the match status.
-                new_task_start_time = datetime.now() + timedelta(minutes=20)
+                new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=20)
                 PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
                 GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.YOUTUBE,

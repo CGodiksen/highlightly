@@ -5,6 +5,9 @@ import re
 import subprocess
 import urllib.parse
 from datetime import datetime, timedelta
+
+import pytz
+from django.utils import timezone
 from math import ceil
 from pathlib import Path
 
@@ -140,7 +143,7 @@ class CounterStrikeScraper(Scraper):
             game_vod = GameVod.objects.create(match=match, game_count=game_count + 1, map=map, url=vod_url,
                                               host=GameVod.Host.TWITCH, language="english", filename=vod_filename,
                                               team_1_round_count=round_count[0], team_2_round_count=round_count[1],
-                                              start_datetime=datetime.now())
+                                              start_datetime=timezone.localtime(timezone.now()))
 
             GOTVDemo.objects.create(game_vod=game_vod, filename=demo_file)
 
@@ -239,7 +242,8 @@ def extract_match_data(html: Tag, base_url: str) -> CounterStrikeMatchData:
     match_url = f"{base_url}{match_url_postfix}"
 
     unix_timestamp = int(html.find("div", class_="matchTime")["data-unix"])
-    start_datetime = datetime.utcfromtimestamp(unix_timestamp / 1000)
+
+    start_datetime = datetime.utcfromtimestamp(unix_timestamp / 1000).astimezone(pytz.timezone("Europe/Copenhagen"))
     match_format = convert_label_to_format(html.find("div", class_="matchMeta").text)
 
     tier = int(html["stars"])
