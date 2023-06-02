@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -19,12 +20,14 @@ class Scraper:
     @staticmethod
     def scheduled_match_already_exists(match: dict) -> bool:
         """Return True if a Match object already exists for the given match."""
-        cleaned_team_1_name = match["team_1"]["name"].removeprefix("Team ").removesuffix(" Clan").strip()
-        cleaned_team_2_name = match["team_2"]["name"].removeprefix("Team ").removesuffix(" Clan").strip()
+        matches = Match.objects.filter(start_datetime=match["start_datetime"])
 
-        return Match.objects.filter(start_datetime=match["start_datetime"],
-                                    team_1__organization__name__icontains=cleaned_team_1_name,
-                                    team_2__organization__name__icontains=cleaned_team_2_name).exists()
+        team_1: str = match["team_1"]["name"]
+        team_2: str = match["team_2"]["name"]
+        matches = [m for m in matches if SequenceMatcher(None, team_1, m.team_1.organization.name).ratio() >= 0.6]
+        equal_matches = [m for m in matches if SequenceMatcher(None, team_2, m.team_2.organization.name).ratio() >= 0.6]
+
+        return len(equal_matches) > 0
 
     @staticmethod
     def create_tournament(match: dict) -> Tournament:
@@ -65,13 +68,15 @@ class Scraper:
         already exists, the existing object is returned.
         """
         team_name: str = match_team_data["name"]
-        cleaned_team_name = team_name.removeprefix("Team ").removesuffix(" Clan").strip()
-        team = Team.objects.filter(game=game, organization__name__icontains=cleaned_team_name).first()
+        teams = Team.objects.filter(game=game)
+        team = next((t for t in teams if SequenceMatcher(None, team_name, t.organization.name).ratio() >= 0.6), None)
 
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
 
-            organization = Organization.objects.filter(name__icontains=cleaned_team_name).first()
+            orgs = Organization.objects.all()
+            organization = next((o for o in orgs if SequenceMatcher(None, team_name, o.name).ratio() >= 0.6), None)
+
             if organization is None:
                 organization = Organization.objects.create(name=team_name)
 
