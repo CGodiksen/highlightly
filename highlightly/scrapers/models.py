@@ -107,7 +107,10 @@ class Match(models.Model):
 
     def create_unique_folder_path(self, folder: str | None = None) -> str:
         """Return a path that can be used to uniquely identify files related to this match."""
-        match_part = f"{self.team_1.organization.name.replace(' ', '-').lower()}-vs-{self.team_2.organization.name.replace(' ', '-').lower()}"
+        team_1_name = self.team_1.organization.name.replace(" ", "-").replace("'", "").lower()
+        team_2_name = self.team_2.organization.name.replace(" ", "-").replace("'", "").lower()
+
+        match_part = f"{team_1_name}-vs-{team_2_name}"
         date_part = self.start_datetime.astimezone(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d")
         path = f"media/matches/{self.tournament.name.replace(' ', '-').lower()}/{match_part}_{date_part}"
 

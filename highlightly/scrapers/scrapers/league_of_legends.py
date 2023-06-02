@@ -120,6 +120,7 @@ class LeagueOfLegendsScraper(Scraper):
 
                 # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
                 stream_url = get_youtube_stream_url(match.tournament.short_name)
+                logging.info(f"Connecting to stream from {stream_url} to download VOD.")
 
                 vod_filename = f"game_{finished_game_count + 1}.mkv"
                 vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
