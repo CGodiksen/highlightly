@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from datetime import timedelta
 
 import cv2
@@ -16,6 +17,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
     # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
+        # TODO: Handle issue with multiple games being present in a single VOD.
         # Use PaddleOCR to find the segment of the VOD that contains the live game itself.
         timeline = extract_game_timeline(game_vod)
 
@@ -83,7 +85,13 @@ def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_p
 
 def get_game_start_second(timeline: dict[int, int]) -> int:
     """Using the given timeline, find the second that the game started on."""
-    return 0
+    start_times = defaultdict(int)
+
+    # For each found timer, check the start time in relation to that timer.
+    for frame_second, timer in timeline.items():
+        start_times[frame_second - timer] += 1
+
+    return max(start_times, key=start_times.get)
 
 
 def get_game_end_second(timeline: dict[int, int]) -> int:
