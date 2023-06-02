@@ -148,10 +148,12 @@ class LeagueOfLegendsScraper(Scraper):
                     os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
 
                     logging.info(f"Extracting game statistics for {finished_game}.")
-                    self.extract_game_statistics(finished_game, match_data)
+
+                    if len(match_data["players"]) > 0:
+                        self.extract_game_statistics(finished_game, match_data)
 
                     finished_game.finished = True
-                    finished_game.save(update_fields=["finished"])
+                    finished_game.save()
 
     @staticmethod
     def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:
@@ -209,7 +211,16 @@ class LeagueOfLegendsScraper(Scraper):
             game_vod.save()
 
         # Extract the MVP and save the player photo.
-        mvp_data = next(player for player in match_data["players"] if player["mvpPoint"] == 1)
+        mvp_data = next((player for player in match_data["players"] if player["mvpPoint"] == 1), None)
+
+        # If there was no selected MVP, select the player with most damage dealt to champions.
+        if mvp_data is None:
+            mvp_data = match_data["players"][0]
+
+            for player in match_data["players"]:
+                if player["totalDamageDealtToChampions"] > mvp_data["totalDamageDealtToChampions"]:
+                    mvp_data = player
+
         player_url = f"https://esports.op.gg/players/{mvp_data['player']['id']}"
 
         if not Player.objects.filter(url=player_url).exists():
