@@ -13,12 +13,20 @@ from videos.editors.editor import get_video_frame_rate, get_video_length
 class LeagueOfLegendsHighlighter(Highlighter):
     """Highlighter that uses the PaddleOCR and template matching to extract highlights from League of Legends matches."""
 
+    # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
         # Use PaddleOCR to find the segment of the VOD that contains the live game itself.
         timeline = extract_game_timeline(game_vod)
 
-        # TODO: Find the frames that should be checked within the live game segment.
+        # Find the frames that should be checked within the live game segment.
+        start_second = get_game_start_second(timeline)
+        end_second = get_game_end_second(timeline)
+
+        logging.info(f"{game_vod} starts at {start_second} and ends at {end_second} in {game_vod.filename}.")
+
+        frames_to_check = range(start_second, end_second + 1, 4)
+
         # TODO: Use template matching or color thresholding to find the events within the frames.
 
         return []
@@ -61,9 +69,7 @@ def extract_game_timeline(game_vod: GameVod) -> dict[int, int]:
             split_timer = detected_timer.split(":")
             timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
-    print(timeline)
-
-    return []
+    return timeline
 
 def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str) -> None:
     """Save an image that contains the timer in the given second of the given video capture."""
@@ -73,3 +79,13 @@ def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_p
     if frame is not None:
         cropped_frame = frame[0:100, 910:1010]
         cv2.imwrite(file_path, scale_image(cropped_frame, 300))
+
+
+def get_game_start_second(timeline: dict[int, int]) -> int:
+    """Using the given timeline, find the second that the game started on."""
+    return 0
+
+
+def get_game_end_second(timeline: dict[int, int]) -> int:
+    """Using the given timeline, extract frames near the end of the timeline to find the exact end second."""
+    return timeline[max(timeline.keys())] + 60
