@@ -1,9 +1,10 @@
 import logging
+from datetime import timedelta
 
 import cv2
 
 from highlights.highlighters.highlighter import Highlighter
-from highlights.highlighters.util import scale_image
+from highlights.highlighters.util import scale_image, optical_character_recognition
 from highlights.types import Event
 from scrapers.models import GameVod
 from videos.editors.editor import get_video_frame_rate, get_video_length
@@ -46,6 +47,23 @@ def extract_game_timeline(game_vod: GameVod) -> dict[int, int]:
     for frame_second in frames:
         save_timer_image(video_capture, frame_rate, frame_second, f"{frame_folder_path}/{frame_second}.png")
 
+    # Attempt to find the game time in each image.
+    frame_detections = optical_character_recognition(frame_folder_path)
+    logging.info(f"Detected text in timer images: {dict(sorted(frame_detections.items()))}")
+
+    timeline = {}
+
+    # Use the detections to create the timeline.
+    for frame_second, detections in frame_detections.items():
+        detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
+
+        if detected_timer:
+            split_timer = detected_timer.split(":")
+            timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+
+    print(timeline)
+
+    return []
 
 def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str) -> None:
     """Save an image that contains the timer in the given second of the given video capture."""
