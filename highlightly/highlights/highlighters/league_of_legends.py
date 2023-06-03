@@ -37,7 +37,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
         frames_to_check = range(start_second, end_second + 1, 4)
         logging.info(f"Checking {len(frames_to_check)} frames for events in {game_vod}.")
 
-        return get_game_events(game_vod, video_capture, frame_rate, frames_to_check)
+        return get_game_events(video_capture, frame_rate, frames_to_check)
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         """Combine the events based on time and create a highlight for each group of events."""
@@ -119,7 +119,7 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
 
 
 # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
-def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_to_check: list[int]) -> list[dict]:
+def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int]) -> list[dict]:
     """Check each frame for events using template matching and return the list of found events."""
     template_paths = ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
                       "media/templates/single_big_sword_red.png"]
@@ -139,8 +139,13 @@ def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_
             result = cv2.matchTemplate(cropped_frame_gray, template_image, cv2.TM_CCOEFF_NORMED)
 
             loc = np.where(result >= 0.8)
+
+            mask = np.zeros(cropped_frame_gray.shape[:2], np.uint8)
             for pt in zip(*loc[::-1]):
-                cv2.rectangle(cropped_frame_gray, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+                # Check if the template match has already been found.
+                if mask[pt[1] + int(round(h / 2)), pt[0] + int(round(w / 2))] != 255:
+                    mask[pt[1]:pt[1] + h, pt[0]:pt[0] + w] = 255
+                    cv2.rectangle(cropped_frame_gray, pt, (pt[0] + w, pt[1] + h), (0, 255, 0), 1)
 
             cv2.imwrite(f'test/{template_path.split("/")[-1].removesuffix(".png")}_{frame_second}.png', cropped_frame_gray)
 
