@@ -43,7 +43,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
         shutil.rmtree(game_vod.match.create_unique_folder_path("frames"))
         shutil.rmtree(game_vod.match.create_unique_folder_path("last_frames"))
 
-        return get_game_events(video_capture, frame_rate, frames_to_check)
+        return get_game_events(video_capture, frame_rate, frames_to_check, end_second)
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         """Combine the events based on time and create a highlight for each group of events."""
@@ -137,7 +137,7 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
 
 
 # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
-def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int]) -> list[dict]:
+def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int], end_second: int) -> list[dict]:
     """Check each frame for events using template matching and return the list of found events."""
     events = []
 
@@ -167,21 +167,19 @@ def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int]
                     mask[pt[1]:pt[1] + h, pt[0]:pt[0] + w] = 255
                     events.append({"name": "event", "time": frame_second})
 
+    # Add an event for the nexus being destroyed.
+    events.append({"name": "nexus_destroyed", "time": end_second})
+
     return events
 
 
 def get_highlight_value(events: list[Event]) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
     value = 0
-    event_values = {"event": 1}
+    event_values = {"event": 1, "nexus_destroyed": 100}
 
     # Add the value of the basic events in the highlight.
     for event in events:
         value += event_values[event["name"]]
-
-    # All scaling is applied based on the original event score to avoid scaling already scaled values further.
-    original_event_value = value
-
-    # TODO: Add context scaling based on how late in the game the highlight is.
 
     return value
