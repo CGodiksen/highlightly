@@ -121,6 +121,10 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
 # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
 def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_to_check: list[int]) -> list[dict]:
     """Check each frame for events using template matching and return the list of found events."""
+    template_paths = ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
+                      "media/templates/single_big_sword_red.png"]
+    template_images = [cv2.imread(template_path, cv2.IMREAD_GRAYSCALE) for template_path in template_paths]
+
     for frame_second in frames_to_check:
         video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
         _res, frame = video_capture.read()
@@ -130,16 +134,14 @@ def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_
         cropped_frame_gray = frame_gray[480:750, 1655:1688]
 
         # Match on the different icons that can be in the kill feed.
-        for template in ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
-                         "media/templates/single_big_sword_red.png"]:
-            template_img = cv2.imread(template, cv2.IMREAD_GRAYSCALE)
-            w, h = template_img.shape[::-1]
-            result = cv2.matchTemplate(cropped_frame_gray, template_img, cv2.TM_CCOEFF_NORMED)
+        for (template_path, template_image) in zip(template_paths, template_images):
+            w, h = template_image.shape[::-1]
+            result = cv2.matchTemplate(cropped_frame_gray, template_image, cv2.TM_CCOEFF_NORMED)
 
             loc = np.where(result >= 0.8)
             for pt in zip(*loc[::-1]):
                 cv2.rectangle(cropped_frame_gray, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
 
-            cv2.imwrite(f'test/{template.split("/")[-1].removesuffix(".png")}_{frame_second}.png', cropped_frame_gray)
+            cv2.imwrite(f'test/{template_path.split("/")[-1].removesuffix(".png")}_{frame_second}.png', cropped_frame_gray)
 
     return []
