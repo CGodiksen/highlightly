@@ -121,6 +121,10 @@ table.team-table {
     width: 500px;
 }
 
+.player-kda-cell-league-of-legends {
+    width: 100px;
+}
+
 .player-name-cell-valorant {
     width: 400px;
 }
