@@ -24,8 +24,8 @@ class Scraper:
 
         team_1: str = match["team_1"]["name"]
         team_2: str = match["team_2"]["name"]
-        matches = [m for m in matches if SequenceMatcher(None, team_1, m.team_1.organization.name).ratio() >= 0.6]
-        equal_matches = [m for m in matches if SequenceMatcher(None, team_2, m.team_2.organization.name).ratio() >= 0.6]
+        matches = [m for m in matches if SequenceMatcher(None, team_1, m.team_1.organization.name).ratio() > 0.75]
+        equal_matches = [m for m in matches if SequenceMatcher(None, team_2, m.team_2.organization.name).ratio() > 0.75]
 
         return len(equal_matches) > 0
 
@@ -69,13 +69,13 @@ class Scraper:
         """
         team_name: str = match_team_data["name"]
         teams = Team.objects.filter(game=game)
-        team = next((t for t in teams if SequenceMatcher(None, team_name, t.organization.name).ratio() >= 0.6), None)
+        team = next((t for t in teams if SequenceMatcher(None, team_name, t.organization.name).ratio() > 0.75), None)
 
         if team is None:
             logging.info(f"{team_name} does not already exist. Creating new team.")
 
             orgs = Organization.objects.all()
-            organization = next((o for o in orgs if SequenceMatcher(None, team_name, o.name).ratio() >= 0.6), None)
+            organization = next((o for o in orgs if SequenceMatcher(None, team_name, o.name).ratio() > 0.75), None)
 
             if organization is None:
                 organization = Organization.objects.create(name=team_name)
