@@ -60,7 +60,7 @@ def add_post_match_video_metadata(match: Match):
 
 def get_team_in_game_names(team_statistics: pd.DataFrame, game: Game) -> list[str]:
     """Given a dataframe with the team statistics, extract the in-game names for all the players."""
-    player_names: pd.Series = team_statistics.iloc[:, 0]
+    player_names: pd.Series = team_statistics.iloc[:, 1 if game == Game.LEAGUE_OF_LEGENDS else 0]
 
     if game == Game.COUNTER_STRIKE or game == Game.LEAGUE_OF_LEGENDS:
         extract_in_game_name = lambda match: re.search("'(.*?)'", match.group()).group().strip("'")

@@ -8,8 +8,8 @@ class LeagueOfLegendsEditor(Editor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.extra_start_time = 6
-        self.extra_duration = 10
+        self.extra_start_time = 8
+        self.extra_duration = 13
 
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
