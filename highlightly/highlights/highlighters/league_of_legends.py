@@ -3,6 +3,7 @@ from collections import defaultdict
 from datetime import timedelta
 
 import cv2
+import numpy as np
 
 from highlights.highlighters.highlighter import Highlighter
 from highlights.highlighters.util import scale_image, optical_character_recognition
@@ -14,7 +15,6 @@ from videos.editors.editor import get_video_frame_rate, get_video_length
 class LeagueOfLegendsHighlighter(Highlighter):
     """Highlighter that uses the PaddleOCR and template matching to extract highlights from League of Legends matches."""
 
-    # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
     # TODO: Handle issue with multiple games being present in a single VOD.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
@@ -33,11 +33,11 @@ class LeagueOfLegendsHighlighter(Highlighter):
         end_second = get_game_end_second(game_vod, timeline, video_capture, frame_rate)
 
         logging.info(f"{game_vod} starts at {start_second} and ends at {end_second} in {game_vod.filename}.")
+
         frames_to_check = range(start_second, end_second + 1, 4)
+        logging.info(f"Checking {len(frames_to_check)} frames for events in {game_vod}.")
 
-        # TODO: Use template matching or color thresholding to find the events within the frames.
-
-        return []
+        return get_game_events(game_vod, video_capture, frame_rate, frames_to_check)
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         """Combine the events based on time and create a highlight for each group of events."""
@@ -73,6 +73,7 @@ def extract_game_timeline(game_vod: GameVod, video_capture, frame_rate: float, t
             timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
     return timeline
+
 
 def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_path: str) -> None:
     """Save an image that contains the timer in the given second of the given video capture."""
@@ -115,3 +116,30 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
             frames_with_timer.append(frame_second)
 
     return max(frames_with_timer)
+
+
+# TODO: Maybe include the object kills from the graphql match data to ensure they are included.
+def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_to_check: list[int]) -> list[dict]:
+    """Check each frame for events using template matching and return the list of found events."""
+    for frame_second in frames_to_check:
+        video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
+        _res, frame = video_capture.read()
+
+        # Modify the image to best capture the kill feed.
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cropped_frame_gray = frame_gray[480:750, 1655:1688]
+
+        # Match on the different icons that can be in the kill feed.
+        for template in ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
+                         "media/templates/single_big_sword_red.png"]:
+            template_img = cv2.imread(template, cv2.IMREAD_GRAYSCALE)
+            w, h = template_img.shape[::-1]
+            result = cv2.matchTemplate(cropped_frame_gray, template_img, cv2.TM_CCOEFF_NORMED)
+
+            loc = np.where(result >= 0.8)
+            for pt in zip(*loc[::-1]):
+                cv2.rectangle(cropped_frame_gray, pt, (pt[0] + w, pt[1] + h), (0, 0, 255), 2)
+
+            cv2.imwrite(f'test/{template.split("/")[-1].removesuffix(".png")}_{frame_second}.png', cropped_frame_gray)
+
+    return []
