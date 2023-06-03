@@ -15,6 +15,8 @@ class CounterStrikeEditor(Editor):
         super().__init__()
         self.second_pistol_round = 16
         self.final_round = 30
+        self.extra_start_time = 3
+        self.extra_duration = 7
 
     # TODO: Use PaddleOCR instead of external Google API.
     @staticmethod

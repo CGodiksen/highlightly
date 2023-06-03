@@ -9,6 +9,8 @@ class ValorantEditor(Editor):
         super().__init__()
         self.second_pistol_round = 13
         self.final_round = 24
+        self.extra_start_time = 3
+        self.extra_duration = 7
 
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:

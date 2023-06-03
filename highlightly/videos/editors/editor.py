@@ -15,6 +15,8 @@ class Editor:
     def __init__(self):
         self.second_pistol_round = None
         self.final_round = None
+        self.extra_start_time = None
+        self.extra_duration = None
 
     @staticmethod
     def find_game_starting_point(game_vod: GameVod) -> int:
@@ -58,8 +60,7 @@ class Editor:
 
         return sorted(selected_highlights, key=lambda h: h.start_time_seconds)
 
-    @staticmethod
-    def create_highlight_video(highlights: list[Highlight], game_vod: GameVod, target_filename: str, offset: int,
+    def create_highlight_video(self, highlights: list[Highlight], game_vod: GameVod, target_filename: str, offset: int,
                                folder_path: str) -> None:
         """Use the highlights and the offset to edit the full VOD into a highlight video."""
         logging.info(f"Using {len(highlights)} highlights to cut {game_vod} into highlight video.")
@@ -72,9 +73,9 @@ class Editor:
         for count, highlight in enumerate(highlights):
             is_last = count + 1 == len(highlights)
 
-            # Add 3 seconds at the start and 4 seconds at the end and add more time to the end of the last highlight.
-            duration = highlight.duration_seconds + (19 if is_last else 7)
-            start = (highlight.start_time_seconds + offset) - 3
+            # Add time at the start and end of each highlight and add more time to the end of the last highlight.
+            duration = highlight.duration_seconds + (self.extra_duration + 12 if is_last else self.extra_duration)
+            start = (highlight.start_time_seconds + offset) - self.extra_start_time
 
             clip_filepath = f"{folder_path}/clips/temp_clip_{count + 1}.mkv" if is_last else f"{folder_path}/clips/clip_{count + 1}.mkv"
             cmd = f"ffmpeg -ss {start} -i {vod_filepath} -to {duration} -c copy {clip_filepath}"
