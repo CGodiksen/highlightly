@@ -9,7 +9,7 @@ import cv2
 import requests
 from bs4 import BeautifulSoup
 
-from highlights.highlighters.highlighter import Highlighter, group_round_events
+from highlights.highlighters.highlighter import Highlighter, group_events
 from highlights.highlighters.util import scale_image, optical_character_recognition
 from highlights.models import Highlight
 from highlights.types import SecondData, Event
@@ -53,7 +53,7 @@ class ValorantHighlighter(Highlighter):
         for round, round_data in rounds.items():
             if len(round_data["events"]) > 0:
                 # Group the events within each round based on time.
-                grouped_events = group_round_events(round_data["events"], "spike_planted")
+                grouped_events = group_events(round_data["events"], "spike_planted")
 
                 # Create a highlight object for each group of events.
                 for group in grouped_events:

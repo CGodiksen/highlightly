@@ -4,7 +4,7 @@ from itertools import groupby
 import pandas as pd
 from demoparser import DemoParser
 
-from highlights.highlighters.highlighter import Highlighter, group_round_events
+from highlights.highlighters.highlighter import Highlighter, group_events
 from highlights.models import Highlight
 from highlights.types import Event, RoundData
 from scrapers.models import GameVod
@@ -180,7 +180,7 @@ def split_rounds_into_highlights(rounds: list[RoundData], game: GameVod) -> None
     """
     for round in rounds:
         if len(round["events"]) > 0:
-            grouped_events = group_round_events(round["events"], "bomb_planted")
+            grouped_events = group_events(round["events"], "bomb_planted")
 
             for group in grouped_events:
                 value = get_highlight_value(group, round)
