@@ -1,12 +1,14 @@
 import logging
+import shutil
 from collections import defaultdict
 from datetime import timedelta
 
 import cv2
 import numpy as np
 
-from highlights.highlighters.highlighter import Highlighter
+from highlights.highlighters.highlighter import Highlighter, group_events
 from highlights.highlighters.util import scale_image, optical_character_recognition
+from highlights.models import Highlight
 from highlights.types import Event
 from scrapers.models import GameVod
 from videos.editors.editor import get_video_frame_rate, get_video_length
@@ -34,14 +36,30 @@ class LeagueOfLegendsHighlighter(Highlighter):
 
         logging.info(f"{game_vod} starts at {start_second} and ends at {end_second} in {game_vod.filename}.")
 
-        frames_to_check = range(start_second, end_second + 1, 4)
+        frames_to_check = list(range(start_second, end_second + 1, 4))
         logging.info(f"Checking {len(frames_to_check)} frames for events in {game_vod}.")
+
+        # Remove the folders used to save the frames that were analyzed.
+        shutil.rmtree(game_vod.match.create_unique_folder_path("frames"))
+        shutil.rmtree(game_vod.match.create_unique_folder_path("last_frames"))
 
         return get_game_events(video_capture, frame_rate, frames_to_check)
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         """Combine the events based on time and create a highlight for each group of events."""
-        pass
+        # Group the events within each round based on time.
+        grouped_events = group_events(events, "", 30)
+
+        for group in grouped_events:
+            # Create a highlight object for each group of events.
+            value = get_highlight_value(group)
+
+            start = group[0]["time"]
+            end = group[-1]["time"]
+            events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
+
+            Highlight.objects.create(game_vod=game, start_time_seconds=start, round_number=1, value=value,
+                                     duration_seconds=max(end - start, 1), events=events_str)
 
 
 def extract_game_timeline(game_vod: GameVod, video_capture, frame_rate: float, total_seconds: float) -> dict[int, int]:
@@ -93,7 +111,7 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
     for frame_second, timer in timeline.items():
         start_times[frame_second - timer] += 1
 
-    return max(start_times, key=start_times.get)
+    return int(max(start_times, key=start_times.get))
 
 
 def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
@@ -150,3 +168,20 @@ def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int]
                     events.append({"name": "event", "time": frame_second})
 
     return events
+
+
+def get_highlight_value(events: list[Event]) -> int:
+    """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
+    value = 0
+    event_values = {"event": 1}
+
+    # Add the value of the basic events in the highlight.
+    for event in events:
+        value += event_values[event["name"]]
+
+    # All scaling is applied based on the original event score to avoid scaling already scaled values further.
+    original_event_value = value
+
+    # TODO: Add context scaling based on how late in the game the highlight is.
+
+    return value
