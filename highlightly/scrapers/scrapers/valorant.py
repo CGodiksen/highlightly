@@ -255,28 +255,3 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
     tournament_context = html.find("div", class_="match-header-event-series").text.strip()
     match.tournament_context = " ".join(tournament_context.split())
     match.save()
-
-
-def get_twitch_video(html: BeautifulSoup) -> dict:
-    """Return the Twitch video related to the game."""
-    # Find the best stream url for the game.
-    stream_divs = html.findAll("div", class_="match-streams-btn")
-    stream_url = stream_divs[0].find("a")["href"]
-
-    valid_stream_languages = ["mod-un", "mod-eu", "mod-us", "mod-au"]
-    banned_streams = ["https://www.twitch.tv/valorant"]
-
-    for stream_div in stream_divs:
-        stream_flag = stream_div.find("i", class_="flag")
-        stream_div_url = stream_div.find("a")["href"]
-
-        # Only allow stream urls from english speaking streams and non-banned streams.
-        if stream_flag["class"][1] in valid_stream_languages and stream_div_url not in banned_streams:
-            stream_url = stream_div_url
-            break
-
-    # Find the latest video from the stream which should be the video with the for the game.
-    list_videos_cmd = f"twitch-dl videos -j {stream_url.split('/')[-1]}"
-    result = subprocess.run(list_videos_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-
-    return json.loads(result.stdout.decode())["videos"][0]
