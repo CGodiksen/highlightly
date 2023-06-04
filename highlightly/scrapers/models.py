@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytz
@@ -42,16 +43,26 @@ class Tournament(models.Model):
         return self.name if self.display_name is None else self.display_name
 
 
-# TODO: Add a field with a list of alternate names and then check against that when checking for existing orgs.
-# TODO: Also change this in other places where the team name is checked against.
 class Organization(models.Model):
     name = models.CharField(max_length=128)
     display_name = models.CharField(max_length=128, blank=True, null=True)
+    # TODO: Maybe use a JSONField instead.
+    alternate_names = models.CharField(max_length=256, blank=True, null=True)
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
     background_color = ColorField(blank=True, null=True)
 
     def __str__(self) -> str:
         return self.name if self.display_name is None else self.display_name
+
+    def get_names(self) -> list[str]:
+        """Return all names that this organization is referred to as."""
+        names = json.loads(self.alternate_names) if self.alternate_names is not None else []
+        names.append(self.name)
+
+        if self.display_name is not None:
+            names.append(self.display_name)
+
+        return names
 
 
 class Team(models.Model):

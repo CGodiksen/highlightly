@@ -17,7 +17,7 @@ class CounterStrikeMatchData(TypedDict):
 
 class TournamentData(TypedDict):
     start_date: date
-    end_date: date
+    end_date: date | None
     prize_pool: str
     first_place_prize: str
     location: str

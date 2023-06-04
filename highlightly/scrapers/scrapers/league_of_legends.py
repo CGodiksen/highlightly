@@ -161,7 +161,7 @@ class LeagueOfLegendsScraper(Scraper):
     def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:
         """Update the game vod object with the post game data."""
         # Set the winner of the match.
-        if match_data["winner"]["name"] == game_vod.match.team_1.organization.name:
+        if match_data["winner"]["name"] in game_vod.match.team_1.organization.get_names():
             game_vod.team_1_round_count = 1
             game_vod.team_2_round_count = 0
         else:
@@ -201,7 +201,12 @@ class LeagueOfLegendsScraper(Scraper):
                 writer = csv.writer(f)
                 writer.writerow(headers)
 
-                rows = team_data[team.organization.name]
+                # Since the match data could contain any of the alternate names, check for each name.
+                for name in team.organization.get_names():
+                    rows = team_data.get(name, None)
+                    if rows is not None:
+                        break
+
                 rows = [next(row for row in rows if row[0] == "top"), next(row for row in rows if row[0] == "jun"),
                         next(row for row in rows if row[0] == "mid"), next(row for row in rows if row[0] == "adc"),
                         next(row for row in rows if row[0] == "sup")]
@@ -285,7 +290,7 @@ def get_finished_games(match: Match) -> tuple[int, int]:
                 player_data_included = False
 
         if player_data_included:
-            if next_game_data["winner"]["name"] == match.team_1.organization.name:
+            if next_game_data["winner"]["name"] in match.team_1.organization.get_names():
                 team_1_game_count += 1
             else:
                 team_2_game_count += 1
