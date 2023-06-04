@@ -2,6 +2,7 @@ import csv
 import logging
 import os
 import signal
+import subprocess
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -105,14 +106,23 @@ class ValorantScraper(Scraper):
         if is_live and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
-            # TODO: Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
+            # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
+            stream_url = get_twitch_stream_url(soup)
+            logging.info(f"Connecting to stream from {stream_url} to download VOD.")
+
+            vod_filename = f"game_{finished_game_count + 1}.mkv"
+            vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
+
+            download_cmd = f"streamlink {stream_url} best -O | ffmpeg -re -i pipe:0 -c:v copy -c:a copy {vod_filepath}"
+            process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
             # Since we assume the game has just started, delay the task to check the match status.
             new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=30)
             PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
             GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                   language="english", start_datetime=timezone.localtime(timezone.now()))
+                                   language="english", start_datetime=timezone.localtime(timezone.now()),
+                                   process_id=process.pid, filename=vod_filename, url=stream_url)
 
         # Check if the most recently finished game has been marked as finished.
         if match.gamevod_set.filter(game_count=finished_game_count).exists():
