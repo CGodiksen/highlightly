@@ -1,6 +1,8 @@
 import csv
 import json
 import logging
+import os
+import signal
 import subprocess
 import urllib.request
 from datetime import datetime, timedelta
@@ -107,6 +109,8 @@ class ValorantScraper(Scraper):
         if is_live and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
+            # TODO: Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
+
             # Since we assume the game has just started, delay the task to check the match status.
             new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=30)
             PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
@@ -120,7 +124,13 @@ class ValorantScraper(Scraper):
             if not finished_game.finished:
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                self.download_game_files(finished_game, soup)
+                try:
+                    # Stop the download of the livestream related to the game.
+                    os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+                except ProcessLookupError as e:
+                    logging.error(e)
+
+                self.add_post_game_data(finished_game, soup)
 
                 logging.info(f"Extracting game statistics for {finished_game}.")
                 self.extract_game_statistics(finished_game, soup)
@@ -129,40 +139,20 @@ class ValorantScraper(Scraper):
                 finished_game.save(update_fields=["finished"])
 
     @staticmethod
-    def download_game_files(game_vod: GameVod, html: BeautifulSoup) -> None:
-        """Download the VOD for the game and update the game vod object with the VOD data."""
-        video = get_twitch_video(html)
-        logging.info(f"Found Twitch video for game: {video}.")
-
+    def add_post_game_data(game_vod: GameVod, html: BeautifulSoup) -> None:
+        """Update the game vod object with the post game data."""
         # Retrieve the tournament logo and tournament context of the match.
         extract_match_page_tournament_data(game_vod.match, html)
-
-        # Find the start time of the game in the full VOD.
-        tz = pytz.timezone("Europe/Copenhagen")
-        vod_started_at = datetime.strptime(video["publishedAt"], "%Y-%m-%dT%H:%M:%SZ").astimezone(tz)
-        vod_match_start_offset = game_vod.start_datetime - vod_started_at
-        vod_start = vod_match_start_offset - timedelta(minutes=5)
-
-        # Download the entire Twitch video from the start offset to now.
-        logging.info(f"Downloading VOD for {game_vod} from {video['id']}.")
-        vods_folder_path = game_vod.match.create_unique_folder_path("vods")
-        vod_filepath = f"{vods_folder_path}/game_{game_vod.game_count}.mkv"
-
-        download_cmd = f"twitch-dl download -q source -s {str(vod_start).split('.')[0]} -o {vod_filepath} {video['id']}"
-        subprocess.run(download_cmd, shell=True)
 
         # Update the game vod object with the post game data.
         game = html.findAll("div", class_="vm-stats-gamesnav-item", attrs={"data-disabled": "0"})[game_vod.game_count]
         game_stats = html.find("div", class_="vm-stats-game", attrs={"data-game-id": game["data-game-id"]})
 
-        vod_url = f"https://www.twitch.tv/videos/{video['id']}"
-        map = game_stats.find("div", class_="map").find("span").text.replace("PICK", "").strip()
+        game_map = game_stats.find("div", class_="map").find("span").text.replace("PICK", "").strip()
         round_count = [int(score.text) for score in game_stats.findAll("div", class_="score")]
 
         # Persist the location of the files and other needed information about the vods to the database.
-        game_vod.map = map
-        game_vod.url = vod_url
-        game_vod.filename = f"game_{game_vod.game_count}.mkv"
+        game_vod.map = game_map
         game_vod.team_1_round_count = round_count[0]
         game_vod.team_2_round_count = round_count[1]
         game_vod.save()
