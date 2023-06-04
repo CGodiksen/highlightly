@@ -1,15 +1,11 @@
 import csv
-import json
 import logging
 import os
 import signal
-import subprocess
 import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import sleep
 
-import pytz
 import requests
 from bs4 import BeautifulSoup, Tag
 from django.utils import timezone
@@ -171,7 +167,7 @@ class ValorantScraper(Scraper):
         return table_group.findAll("table", class_="wf-table-inset")
 
     @staticmethod
-    def get_mvp_url(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+    def get_mvp_url(table_group: BeautifulSoup) -> str:
         """Find the MVP of the game and return the URL to the players page."""
         player_rows = table_group.select("tbody tr")
         mvp_row = max(player_rows, key=lambda row: float(row.findAll("td")[2].find("span", class_="mod-both").text))
@@ -255,3 +251,22 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
     tournament_context = html.find("div", class_="match-header-event-series").text.strip()
     match.tournament_context = " ".join(tournament_context.split())
     match.save()
+
+
+def get_twitch_stream_url(html: BeautifulSoup) -> dict:
+    """Return the best Twitch stream URL related to the game."""
+    stream_divs = html.findAll("div", class_="match-streams-btn")
+    stream_url = stream_divs[0].find("a")["href"]
+
+    valid_stream_languages = ["mod-un", "mod-eu", "mod-us", "mod-au"]
+    banned_streams = ["https://www.twitch.tv/valorant"]
+
+    for stream_div in stream_divs:
+        stream_flag = stream_div.find("i", class_="flag")
+        stream_div_url = stream_div.find("a")["href"]
+
+        # Only allow stream urls from english speaking streams and non-banned streams.
+        if stream_flag["class"][1] in valid_stream_languages and stream_div_url not in banned_streams:
+            return stream_div_url
+
+    return stream_url
