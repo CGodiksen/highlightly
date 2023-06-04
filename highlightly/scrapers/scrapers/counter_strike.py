@@ -45,10 +45,12 @@ class CounterStrikeScraper(Scraper):
         for row in rows:
             match = extract_match_data(row, base_url)
 
-            # Ignore the match if it currently still contains a "TBD" team.
-            if match is not None and match["team_1"]["name"] != "TBD" and match["team_2"]["name"] != "TBD":
+            is_tdb = match["team_1"]["name"] == "TBD" or match["team_2"]["name"] == "TBD"
+            is_showmatch = "showmatch" in match["tournament_name"].lower()
+
+            # Ignore the match if it currently still contains a "TBD" team or if it is a showmatch.
+            if match is not None and not is_tdb and not is_showmatch:
                 logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
-                match["game"] = Game.COUNTER_STRIKE
                 upcoming_matches.append(match)
 
         return upcoming_matches
@@ -168,7 +170,7 @@ class CounterStrikeScraper(Scraper):
         return table_group.findAll("table", class_="table totalstats")
 
     @staticmethod
-    def get_mvp_url(table_group: BeautifulSoup) -> list[BeautifulSoup]:
+    def get_mvp_url(table_group: BeautifulSoup) -> str:
         """Find the MVP of the game and return the URL to the players page."""
         player_rows = [row for row in table_group.select(".totalstats tr") if "header-row" not in row["class"]]
         mvp_row = max(player_rows, key=lambda row: float(row.find("td", class_="rating").text))
@@ -226,7 +228,7 @@ def get_protected_page_html(protected_url: str, test=None) -> BeautifulSoup:
     return BeautifulSoup(html, "html.parser")
 
 
-def extract_match_data(html: Tag, base_url: str) -> CounterStrikeMatchData:
+def extract_match_data(html: Tag, base_url: str) -> CounterStrikeMatchData | None:
     """Given the HTML for a row in the upcoming matches table, extract the data for a match."""
     team_1_id = html.get("team1")
     team_2_id = html.get("team2")
@@ -252,7 +254,7 @@ def extract_match_data(html: Tag, base_url: str) -> CounterStrikeMatchData:
     team_1_data = {"id": int(team_1_id), "name": team_1_name}
     team_2_data = {"id": int(team_2_id), "name": team_2_name}
     return {"url": match_url, "team_1": team_1_data, "team_2": team_2_data, "start_datetime": start_datetime,
-            "tier": tier, "format": match_format, "tournament_name": tournament_name}
+            "tier": tier, "format": match_format, "tournament_name": tournament_name, "game": Game.COUNTER_STRIKE}
 
 
 def extract_team_name(html: Tag, team_number: int) -> str:

@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import TypedDict
 
-from scrapers.models import Match, Tournament
+from scrapers.models import Match, Tournament, Game
 
 
 class CounterStrikeMatchData(TypedDict):
@@ -12,6 +12,7 @@ class CounterStrikeMatchData(TypedDict):
     tier: int
     format: Match.Format
     tournament_name: str
+    game: Game
 
 
 class TournamentData(TypedDict):
@@ -27,5 +28,4 @@ class TournamentData(TypedDict):
 class TeamData(TypedDict):
     url: str
     nationality: str
-    ranking: int
-    logo_filename: str
+    ranking: int | None
