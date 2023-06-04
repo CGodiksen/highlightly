@@ -145,8 +145,11 @@ class LeagueOfLegendsScraper(Scraper):
 
                     self.add_post_game_data(match_data, finished_game)
 
-                    # Stop the download of the livestream related to the game.
-                    os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+                    try:
+                        # Stop the download of the livestream related to the game.
+                        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+                    except ProcessLookupError as e:
+                        logging.error(e)
 
                     logging.info(f"Extracting game statistics for {finished_game}.")
 
@@ -279,7 +282,7 @@ def get_finished_games(match: Match) -> tuple[int, int]:
         # Check that the game data for each player is included in the match data.
         player_data_included = True
         for player in next_game_data["players"]:
-            if player.get("totalDamageDealtToChampions", None) is None or player["totalDamageDealtToChampions"] == 0:
+            if player.get("creepScore", None) is None or player["creepScore"] == 0:
                 logging.info(f"Data for player '{player['player']['nickName']}' is not included in the match data.")
                 player_data_included = False
 
