@@ -30,7 +30,7 @@ def create_video_title(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
     # TODO: Generate an eye catching initial part of the video title based on the context of the match.
     team_part = f"{scheduled_match.team_1.organization} vs {scheduled_match.team_2.organization}"
-    basic_title = f"{team_part} - HIGHLIGHTS | {scheduled_match.tournament.name}"
+    basic_title = f"{team_part} - HIGHLIGHTS | {scheduled_match.tournament.get_display_name()}"
 
     return basic_title
 
@@ -47,7 +47,7 @@ def create_video_description(scheduled_match: Match) -> str:
                  f"{scheduled_match.team_2.organization}: TEAM_2_PLAYERS\n"
 
     link_part = f"This is the TOURNAMENT_CONTEXT of the {tournament.prize_pool_us_dollars} prize pool " \
-                f"{game} tournament {tournament.name}:\n" \
+                f"tournament {tournament.get_display_name()}:\n" \
                 f"Match: {scheduled_match.url}\n" \
                 f"Tournament: {tournament.url}\n" \
                 f"Credits: CREDIT_URL\n"
@@ -72,7 +72,7 @@ def create_video_description(scheduled_match: Match) -> str:
 def create_video_tags(scheduled_match: Match) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
     tags = [str(scheduled_match.team_1.organization), str(scheduled_match.team_2.organization),
-            scheduled_match.tournament.name, scheduled_match.team_1.get_game_display(),
+            scheduled_match.tournament.get_display_name(), scheduled_match.team_1.get_game_display(),
             scheduled_match.tournament.location, scheduled_match.team_1.nationality, scheduled_match.team_2.nationality,
             scheduled_match.get_format_display()]
 

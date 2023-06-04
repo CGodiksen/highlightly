@@ -19,6 +19,7 @@ class Tournament(models.Model):
 
     game = models.CharField(max_length=32, choices=Game.choices)
     name = models.CharField(max_length=128)
+    display_name = models.CharField(max_length=128, blank=True, null=True)
     short_name = models.CharField(max_length=32, blank=True, null=True)
 
     url = models.URLField(max_length=128, blank=True, null=True)
@@ -37,7 +38,12 @@ class Tournament(models.Model):
     def __str__(self) -> str:
         return f"{self.name} ({self.get_game_display()})"
 
+    def get_display_name(self) -> str:
+        return self.name if self.display_name is None else self.display_name
 
+
+# TODO: Add a field with a list of alternate names and then check against that when checking for existing orgs.
+# TODO: Also change this in other places where the team name is checked against.
 class Organization(models.Model):
     name = models.CharField(max_length=128)
     display_name = models.CharField(max_length=128, blank=True, null=True)
