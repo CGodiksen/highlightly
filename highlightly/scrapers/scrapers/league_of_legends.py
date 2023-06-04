@@ -154,7 +154,7 @@ class LeagueOfLegendsScraper(Scraper):
                         self.extract_game_statistics(finished_game, match_data)
 
                     finished_game.finished = True
-                    finished_game.save()
+                    finished_game.save(update_fields=["finished"])
 
     @staticmethod
     def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:
@@ -275,11 +275,19 @@ def get_finished_games(match: Match) -> tuple[int, int]:
     team_2_game_count = finished_games.filter(team_2_round_count=1).count()
 
     next_game_data = retrieve_game_data(match, finished_games.count() + 1)
-    if next_game_data is not None and next_game_data["finished"]:
-        if next_game_data["winner"]["name"] == match.team_1.organization.name:
-            team_1_game_count += 1
-        else:
-            team_2_game_count += 1
+    if next_game_data is not None and next_game_data["finished"] and len(next_game_data["players"]) > 0:
+        # Check that the game data for each player is included in the match data.
+        player_data_included = True
+        for player in next_game_data["players"]:
+            if player.get("totalDamageDealtToChampions", None) is None or player["totalDamageDealtToChampions"] == 0:
+                logging.info(f"Data for player '{player['player']['nickName']}' is not included in the match data.")
+                player_data_included = False
+
+        if player_data_included:
+            if next_game_data["winner"]["name"] == match.team_1.organization.name:
+                team_1_game_count += 1
+            else:
+                team_2_game_count += 1
 
     return team_1_game_count, team_2_game_count
 
