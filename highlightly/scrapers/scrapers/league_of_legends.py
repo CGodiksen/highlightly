@@ -141,9 +141,6 @@ class LeagueOfLegendsScraper(Scraper):
                 finished_game = match.gamevod_set.get(game_count=finished_game_count)
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
-                    match_data = retrieve_game_data(finished_game.match, finished_game.game_count)
-
-                    self.add_post_game_data(match_data, finished_game)
 
                     try:
                         # Stop the download of the livestream related to the game.
@@ -151,10 +148,11 @@ class LeagueOfLegendsScraper(Scraper):
                     except ProcessLookupError as e:
                         logging.error(e)
 
-                    logging.info(f"Extracting game statistics for {finished_game}.")
+                    match_data = retrieve_game_data(finished_game.match, finished_game.game_count)
+                    self.add_post_game_data(match_data, finished_game)
 
-                    if len(match_data["players"]) > 0:
-                        self.extract_game_statistics(finished_game, match_data)
+                    logging.info(f"Extracting game statistics for {finished_game}.")
+                    self.extract_game_statistics(finished_game, match_data)
 
                     finished_game.finished = True
                     finished_game.save(update_fields=["finished"])
