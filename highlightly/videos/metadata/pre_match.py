@@ -29,7 +29,7 @@ def create_pre_match_video_metadata(scheduled_match: Match):
 def create_video_title(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
     # TODO: Generate an eye catching initial part of the video title based on the context of the match.
-    team_part = f"{scheduled_match.team_1.organization.name} vs {scheduled_match.team_2.organization.name}"
+    team_part = f"{scheduled_match.team_1.organization} vs {scheduled_match.team_2.organization}"
     basic_title = f"{team_part} - HIGHLIGHTS | {scheduled_match.tournament.name}"
 
     return basic_title
@@ -41,10 +41,10 @@ def create_video_description(scheduled_match: Match) -> str:
     game = scheduled_match.team_1.get_game_display()
 
     match_part_prefix = "the game" if scheduled_match.format == Match.Format.BEST_OF_1 else "all games"
-    match_part = f"Highlights from {match_part_prefix} between {scheduled_match.team_1.organization.name} and " \
-                 f"{scheduled_match.team_2.organization.name} ({scheduled_match.get_format_display()})\n" \
-                 f"{scheduled_match.team_1.organization.name}: TEAM_1_PLAYERS\n" \
-                 f"{scheduled_match.team_2.organization.name}: TEAM_2_PLAYERS\n"
+    match_part = f"Highlights from {match_part_prefix} between {scheduled_match.team_1.organization} and " \
+                 f"{scheduled_match.team_2.organization} ({scheduled_match.get_format_display()})\n" \
+                 f"{scheduled_match.team_1.organization}: TEAM_1_PLAYERS\n" \
+                 f"{scheduled_match.team_2.organization}: TEAM_2_PLAYERS\n"
 
     link_part = f"This is the TOURNAMENT_CONTEXT of the {tournament.prize_pool_us_dollars} prize pool " \
                 f"{game} tournament {tournament.name}:\n" \
@@ -62,8 +62,8 @@ def create_video_description(scheduled_match: Match) -> str:
                     "League of Legends: https://www.youtube.com/channel/UCH97dRgcN7vvhzpfAZRiUlg\n"
 
     game_name = game if game != "Counter-Strike" else "csgo"
-    tags_part = f"#{scheduled_match.team_1.organization.name.replace(' ', '').lower()} " \
-                f"#{scheduled_match.team_2.organization.name.replace(' ', '').lower()} " \
+    tags_part = f"#{str(scheduled_match.team_1.organization).replace(' ', '').lower()} " \
+                f"#{str(scheduled_match.team_2.organization).replace(' ', '').lower()} " \
                 f"#{game_name.replace(' ', '').replace('-', '').lower()}"
 
     return f"{match_part}\n{link_part}\n{channel_part}\n{channels_part}\n{tags_part}"
@@ -71,7 +71,7 @@ def create_video_description(scheduled_match: Match) -> str:
 
 def create_video_tags(scheduled_match: Match) -> list[str]:
     """Use the teams, tournament, and, if necessary, extra match information to create tags for the video."""
-    tags = [scheduled_match.team_1.organization.name, scheduled_match.team_2.organization.name,
+    tags = [str(scheduled_match.team_1.organization), str(scheduled_match.team_2.organization),
             scheduled_match.tournament.name, scheduled_match.team_1.get_game_display(),
             scheduled_match.tournament.location, scheduled_match.team_1.nationality, scheduled_match.team_2.nationality,
             scheduled_match.get_format_display()]

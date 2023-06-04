@@ -168,7 +168,7 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
         result = "winner" if game.team_2_round_count > game.team_1_round_count else "loser"
 
     score = df["kills"].sum() if game_name == "league-of-legends" else getattr(game, f"team_{team_number}_round_count")
-    team_data = {f"team_{team_number}_name": team.organization.name, f"team_{team_number}_score": score,
+    team_data = {f"team_{team_number}_name": str(team.organization), f"team_{team_number}_score": score,
                  f"team_{team_number}_result": result, f"team_{team_number}_logo": team_logo_filepath}
 
     if game_name == "counter-strike":

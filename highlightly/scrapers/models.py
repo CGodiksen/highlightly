@@ -40,11 +40,12 @@ class Tournament(models.Model):
 
 class Organization(models.Model):
     name = models.CharField(max_length=128)
+    display_name = models.CharField(max_length=128, blank=True, null=True)
     logo_filename = models.CharField(max_length=256, blank=True, null=True)
     background_color = ColorField(blank=True, null=True)
 
     def __str__(self) -> str:
-        return self.name
+        return self.name if self.display_name is None else self.display_name
 
 
 class Team(models.Model):
@@ -56,7 +57,7 @@ class Team(models.Model):
     url = models.URLField(max_length=128, blank=True, null=True)
 
     def __str__(self) -> str:
-        return f"{self.organization.name} ({self.get_game_display()})"
+        return f"{self.organization} ({self.get_game_display()})"
 
 
 # TODO: Handle when a profile picture cannot be found for a player.
