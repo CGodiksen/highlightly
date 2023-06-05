@@ -248,13 +248,15 @@ def extract_tournament_data(html: BeautifulSoup) -> TournamentData:
     prize_pool = get_tournament_table_data(html, "Prize Pool:").split("\xa0")[0]
     location = get_tournament_table_data(html, "Location:").strip()
     tier = convert_letter_tier_to_number_tier(get_tournament_table_data(html, "Liquipedia Tier:").lower().strip())
-    type = Tournament.Type(get_tournament_table_data(html, "Type:").upper())
+
+    tournament_type = get_tournament_table_data(html, "Type:")
+    tournament_type = Tournament.Type("OFFLINE" if tournament_type == "Online/Offline" else tournament_type.upper())
 
     first_place_row = html.find("div", class_="csstable-widget-row background-color-first-place")
     first_place_prize = first_place_row.find_next().find_next_sibling().text
 
     return {"start_date": start_date, "end_date": end_date, "prize_pool": prize_pool, "location": location,
-            "tier": tier, "type": type, "first_place_prize": first_place_prize}
+            "tier": tier, "type": tournament_type, "first_place_prize": first_place_prize}
 
 
 def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
