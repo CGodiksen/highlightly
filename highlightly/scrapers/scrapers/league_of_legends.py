@@ -353,3 +353,14 @@ def get_match_data_finished_games(match_data: dict) -> tuple[int, int]:
     team_2_score = match_data["scores"][str(team_2["id"])]
 
     return 0 if team_1_score is None else team_1_score, 0 if team_2_score is None else team_2_score
+
+
+def get_post_game_data(match_data: dict, game_count: int) -> dict:
+    """Return the detailed game data related to a specific finished game of the match in the given match data."""
+    game_id = match_data["matches"][game_count - 1]["id"]
+
+    url = f"https://neptune.1337pro.com/matches/{game_id}/summary?seriesId={match_data['id']}"
+    headers = {"Accept": "application/vnd.neptune+json; version=1"}
+    html = requests.get(url=url, headers=headers).text
+
+    return json.loads(html) if len(html) > 0 else {}
