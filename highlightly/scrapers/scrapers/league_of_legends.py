@@ -321,7 +321,7 @@ def extract_player_data(mvp_data: dict, url: str) -> Player:
                                  team=team, profile_picture_filename=profile_picture_filename)
 
 
-def get_live_match(match: Match) -> dict:
+def get_live_match_data(match: Match) -> dict:
     """Return the live match data from the 1337pro.com matches that correspond to the given match object."""
     today = timezone.localtime(timezone.now())
     start_timestamp = int((datetime(today.year, today.month, today.day)).timestamp() * 1e3)
@@ -342,3 +342,14 @@ def get_live_match(match: Match) -> dict:
 
         if team_1_matches or team_2_matches:
             return m
+
+
+def get_match_data_finished_games(match_data: dict) -> tuple[int, int]:
+    """Return a tuple with the format (team_1_wins, team_2_wins)."""
+    team_1 = match_data["participants"][0]
+    team_1_score = match_data["scores"][str(team_1["id"])]
+
+    team_2 = match_data["participants"][1]
+    team_2_score = match_data["scores"][str(team_2["id"])]
+
+    return 0 if team_1_score is None else team_1_score, 0 if team_2_score is None else team_2_score
