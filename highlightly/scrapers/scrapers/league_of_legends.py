@@ -143,8 +143,9 @@ class LeagueOfLegendsScraper(Scraper):
                 PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
                 GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                       language="english", process_id=process.pid, filename=vod_filename,
-                                       map="Summoner's Rift", url=stream_url)
+                                       language="english", start_datetime=timezone.localtime(timezone.now()),
+                                       process_id=process.pid, filename=vod_filename, map="Summoner's Rift",
+                                       url=stream_url)
 
             # Check if the most recently finished game has been marked as finished.
             if match.gamevod_set.filter(game_count=finished_game_count).exists():
@@ -177,11 +178,6 @@ class LeagueOfLegendsScraper(Scraper):
         else:
             game_vod.team_1_round_count = 0
             game_vod.team_2_round_count = 1
-
-        # Set the actual start datetime of the game.
-        begin_at = datetime.strptime(str(match_data["beginAt"]).split(".")[0], "%Y-%m-%dT%H:%M:%S")
-        begin_at = pytz.utc.localize(begin_at)
-        game_vod.start_datetime = begin_at.astimezone(pytz.timezone("Europe/Copenhagen"))
 
         game_vod.save()
 
