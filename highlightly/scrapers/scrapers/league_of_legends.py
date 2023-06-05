@@ -87,8 +87,16 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
-    def check_match_status(self, match: Match):
+    def check_match_status(self, match: Match) -> None:
         """Check the current match status and start the highlighting process if a game is finished."""
+        # Check that the previous matches in the same tournament are done first.
+        previous_matches = Match.objects.filter(tournament=match.tournament, start_datetime__lt=match.start_datetime,
+                                                finished=False)
+
+        if previous_matches.count() > 0:
+            logging.info(f"{previous_matches.count()} previous matches needs to finish before {match}.")
+            return None
+
         html = requests.get(url=match.url).text
         soup = BeautifulSoup(html, "html.parser")
 
