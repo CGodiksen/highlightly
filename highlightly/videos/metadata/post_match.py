@@ -45,10 +45,18 @@ def add_post_match_video_metadata(match: Match):
     new_tags.extend(team_1_in_game_names)
     new_tags.extend(team_2_in_game_names)
 
+    # TODO: Use a more consistent way to retrieve the stream url.
     # Add credit to where the VOD is from to the description.
-    short_name = match.tournament.short_name
-    channel_name = get_match_vod_channel_name(match) if game_1.host == GameVod.Host.TWITCH else short_name
-    new_description = new_description.replace("CREDIT_URL", f"https://www.twitch.tv/{channel_name.lower()}")
+    if game_1.match.team_1.game == Game.COUNTER_STRIKE:
+        channel_name = get_match_vod_channel_name(match)
+        url = f"https://www.twitch.tv/{channel_name.lower()}"
+    elif game_1.match.team_1.game == Game.LEAGUE_OF_LEGENDS:
+        short_name = match.tournament.short_name
+        url = f"https://www.twitch.tv/{short_name.lower()}"
+    else:
+        url = match.gamevod_set.first().url
+
+    new_description = new_description.replace("CREDIT_URL", url)
 
     # Add a frame from the match and the tournament logo to the thumbnail.
     finish_video_thumbnail(match, video_metadata, None)
