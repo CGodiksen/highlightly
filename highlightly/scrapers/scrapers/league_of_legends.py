@@ -323,3 +323,26 @@ def extract_player_data(mvp_data: dict, url: str) -> Player:
 
     return Player.objects.create(nationality=mvp_data["player"]["nationality"], tag=tag, name=name, url=url,
                                  team=team, profile_picture_filename=profile_picture_filename)
+
+
+def get_live_match(match: Match) -> dict:
+    """Return the live match data from the 1337pro.com matches that correspond to the given match object."""
+    today = timezone.localtime(timezone.now())
+    start_timestamp = int((datetime(today.year, today.month, today.day)).timestamp() * 1e3)
+    end_timestamp = int((datetime(today.year, today.month, today.day, 23, 59, 59)).timestamp() * 1e3)
+
+    url = f"https://neptune.1337pro.com/series/grouped/all-and-live?start_after={start_timestamp}&start_before={end_timestamp}"
+    headers = {"Accept": "application/vnd.neptune+json; version=1"}
+    html = requests.get(url=url, headers=headers).text
+
+    matches: dict = json.loads(html)
+    league_of_legends_matches = [m for m in matches["items"] if
+                                 len(m["participants"]) == 2 and m["participants"][0]["game_id"] == 2]
+
+    for m in league_of_legends_matches:
+        team_names = [p["team_name"] for p in m["participants"]]
+        team_1_matches = team_names[0].lower() in [name.lower() for name in match.team_1.organization.get_names()]
+        team_2_matches = team_names[1].lower() in [name.lower() for name in match.team_2.organization.get_names()]
+
+        if team_1_matches or team_2_matches:
+            return m
