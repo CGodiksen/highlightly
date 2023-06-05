@@ -23,7 +23,7 @@ from scrapers.types import TeamData
 class LeagueOfLegendsScraper(Scraper):
     """Webscraper that scrapes op.gg for upcoming League of Legends matches."""
 
-    included_tournaments = ["LEC", "LPL", "LCK", "LCS"]
+    included_tournaments = ["LEC", "LPL", "LCK", "LCS", "LCO"]
 
     def list_upcoming_matches(self) -> list[dict]:
         """Use GraphQL to retrieve the upcoming matches from op.gg."""
@@ -119,7 +119,9 @@ class LeagueOfLegendsScraper(Scraper):
                 logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
                 # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
-                stream_url = get_youtube_stream_url(match.tournament.short_name)
+                pre_match_data = json.loads(soup.find("script", id="__NEXT_DATA__").contents[0])
+                stream_url = pre_match_data["props"]["pageProps"]["match"]["streams"][0]["rawUrl"]
+
                 logging.info(f"Connecting to stream from {stream_url} to download VOD.")
 
                 vod_filename = f"game_{finished_game_count + 1}.mkv"
@@ -132,7 +134,7 @@ class LeagueOfLegendsScraper(Scraper):
                 new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=20)
                 PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
 
-                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.YOUTUBE,
+                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
                                        language="english", process_id=process.pid, filename=vod_filename,
                                        map="Summoner's Rift", url=stream_url)
 
@@ -261,17 +263,6 @@ def save_tournament_logo(match_data: dict) -> str:
         urllib.request.urlretrieve(image_url, f"media/tournaments/{logo_filename}")
 
     return logo_filename
-
-
-def get_youtube_stream_url(channel_name: str):
-    """Return the YouTube URL related to the livestream of the game."""
-    api_key = os.environ["YOUTUBE_API_KEY"]
-    base_url = "https://youtube.googleapis.com/youtube/v3/search"
-    query = f"{channel_name} league of legends"
-
-    response = requests.get(f"{base_url}?part=snippet&eventType=live&maxResults=5&q={query}&type=video&key={api_key}")
-
-    return f"https://www.youtube.com/watch?v={json.loads(response.content)['items'][0]['id']['videoId']}"
 
 
 def get_finished_games(match: Match) -> tuple[int, int]:
