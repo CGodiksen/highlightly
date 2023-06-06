@@ -302,9 +302,10 @@ def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[l
     url = f"https://neptune.1337pro.com/rosters?ids={team_1['roster']['id']},{team_2['roster']['id']}"
     headers = {"Accept": "application/vnd.neptune+json; version=1"}
     html = requests.get(url=url, headers=headers).text
+    rosters = json.loads(html)
 
-    team_1_roster = json.loads(html)[0]
-    team_2_roster = json.loads(html)[1]
+    team_1_roster = next(roster for roster in rosters if roster["id"] == team_1['roster']['id'])
+    team_2_roster = next(roster for roster in rosters if roster["id"] == team_2['roster']['id'])
 
     mvp = {"ratio": -1, "tag": None, "name": None, "team": None, "nationality": None}
 
