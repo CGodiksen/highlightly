@@ -180,38 +180,7 @@ class LeagueOfLegendsScraper(Scraper):
     @staticmethod
     def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
         """Extract and save statistics for the game. Also extract the MVP and the players photo."""
-        team_1 = game_data["teams"]["home"]
-        team_2 = game_data["teams"]["away"]
-
-        url = f"https://neptune.1337pro.com/rosters?ids={team_1['roster']['id']},{team_2['roster']['id']}"
-        headers = {"Accept": "application/vnd.neptune+json; version=1"}
-        html = requests.get(url=url, headers=headers).text
-
-        team_1_roster = json.loads(html)[0]
-        team_2_roster = json.loads(html)[1]
-
-        mvp = {"ratio": -1, "tag": None, "name": None, "team": None, "nationality": None}
-
-        team_rows = []
-        for team, roster in [(team_1, team_1_roster), (team_2, team_2_roster)]:
-            team_data = []
-
-            for player in team["players"]:
-                roster_player = next(p for p in roster["players"] if p["id"] == player["id"])
-                name = f"{roster_player['first_name']} '{roster_player['nick_name']}' {roster_player['last_name']}"
-
-                # Set the MVP to the player with the highest KDA ratio.
-                ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
-                if ratio > mvp["ratio"]:
-                    mvp_team = game_vod.match.team_1 if team == team_1 else game_vod.match.team_2
-                    mvp = {"ratio": ratio, "tag": roster_player["nick_name"], "team": mvp_team,
-                           "name": f"{roster_player['first_name']} {roster_player['last_name']}",
-                           "nationality": roster_player["country"]["name"]}
-
-                team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
-                                  player["creeps"]["total"]["kills"]])
-
-            team_rows.append(team_data)
+        team_rows, mvp = get_game_team_statistics(game_data, game_vod)
 
         statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
         headers = ["name", "kills", "deaths", "assists", "cs"]
@@ -234,6 +203,7 @@ class LeagueOfLegendsScraper(Scraper):
         game_mvp = Player.objects.filter(tag=mvp["tag"], name=mvp["name"]).first()
 
         if game_mvp is None:
+            # TODO: Get the profile picture of the MVP if possible.
             game_mvp = Player.objects.create(nationality=mvp["nationality"], tag=mvp["tag"], name=mvp["name"], url="",
                                              team=mvp["team"], profile_picture_filename="default.png")
 
@@ -322,3 +292,41 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
     html = requests.get(url=url, headers=headers).text
 
     return json.loads(html) if len(html) > 0 else {}
+
+
+def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[list], dict]:
+    """Find the per-player statistics for each team in the given game and the MVP of the entire game."""
+    team_1 = game_data["teams"]["home"]
+    team_2 = game_data["teams"]["away"]
+
+    url = f"https://neptune.1337pro.com/rosters?ids={team_1['roster']['id']},{team_2['roster']['id']}"
+    headers = {"Accept": "application/vnd.neptune+json; version=1"}
+    html = requests.get(url=url, headers=headers).text
+
+    team_1_roster = json.loads(html)[0]
+    team_2_roster = json.loads(html)[1]
+
+    mvp = {"ratio": -1, "tag": None, "name": None, "team": None, "nationality": None}
+
+    team_rows = []
+    for team, roster in [(team_1, team_1_roster), (team_2, team_2_roster)]:
+        team_data = []
+
+        for player in team["players"]:
+            roster_player = next(p for p in roster["players"] if p["id"] == player["id"])
+            name = f"{roster_player['first_name']} '{roster_player['nick_name']}' {roster_player['last_name']}"
+
+            # Set the MVP to the player with the highest KDA ratio.
+            ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
+            if ratio > mvp["ratio"]:
+                mvp_team = game_vod.match.team_1 if team == team_1 else game_vod.match.team_2
+                mvp = {"ratio": ratio, "tag": roster_player["nick_name"], "team": mvp_team,
+                       "name": f"{roster_player['first_name']} {roster_player['last_name']}",
+                       "nationality": roster_player["country"]["name"]}
+
+            team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
+                              player["creeps"]["total"]["kills"]])
+
+        team_rows.append(team_data)
+
+    return team_rows, mvp
