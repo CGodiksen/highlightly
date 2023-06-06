@@ -137,6 +137,7 @@ def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None
 
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
+# TODO: Order the league of legends players according to position.
 def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
     """Create an image that contains the statistics for each game and for the total match statistics."""
     game_name = game.match.team_1.game.lower().replace("_", "-").replace(" ", "-")
@@ -186,7 +187,7 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
         df = df.drop("ADR", axis=1)
         columns = ["name", "r", "acs", "k", "d", "plus_minus", "kast", "hs_percent"]
     else:
-        columns = ["name", "kills", "deaths", "assists", "cs"]
+        columns = ["name", "kills", "deaths", "assists", "cs", "cs_minute", "ratio"]
 
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
@@ -198,5 +199,9 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
 
                 value = f"+{value}" if value > 0 else value
                 team_data[f"team_{team_number}_player_{value_count + 1}_{column}"] = value
+
+            if column == "ratio":
+                sign = "plus" if value > 1 else "minus" if value < 1 else ""
+                team_data[f"team_{team_number}_player_{value_count + 1}_sign"] = sign
 
     return team_data
