@@ -5,13 +5,11 @@ import os
 import signal
 import subprocess
 import urllib.request
-from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytz
 import requests
-from bs4 import BeautifulSoup
 from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
@@ -192,7 +190,7 @@ class LeagueOfLegendsScraper(Scraper):
         team_1_roster = json.loads(html)[0]
         team_2_roster = json.loads(html)[1]
 
-        mvp = ("", "", 1, -1)
+        mvp = {"ratio": -1, "tag": None, "name": None, "team": None, "nationality": None}
 
         team_rows = []
         for team, roster in [(team_1, team_1_roster), (team_2, team_2_roster)]:
@@ -204,9 +202,11 @@ class LeagueOfLegendsScraper(Scraper):
 
                 # Set the MVP to the player with the highest KDA ratio.
                 ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
-                if ratio > mvp[3]:
-                    mvp = (roster_player['nick_name'], f"{roster_player['first_name']} {roster_player['last_name']}",
-                           1 if team == team_1 else 2, ratio)
+                if ratio > mvp["ratio"]:
+                    mvp_team = game_vod.match.team_1 if team == team_1 else game_vod.match.team_2
+                    mvp = {"ratio": ratio, "tag": roster_player["nick_name"], "team": mvp_team,
+                           "name": f"{roster_player['first_name']} {roster_player['last_name']}",
+                           "nationality": roster_player["country"]["name"]}
 
                 team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
                                   player["creeps"]["total"]["kills"]])
@@ -231,13 +231,14 @@ class LeagueOfLegendsScraper(Scraper):
             game_vod.save()
 
         # Extract the MVP and save the player photo.
-        game_mvp = Player.objects.create(nationality="", tag=mvp[0], name=mvp[1], url="",
-                                         team=game_vod.match.team_1 if mvp[2] == 1 else game_vod.match.team_2,
-                                         profile_picture_filename="default.png")
+        game_mvp = Player.objects.filter(tag=mvp["tag"], name=mvp["name"]).first()
 
-        if game_mvp:
-            game_vod.mvp = game_mvp
-            game_vod.save()
+        if game_mvp is None:
+            game_mvp = Player.objects.create(nationality=mvp["nationality"], tag=mvp["tag"], name=mvp["name"], url="",
+                                             team=mvp["team"], profile_picture_filename="default.png")
+
+        game_vod.mvp = game_mvp
+        game_vod.save()
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
