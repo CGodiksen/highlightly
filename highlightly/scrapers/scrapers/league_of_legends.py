@@ -85,7 +85,8 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
-    def check_match_status(self, match: Match) -> None:
+    @staticmethod
+    def check_match_status(match: Match) -> None:
         """Check the current match status and start the highlighting process if a game is finished."""
         # Check that the previous matches in the same tournament are done first.
         previous_matches = Match.objects.filter(tournament=match.tournament, start_datetime__lt=match.start_datetime,
@@ -130,68 +131,13 @@ class LeagueOfLegendsScraper(Scraper):
                         logging.error(e)
 
                     game_data = get_post_game_data(match_data, finished_game_count)
-                    self.add_post_game_data(game_data, finished_game)
+                    add_post_game_data(game_data, finished_game)
 
                     logging.info(f"Extracting game statistics for {finished_game}.")
-                    self.extract_game_statistics(game_data, finished_game)
+                    extract_game_statistics(game_data, finished_game)
 
                     finished_game.finished = True
                     finished_game.save(update_fields=["finished"])
-
-    @staticmethod
-    def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
-        """Update the game vod object with the post game data."""
-        team_1 = game_data["teams"]["home"]
-
-        # Set the winner of the match.
-        if team_1["is_winner"] is not None:
-            game_vod.team_1_round_count = 1
-            game_vod.team_2_round_count = 0
-        else:
-            game_vod.team_1_round_count = 0
-            game_vod.team_2_round_count = 1
-
-        game_vod.save()
-
-    @staticmethod
-    def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
-        """Extract and save statistics for the game. Also extract the MVP and the players photo."""
-        team_rows, mvp = get_game_team_statistics(game_data, game_vod)
-
-        statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
-        headers = ["name", "kills", "deaths", "assists", "cs", "cs_minute", "ratio"]
-
-        # For each team, save a CSV file with the player data for the game.
-        for team, team_data in [(game_vod.match.team_1, team_rows[0]), (game_vod.match.team_2, team_rows[1])]:
-            team_name = team.organization.name.lower().replace(' ', '_')
-            filename = f"map_{game_vod.game_count}_{team_name}.csv"
-
-            with open(f"{statistics_folder_path}/{filename}", "w") as f:
-                writer = csv.writer(f)
-                writer.writerow(headers)
-                writer.writerows(team_data)
-
-            field_to_update = "team_1_statistics_filename" if game_vod.match.team_1 == team else "team_2_statistics_filename"
-            setattr(game_vod, field_to_update, filename)
-            game_vod.save()
-
-        # Extract the MVP and save the player profile picture if possible.
-        game_mvp = Player.objects.filter(tag=mvp["tag"], name=mvp["name"]).first()
-
-        if game_mvp is None:
-            logging.info(f"Player with tag '{mvp['tag']}' does not already exist. Creating new player.")
-
-            if mvp["profile_picture_url"] is not None:
-                profile_picture_filename = f"{mvp['team'].organization.name.replace(' ', '-').lower()}-{mvp['tag'].replace(' ', '-').lower()}.png"
-                urllib.request.urlretrieve(mvp["profile_picture_url"], f"media/players/{profile_picture_filename}")
-            else:
-                profile_picture_filename = "default.png"
-
-            game_mvp = Player.objects.create(nationality=mvp["nationality"], tag=mvp["tag"], name=mvp["name"], url="",
-                                             team=mvp["team"], profile_picture_filename=profile_picture_filename)
-
-        game_vod.mvp = game_mvp
-        game_vod.save()
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
@@ -283,6 +229,59 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
     html = requests.get(url=url, headers=headers).text
 
     return json.loads(html) if len(html) > 0 else {}
+
+def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
+    """Update the game vod object with the post game data."""
+    team_1 = game_data["teams"]["home"]
+
+    # Set the winner of the match.
+    if team_1["is_winner"] is not None:
+        game_vod.team_1_round_count = 1
+        game_vod.team_2_round_count = 0
+    else:
+        game_vod.team_1_round_count = 0
+        game_vod.team_2_round_count = 1
+
+    game_vod.save()
+
+def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
+    """Extract and save statistics for the game. Also extract the MVP and the players photo."""
+    team_rows, mvp = get_game_team_statistics(game_data, game_vod)
+
+    statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
+    headers = ["name", "kills", "deaths", "assists", "cs", "cs_minute", "ratio"]
+
+    # For each team, save a CSV file with the player data for the game.
+    for team, team_data in [(game_vod.match.team_1, team_rows[0]), (game_vod.match.team_2, team_rows[1])]:
+        team_name = team.organization.name.lower().replace(' ', '_')
+        filename = f"map_{game_vod.game_count}_{team_name}.csv"
+
+        with open(f"{statistics_folder_path}/{filename}", "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(team_data)
+
+        field_to_update = "team_1_statistics_filename" if game_vod.match.team_1 == team else "team_2_statistics_filename"
+        setattr(game_vod, field_to_update, filename)
+        game_vod.save()
+
+    # Extract the MVP and save the player profile picture if possible.
+    game_mvp = Player.objects.filter(tag=mvp["tag"], name=mvp["name"]).first()
+
+    if game_mvp is None:
+        logging.info(f"Player with tag '{mvp['tag']}' does not already exist. Creating new player.")
+
+        if mvp["profile_picture_url"] is not None:
+            profile_picture_filename = f"{mvp['team'].organization.name.replace(' ', '-').lower()}-{mvp['tag'].replace(' ', '-').lower()}.png"
+            urllib.request.urlretrieve(mvp["profile_picture_url"], f"media/players/{profile_picture_filename}")
+        else:
+            profile_picture_filename = "default.png"
+
+        game_mvp = Player.objects.create(nationality=mvp["nationality"], tag=mvp["tag"], name=mvp["name"], url="",
+                                         team=mvp["team"], profile_picture_filename=profile_picture_filename)
+
+    game_vod.mvp = game_mvp
+    game_vod.save()
 
 
 def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[list], dict]:
