@@ -87,7 +87,6 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
-    # TODO: Retrieve the winner of the game from the post game data.
     # TODO: Extract the kills, deaths, assists and cs of each player from the post game data.
     # TODO: Combine the data with the names from the rosters endpoint.
     # TODO: Find the MVP and extract the MVP player photo from op.gg.
@@ -326,3 +325,40 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
     html = requests.get(url=url, headers=headers).text
 
     return json.loads(html) if len(html) > 0 else {}
+
+
+def extract_game_statistics(game_data: dict) -> None:
+    """Extract and save statistics for the game. Also extract the MVP and the players photo."""
+    headers = ["name", "kills", "deaths", "assists", "cs"]
+
+    team_1 = game_data["teams"]["home"]
+    team_2 = game_data["teams"]["away"]
+
+    url = f"https://neptune.1337pro.com/rosters?ids={team_1['roster']['id']},{team_2['roster']['id']}"
+    headers = {"Accept": "application/vnd.neptune+json; version=1"}
+    html = requests.get(url=url, headers=headers).text
+
+    team_1_roster = json.loads(html)[0]
+    team_2_roster = json.loads(html)[1]
+
+    mvp = ("", -1)
+
+    for team, roster in [(team_1, team_1_roster), (team_2, team_2_roster)]:
+        team_data = []
+
+        for player in team["players"]:
+            roster_player = next(p for p in roster["players"] if p["id"] == player["id"])
+            name = f"{roster_player['first_name']} '{roster_player['nick_name']}' {roster_player['last_name']}"
+
+            print(player)
+            print(roster_player)
+
+            ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
+            if ratio > mvp[1]:
+                mvp = (name, ratio)
+
+            team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
+                              player["creeps"]["total"]["kills"]])
+
+        print(team_data)
+        print(mvp)
