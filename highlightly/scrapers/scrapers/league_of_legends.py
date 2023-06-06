@@ -183,7 +183,7 @@ class LeagueOfLegendsScraper(Scraper):
         team_rows, mvp = get_game_team_statistics(game_data, game_vod)
 
         statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
-        headers = ["name", "kills", "deaths", "assists", "cs"]
+        headers = ["name", "kills", "deaths", "assists", "cs", "cs_minute", "ratio"]
 
         # For each team, save a CSV file with the player data for the game.
         for team, team_data in [(game_vod.match.team_1, team_rows[0]), (game_vod.match.team_2, team_rows[1])]:
@@ -288,6 +288,8 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
 
 def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[list], dict]:
     """Find the per-player statistics for each team in the given game and the MVP of the entire game."""
+    game_duration_minutes = (game_data["match"]["timeline"]["clock"]["milliseconds"] / 1000) / 60
+
     team_1 = game_data["teams"]["home"]
     team_2 = game_data["teams"]["away"]
 
@@ -308,9 +310,9 @@ def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[l
         for player in team["players"]:
             roster_player = next(p for p in roster["players"] if p["id"] == player["id"])
             name = f"{roster_player['first_name']} '{roster_player['nick_name']}' {roster_player['last_name']}"
+            ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
 
             # Set the MVP to the player with the highest KDA ratio.
-            ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
             if ratio > mvp["ratio"]:
                 mvp_team = game_vod.match.team_1 if team == team_1 else game_vod.match.team_2
                 image_url = roster_player["images"][0]["url"] if len(roster_player["images"]) > 0 else None
@@ -319,8 +321,9 @@ def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[l
                        "name": f"{roster_player['first_name']} {roster_player['last_name']}",
                        "nationality": roster_player["country"]["name"], "profile_picture_url": image_url}
 
+            cs = player["creeps"]["total"]["kills"]
             team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
-                              player["creeps"]["total"]["kills"]])
+                              cs, round(cs / game_duration_minutes, 1), round(ratio, 2)])
 
         team_rows.append(team_data)
 
