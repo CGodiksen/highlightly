@@ -269,30 +269,6 @@ def save_tournament_logo(match_data: dict) -> str:
     return logo_filename
 
 
-def get_finished_games(match: Match) -> tuple[int, int]:
-    """Return a tuple with the format (team_1_wins, team_2_wins)."""
-    finished_games = match.gamevod_set.filter(finished=True)
-    team_1_game_count = finished_games.filter(team_1_round_count=1).count()
-    team_2_game_count = finished_games.filter(team_2_round_count=1).count()
-
-    next_game_data = retrieve_game_data(match, finished_games.count() + 1)
-    if next_game_data is not None and next_game_data["finished"] and len(next_game_data["players"]) > 0:
-        # Check that the game data for each player is included in the match data.
-        player_data_included = True
-        for player in next_game_data["players"]:
-            if player.get("creepScore", None) is None or player["creepScore"] == 0:
-                logging.info(f"Data for player '{player['player']['nickName']}' is not included in the match data.")
-                player_data_included = False
-
-        if player_data_included:
-            if next_game_data["winner"]["name"] in match.team_1.organization.get_names():
-                team_1_game_count += 1
-            else:
-                team_2_game_count += 1
-
-    return team_1_game_count, team_2_game_count
-
-
 def retrieve_game_data(match: Match, game_count: int) -> dict:
     """Use the graphql endpoint to retrieve the finished game data."""
     with open("../data/graphql/op_gg_match.json") as file:
