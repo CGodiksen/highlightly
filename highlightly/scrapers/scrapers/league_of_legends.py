@@ -87,7 +87,6 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
-    # TODO: If a game is finished, retrieve the post game data using the match data and the finished game count.
     # TODO: Retrieve the winner of the game from the post game data.
     # TODO: Extract the kills, deaths, assists and cs of each player from the post game data.
     # TODO: Combine the data with the names from the rosters endpoint.
@@ -157,8 +156,8 @@ class LeagueOfLegendsScraper(Scraper):
                     except ProcessLookupError as e:
                         logging.error(e)
 
-                    match_data = retrieve_game_data(finished_game.match, finished_game.game_count)
-                    self.add_post_game_data(match_data, finished_game)
+                    game_data = get_post_game_data(match_data, finished_game_count)
+                    self.add_post_game_data(game_data, finished_game)
 
                     logging.info(f"Extracting game statistics for {finished_game}.")
                     self.extract_game_statistics(finished_game, match_data)
@@ -167,10 +166,12 @@ class LeagueOfLegendsScraper(Scraper):
                     finished_game.save(update_fields=["finished"])
 
     @staticmethod
-    def add_post_game_data(match_data: dict, game_vod: GameVod) -> None:
+    def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
         """Update the game vod object with the post game data."""
+        team_1 = game_data["teams"]["home"]
+
         # Set the winner of the match.
-        if match_data["winner"]["name"] in game_vod.match.team_1.organization.get_names():
+        if team_1["is_winner"] is not None:
             game_vod.team_1_round_count = 1
             game_vod.team_2_round_count = 0
         else:
@@ -265,19 +266,6 @@ def save_tournament_logo(match_data: dict) -> str:
         urllib.request.urlretrieve(image_url, f"media/tournaments/{logo_filename}")
 
     return logo_filename
-
-
-def retrieve_game_data(match: Match, game_count: int) -> dict:
-    """Use the graphql endpoint to retrieve the finished game data."""
-    with open("../data/graphql/op_gg_match.json") as file:
-        data = json.load(file)
-        data["variables"]["matchId"] = match.url.split("/")[-1]
-        data["variables"]["set"] = game_count
-
-        response = requests.post("https://esports.op.gg/matches/graphql", json=data)
-        content = json.loads(response.content)
-
-        return content["data"]["gameByMatch"]
 
 
 def extract_player_data(mvp_data: dict, url: str) -> Player:
