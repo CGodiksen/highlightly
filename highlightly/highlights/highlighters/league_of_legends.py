@@ -111,7 +111,7 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
     for frame_second, timer in timeline.items():
         start_times[frame_second - timer] += 1
 
-    return int(max(start_times, key=start_times.get))
+    return max(1, int(max(start_times, key=start_times.get)))
 
 
 def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
