@@ -123,21 +123,7 @@ class LeagueOfLegendsScraper(Scraper):
                 finished_game = match.gamevod_set.get(game_count=finished_game_count)
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
-
-                    try:
-                        # Stop the download of the livestream related to the game.
-                        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
-                    except ProcessLookupError as e:
-                        logging.error(e)
-
-                    game_data = get_post_game_data(match_data, finished_game_count)
-                    add_post_game_data(game_data, finished_game)
-
-                    logging.info(f"Extracting game statistics for {finished_game}.")
-                    extract_game_statistics(game_data, finished_game)
-
-                    finished_game.finished = True
-                    finished_game.save(update_fields=["finished"])
+                    handle_game_finished(finished_game, match_data, finished_game_count)
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
@@ -197,7 +183,7 @@ def get_match_data_finished_game_counts(match_data: dict) -> tuple[int, int]:
     return 0 if team_1_score is None else team_1_score, 0 if team_2_score is None else team_2_score
 
 
-def handle_game_started(match: Match, finished_game_count: int):
+def handle_game_started(match: Match, finished_game_count: int) -> None:
     """Start downloading the stream related to the game and create an object to save game data."""
     # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
     stream_url = f"https://www.twitch.tv/{match.tournament.short_name.lower()}"
@@ -230,6 +216,25 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
 
     return json.loads(html) if len(html) > 0 else {}
 
+
+def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game_count: int) -> None:
+    """Stop the download of the livestream, add post game data to game vod object, and extract game statistics."""
+    try:
+        # Stop the download of the livestream related to the game.
+        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+    except ProcessLookupError as e:
+        logging.error(e)
+
+    game_data = get_post_game_data(match_data, finished_game_count)
+    add_post_game_data(game_data, finished_game)
+
+    logging.info(f"Extracting game statistics for {finished_game}.")
+    extract_game_statistics(game_data, finished_game)
+
+    finished_game.finished = True
+    finished_game.save(update_fields=["finished"])
+
+
 def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
     """Update the game vod object with the post game data."""
     team_1 = game_data["teams"]["home"]
@@ -243,6 +248,7 @@ def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
         game_vod.team_2_round_count = 1
 
     game_vod.save()
+
 
 def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
     """Extract and save statistics for the game. Also extract the MVP and the players photo."""
