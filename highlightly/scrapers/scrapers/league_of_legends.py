@@ -199,13 +199,20 @@ class LeagueOfLegendsScraper(Scraper):
             setattr(game_vod, field_to_update, filename)
             game_vod.save()
 
-        # Extract the MVP and save the player photo.
+        # Extract the MVP and save the player profile picture if possible.
         game_mvp = Player.objects.filter(tag=mvp["tag"], name=mvp["name"]).first()
 
         if game_mvp is None:
-            # TODO: Get the profile picture of the MVP if possible.
+            logging.info(f"Player with tag '{mvp['tag']}' does not already exist. Creating new player.")
+
+            if mvp["profile_picture_url"] is not None:
+                profile_picture_filename = f"{mvp['team'].organization.name.replace(' ', '-').lower()}-{mvp['tag'].replace(' ', '-').lower()}.png"
+                urllib.request.urlretrieve(mvp["profile_picture_url"], f"media/players/{profile_picture_filename}")
+            else:
+                profile_picture_filename = "default.png"
+
             game_mvp = Player.objects.create(nationality=mvp["nationality"], tag=mvp["tag"], name=mvp["name"], url="",
-                                             team=mvp["team"], profile_picture_filename="default.png")
+                                             team=mvp["team"], profile_picture_filename=profile_picture_filename)
 
         game_vod.mvp = game_mvp
         game_vod.save()
@@ -321,9 +328,11 @@ def get_game_team_statistics(game_data: dict, game_vod: GameVod) -> tuple[list[l
             ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
             if ratio > mvp["ratio"]:
                 mvp_team = game_vod.match.team_1 if team == team_1 else game_vod.match.team_2
+                image_url = roster_player["images"][0]["url"] if len(roster_player["images"]) > 0 else None
+
                 mvp = {"ratio": ratio, "tag": roster_player["nick_name"], "team": mvp_team,
                        "name": f"{roster_player['first_name']} {roster_player['last_name']}",
-                       "nationality": roster_player["country"]["name"]}
+                       "nationality": roster_player["country"]["name"], "profile_picture_url": image_url}
 
             team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
                               player["creeps"]["total"]["kills"]])
