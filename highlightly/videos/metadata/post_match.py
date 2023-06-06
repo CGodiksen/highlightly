@@ -68,7 +68,7 @@ def add_post_match_video_metadata(match: Match):
 
 def get_team_in_game_names(team_statistics: pd.DataFrame, game: Game) -> list[str]:
     """Given a dataframe with the team statistics, extract the in-game names for all the players."""
-    player_names: pd.Series = team_statistics.iloc[:, 1 if game == Game.LEAGUE_OF_LEGENDS else 0]
+    player_names: pd.Series = team_statistics.iloc[:, 0]
 
     if game == Game.COUNTER_STRIKE or game == Game.LEAGUE_OF_LEGENDS:
         extract_in_game_name = lambda match: re.search("'(.*?)'", match.group()).group().strip("'")
@@ -186,9 +186,7 @@ def get_team_statistics_data(game: GameVod, team: Team, team_number: int, game_n
         df = df.drop("ADR", axis=1)
         columns = ["name", "r", "acs", "k", "d", "plus_minus", "kast", "hs_percent"]
     else:
-        df = df.drop("position", axis=1)
-        df = df.drop("gold", axis=1)
-        columns = ["name", "kills", "deaths", "assists", "cs", "damage", "sight", "level"]
+        columns = ["name", "kills", "deaths", "assists", "cs"]
 
     for column_count, column in enumerate(columns):
         for value_count, value in enumerate(df.iloc[:, column_count].tolist()):
