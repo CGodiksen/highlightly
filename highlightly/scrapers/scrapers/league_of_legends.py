@@ -87,6 +87,13 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
+    # TODO: If a game is finished, retrieve the post game data using the match data and the finished game count.
+    # TODO: Retrieve the winner of the game from the post game data.
+    # TODO: Extract the kills, deaths, assists and cs of each player from the post game data.
+    # TODO: Combine the data with the names from the rosters endpoint.
+    # TODO: Find the MVP and extract the MVP player photo from op.gg.
+    # TODO: Change the post game statistics image to use the new data.
+
     def check_match_status(self, match: Match) -> None:
         """Check the current match status and start the highlighting process if a game is finished."""
         # Check that the previous matches in the same tournament are done first.
@@ -97,23 +104,15 @@ class LeagueOfLegendsScraper(Scraper):
             logging.info(f"{previous_matches.count()} previous matches needs to finish before {match}.")
             return None
 
-        html = requests.get(url=match.url).text
-        soup = BeautifulSoup(html, "html.parser")
+        match_data = get_match_data(match)
 
         # Find the current number of finished games.
-        game_counts = get_finished_games(match)
+        game_counts = get_match_data_finished_game_counts(match_data)
         finished_game_count = sum(game_counts)
 
-        live_span = soup.find("span", class_="font-bold text-red-500")
-        is_live = live_span is not None and live_span.text.strip().lower() == "live"
-
-        if finished_game_count > 0 or is_live:
+        if finished_game_count > 0 or match_data["lifecycle"] == "live":
             # If it is the last game of the match, mark the match as finished and delete the related periodic task.
-            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
-            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
-            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
-            match_finished = bo1_finished or bo3_finished or bo5_finished
-
+            match_finished = match_data["lifecycle"] == "over"
             if match_finished:
                 logging.info(f"{match} is finished. Deleting the periodic task.")
 
@@ -127,8 +126,7 @@ class LeagueOfLegendsScraper(Scraper):
                 logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
                 # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
-                pre_match_data = json.loads(soup.find("script", id="__NEXT_DATA__").contents[0])
-                stream_url = pre_match_data["props"]["pageProps"]["match"]["streams"][0]["rawUrl"]
+                stream_url = f"https://www.twitch.tv/{match.tournament.short_name.lower()}"
 
                 logging.info(f"Connecting to stream from {stream_url} to download VOD.")
 
@@ -297,8 +295,8 @@ def extract_player_data(mvp_data: dict, url: str) -> Player:
                                  team=team, profile_picture_filename=profile_picture_filename)
 
 
-def get_live_match_data(match: Match) -> dict:
-    """Return the live match data from the 1337pro.com matches that correspond to the given match object."""
+def get_match_data(match: Match) -> dict:
+    """Return the match data from the 1337pro.com matches that correspond to the given match object."""
     today = timezone.localtime(timezone.now())
     start_timestamp = int((datetime(today.year, today.month, today.day)).timestamp() * 1e3)
     end_timestamp = int((datetime(today.year, today.month, today.day, 23, 59, 59)).timestamp() * 1e3)
@@ -320,7 +318,7 @@ def get_live_match_data(match: Match) -> dict:
             return m
 
 
-def get_match_data_finished_games(match_data: dict) -> tuple[int, int]:
+def get_match_data_finished_game_counts(match_data: dict) -> tuple[int, int]:
     """Return a tuple with the format (team_1_wins, team_2_wins)."""
     team_1 = match_data["participants"][0]
     team_1_score = match_data["scores"][str(team_1["id"])]
