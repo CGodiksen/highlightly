@@ -241,21 +241,6 @@ def save_tournament_logo(match_data: dict) -> str:
     return logo_filename
 
 
-def extract_player_data(mvp_data: dict, url: str) -> Player:
-    """Retrieve information about the player from the given URL and create a player object."""
-    logging.info(f"Player in {url} does not already exist. Creating new player.")
-
-    team = Organization.objects.get(name=mvp_data["team"]["name"]).teams.get(game=Game.LEAGUE_OF_LEGENDS)
-    tag = mvp_data["player"]["nickName"]
-    name = f"{mvp_data['player']['firstName']} {mvp_data['player']['lastName']}"
-
-    profile_picture_filename = f"{team.organization.name.replace(' ', '-').lower()}-{tag.replace(' ', '-').lower()}.png"
-    urllib.request.urlretrieve(mvp_data["player"]["imageUrl"], f"media/players/{profile_picture_filename}")
-
-    return Player.objects.create(nationality=mvp_data["player"]["nationality"], tag=tag, name=name, url=url,
-                                 team=team, profile_picture_filename=profile_picture_filename)
-
-
 def get_match_data(match: Match) -> dict:
     """Return the match data from the 1337pro.com matches that correspond to the given match object."""
     today = timezone.localtime(timezone.now())
