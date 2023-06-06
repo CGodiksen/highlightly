@@ -327,10 +327,8 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
     return json.loads(html) if len(html) > 0 else {}
 
 
-def extract_game_statistics(game_data: dict) -> None:
+def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
     """Extract and save statistics for the game. Also extract the MVP and the players photo."""
-    headers = ["name", "kills", "deaths", "assists", "cs"]
-
     team_1 = game_data["teams"]["home"]
     team_2 = game_data["teams"]["away"]
 
@@ -341,8 +339,9 @@ def extract_game_statistics(game_data: dict) -> None:
     team_1_roster = json.loads(html)[0]
     team_2_roster = json.loads(html)[1]
 
-    mvp = ("", -1)
+    mvp = ("", "", 1, -1)
 
+    team_rows = []
     for team, roster in [(team_1, team_1_roster), (team_2, team_2_roster)]:
         team_data = []
 
@@ -350,15 +349,39 @@ def extract_game_statistics(game_data: dict) -> None:
             roster_player = next(p for p in roster["players"] if p["id"] == player["id"])
             name = f"{roster_player['first_name']} '{roster_player['nick_name']}' {roster_player['last_name']}"
 
-            print(player)
-            print(roster_player)
-
+            # Set the MVP to the player with the highest KDA ratio.
             ratio = (player["kills"]["total"] + player["assists"]["total"]) / max(player["deaths"]["total"], 1)
-            if ratio > mvp[1]:
-                mvp = (name, ratio)
+            if ratio > mvp[3]:
+                mvp = ({roster_player['nick_name']}, f"{roster_player['first_name']} {roster_player['last_name']}",
+                       1 if team == team_1 else 2, ratio)
 
             team_data.append([name, player["kills"]["total"], player["deaths"]["total"], player["assists"]["total"],
                               player["creeps"]["total"]["kills"]])
 
-        print(team_data)
-        print(mvp)
+        team_rows.append(team_data)
+
+    statistics_folder_path = game_vod.match.create_unique_folder_path("statistics")
+    headers = ["name", "kills", "deaths", "assists", "cs"]
+
+    # For each team, save a CSV file with the player data for the game.
+    for team, team_data in [(game_vod.match.team_1, team_rows[0]), (game_vod.match.team_2, team_rows[1])]:
+        team_name = team.organization.name.lower().replace(' ', '_')
+        filename = f"map_{game_vod.game_count}_{team_name}.csv"
+
+        with open(f"{statistics_folder_path}/{filename}", "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerows(team_data)
+
+        field_to_update = "team_1_statistics_filename" if game_vod.match.team_1 == team else "team_2_statistics_filename"
+        setattr(game_vod, field_to_update, filename)
+        game_vod.save()
+
+    # Extract the MVP and save the player photo.
+    game_mvp = Player.objects.create(nationality="", tag=mvp[0], name=mvp[1], url="",
+                                     team=game_vod.match.team_1 if mvp[2] == 1 else game_vod.match.team_2,
+                                     profile_picture_filename="default.png")
+
+    if game_mvp:
+        game_vod.mvp = game_mvp
+        game_vod.save()
