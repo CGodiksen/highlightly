@@ -85,11 +85,6 @@ class LeagueOfLegendsScraper(Scraper):
 
         return {"url": team_url, "nationality": match_team_data["nationality"], "ranking": None}
 
-    # TODO: Extract the kills, deaths, assists and cs of each player from the post game data.
-    # TODO: Combine the data with the names from the rosters endpoint.
-    # TODO: Find the MVP and extract the MVP player photo from op.gg.
-    # TODO: Change the post game statistics image to use the new data.
-
     def check_match_status(self, match: Match) -> None:
         """Check the current match status and start the highlighting process if a game is finished."""
         # Check that the previous matches in the same tournament are done first.
@@ -120,26 +115,7 @@ class LeagueOfLegendsScraper(Scraper):
             # If a new game has started, create an object for the game.
             if not match_finished and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
                 logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
-
-                # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
-                stream_url = f"https://www.twitch.tv/{match.tournament.short_name.lower()}"
-
-                logging.info(f"Connecting to stream from {stream_url} to download VOD.")
-
-                vod_filename = f"game_{finished_game_count + 1}.mkv"
-                vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
-
-                download_cmd = f"streamlink {stream_url} best -O | ffmpeg -re -i pipe:0 -c:v copy -c:a copy {vod_filepath}"
-                process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
-
-                # Since we assume the game has just started, delay the task to check the match status.
-                new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=20)
-                PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
-
-                GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
-                                       language="english", start_datetime=timezone.localtime(timezone.now()),
-                                       process_id=process.pid, filename=vod_filename, map="Summoner's Rift",
-                                       url=stream_url)
+                handle_game_started(match, finished_game_count)
 
             # Check if the most recently finished game has been marked as finished.
             if match.gamevod_set.filter(game_count=finished_game_count).exists():
@@ -273,6 +249,29 @@ def get_match_data_finished_game_counts(match_data: dict) -> tuple[int, int]:
     team_2_score = match_data["scores"][str(team_2["id"])]
 
     return 0 if team_1_score is None else team_1_score, 0 if team_2_score is None else team_2_score
+
+
+def handle_game_started(match: Match, finished_game_count: int):
+    """Start downloading the stream related to the game and create an object to save game data."""
+    # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
+    stream_url = f"https://www.twitch.tv/{match.tournament.short_name.lower()}"
+
+    logging.info(f"Connecting to stream from {stream_url} to download VOD.")
+
+    vod_filename = f"game_{finished_game_count + 1}.mkv"
+    vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
+
+    download_cmd = f"streamlink {stream_url} best -O | ffmpeg -re -i pipe:0 -c:v copy -c:a copy {vod_filepath}"
+    process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
+
+    # Since we assume the game has just started, delay the task to check the match status.
+    new_task_start_time = timezone.localtime(timezone.now()) + timedelta(minutes=20)
+    PeriodicTask.objects.filter(name=f"Check {match} status").update(start_time=new_task_start_time)
+
+    GameVod.objects.create(match=match, game_count=finished_game_count + 1, host=GameVod.Host.TWITCH,
+                           language="english", start_datetime=timezone.localtime(timezone.now()),
+                           process_id=process.pid, filename=vod_filename, map="Summoner's Rift",
+                           url=stream_url)
 
 
 def get_post_game_data(match_data: dict, game_count: int) -> dict:
