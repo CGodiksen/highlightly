@@ -99,7 +99,7 @@ def save_timer_image(video_capture, frame_rate: float, frame_second: int, file_p
     _res, frame = video_capture.read()
 
     if frame is not None:
-        cropped_frame = frame[0:100, 910:1010]
+        cropped_frame = frame[0:110, 910:1010]
         cv2.imwrite(file_path, scale_image(cropped_frame, 300))
 
 
