@@ -1,4 +1,3 @@
-import math
 import logging
 import shutil
 import subprocess
@@ -102,7 +101,7 @@ class Editor:
             logging.info(f"Created {duration} second highlight clip for round {highlight.round_number} of {game_vod}.")
             exact_durations.append(exact_duration)
 
-        combine_clips_with_crossfade(folder_path, target_filename, exact_durations)
+        combine_clips_with_crossfade(folder_path, target_filename, exact_durations, game_vod.game_count)
         logging.info(f"Combined {len(highlights)} highlights into a single highlight video for {game_vod}.")
 
         shutil.rmtree(f"{folder_path}/clips")
@@ -171,53 +170,47 @@ def add_highlight_to_selected(selected_highlights: list[Highlight], highlight: H
     return added_duration
 
 
-# TODO: Find a way to combine all the clips in a single command without running out of memory.
-def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float]):
+def combine_clips_with_crossfade(folder_path: str, target_filename: str, clip_durations: list[float], game_count: int):
     """Combine the given clips, adding a crossfade effect between each clip for cleaner transitions."""
-    # Split the clips into groups of 10 to avoid memory issues with combining them all with a single command.
-    group_size = 10
-    groups = math.ceil(len(clip_durations) / group_size)
+    Path(f"{folder_path}/highlights/game_{game_count}").mkdir(parents=True, exist_ok=True)
 
-    if len(clip_durations) % 10 == 1:
-        group_size = 9
+    video_filters = []
+    audio_filters = []
+    file_ids = list(range(0, len(clip_durations)))
 
-    Path(f"{folder_path}/highlights/groups").mkdir(parents=True, exist_ok=True)
+    # Find the audio and video filters between each clip.
+    fade_offset = 0
+    for i in range(len(file_ids) - 1):
+        fade_offset += clip_durations[i] - 1
 
-    with open(f"{folder_path}/highlights/groups/groups.txt", "a+") as groups_txt:
-        for group in range(groups):
-            group_video_filters = []
-            group_audio_filters = []
-            group_file_ids = list(range(group * group_size, min((group * group_size) + group_size, len(clip_durations))))
+        v_filter_start = "[0]" if i == 0 else f"[vfade{i}]"
+        v_filter_end = ",format=yuv420p" if i + 1 == len(file_ids) - 1 else f"[vfade{i + 1}]"
+        video_filters.append(f"{v_filter_start}[{i + 1}:v]xfade=transition=fade:duration=1"
+                             f":offset={fade_offset}{v_filter_end}")
 
-            fade_offset = 0
-            for i in range(len(group_file_ids) - 1):
-                fade_offset += clip_durations[i + group * group_size] - 1
+        a_filter_start = "[0:a]" if i == 0 else f"[afade{i}]"
+        a_filter_end = "" if i + 1 == len(file_ids) - 1 else f"[afade{i + 1}]"
+        audio_filters.append(f"{a_filter_start}[{i + 1}:a]acrossfade=d=0.96{a_filter_end}")
 
-                v_filter_start = "[0]" if i == 0 else f"[vfade{i}]"
-                v_filter_end = ",format=yuv420p" if i + 1 == len(group_file_ids) - 1 else f"[vfade{i + 1}]"
-                group_video_filters.append(f"{v_filter_start}[{i + 1}:v]xfade=transition=fade:duration=1"
-                                           f":offset={fade_offset}{v_filter_end}")
+    clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in file_ids])
 
-                a_filter_start = "[0:a]" if i == 0 else f"[afade{i}]"
-                a_filter_end = "" if i + 1 == len(group_file_ids) - 1 else f"[afade{i + 1}]"
-                group_audio_filters.append(f"{a_filter_start}[{i + 1}:a]acrossfade=d=1{a_filter_end}")
+    # Combine the clips into a video file with a 1-second video crossfade between each clip.
+    video_filename = target_filename.replace('.mkv', f'_video.mkv')
+    video_cmd = f"ffmpeg {clips_part} -filter_complex '{'; '.join(video_filters)}' " \
+                f"-preset superfast -crf 27 -an {folder_path}/highlights/game_{game_count}/{video_filename}"
+    subprocess.run(video_cmd, shell=True)
 
-            # Combine the clips in the group into a single highlight video file.
-            clips_part = " ".join([f'-i {folder_path}/clips/clip_{i + 1}.mkv' for i in group_file_ids])
-            group_video_filename = target_filename.replace('.mkv', f'_{group}.mkv')
-            cmd = f"ffmpeg {clips_part} -filter_complex 'afade=t=in:ss=0:d=1[0:a], {'; '.join(group_video_filters)}; " \
-                  f"{'; '.join(group_audio_filters)}, afade=t=out:st={fade_offset + clip_durations[group_file_ids[-1]] - 2}:d=2' " \
-                  f"-preset superfast -crf 27 -movflags +faststart {folder_path}/highlights/groups/{group_video_filename}"
+    # Combine the clips into an audio file with a 1-second audio crossfade between each clip.
+    audio_filename = target_filename.replace('.mkv', f'_audio.aac')
+    audio_cmd = f"ffmpeg {clips_part} -filter_complex '{'; '.join(audio_filters)}' " \
+                f"{folder_path}/highlights/game_{game_count}/{audio_filename}"
+    subprocess.run(audio_cmd, shell=True)
 
-            subprocess.run(cmd, shell=True)
-
-            groups_txt.write(f"file '{group_video_filename}'\n")
-
-    # Combine each group highlight video into a single file for the entire game.
-    cmd = f"ffmpeg -f concat -i {folder_path}/highlights/groups/groups.txt -codec copy {folder_path}/highlights/{target_filename}"
-    subprocess.run(cmd, shell=True)
-
-    shutil.rmtree(f"{folder_path}/highlights/groups")
+    # Combine the created video and audio files into a single complete highlight video.
+    combine_cmd = f"ffmpeg -i {folder_path}/highlights/game_{game_count}/{video_filename} -i " \
+                  f"{folder_path}/highlights/game_{game_count}/{audio_filename} -c copy -movflags +faststart " \
+                  f"{folder_path}/highlights/{target_filename}"
+    subprocess.run(combine_cmd, shell=True)
 
 
 def get_video_length(filepath: str) -> float:
