@@ -278,8 +278,10 @@ def extract_game_statistics(game_data: dict, game_vod: GameVod) -> None:
         logging.info(f"Player with tag '{mvp['tag']}' does not already exist. Creating new player.")
 
         if mvp["profile_picture_url"] is not None:
+            r = requests.get(mvp["profile_picture_url"])
             profile_picture_filename = f"{mvp['team'].organization.name.replace(' ', '-').lower()}-{mvp['tag'].replace(' ', '-').lower()}.png"
-            urllib.request.urlretrieve(mvp["profile_picture_url"], f"media/players/{profile_picture_filename}")
+            with open(f"media/players/{profile_picture_filename}", 'wb') as outfile:
+                outfile.write(r.content)
         else:
             profile_picture_filename = "default.png"
 
