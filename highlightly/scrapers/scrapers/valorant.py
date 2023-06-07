@@ -113,7 +113,7 @@ class ValorantScraper(Scraper):
             vod_filename = f"game_{finished_game_count + 1}.mkv"
             vod_filepath = f"{match.create_unique_folder_path('vods')}/{vod_filename}"
 
-            download_cmd = f"streamlink {stream_url} best -O | ffmpeg -re -i pipe:0 -c:v copy -c:a copy {vod_filepath}"
+            download_cmd = f"streamlink {stream_url} best -O | ffmpeg -re -i pipe:0 -filter:v scale=1920:-1 -c:a copy {vod_filepath}"
             process = subprocess.Popen(download_cmd, stdout=subprocess.PIPE, shell=True, preexec_fn=os.setsid)
 
             # Since we assume the game has just started, delay the task to check the match status.
