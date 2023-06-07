@@ -6,6 +6,7 @@ import signal
 import subprocess
 import urllib.request
 from datetime import datetime, timedelta
+from json import JSONDecodeError
 from pathlib import Path
 
 import pytz
@@ -103,15 +104,7 @@ class LeagueOfLegendsScraper(Scraper):
         finished_game_count = sum(game_counts)
 
         if finished_game_count > 0 or match_data["lifecycle"] == "live":
-            # If it is the last game of the match, mark the match as finished and delete the related periodic task.
             match_finished = match_data["lifecycle"] == "over"
-            if match_finished:
-                logging.info(f"{match} is finished. Deleting the periodic task.")
-
-                PeriodicTask.objects.filter(name=f"Check {match} status").delete()
-
-                match.finished = True
-                match.save()
 
             # If a new game has started, create an object for the game.
             if not match_finished and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():
@@ -123,7 +116,7 @@ class LeagueOfLegendsScraper(Scraper):
                 finished_game = match.gamevod_set.get(game_count=finished_game_count)
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
-                    handle_game_finished(finished_game, match_data, finished_game_count)
+                    handle_game_finished(finished_game, match_data, finished_game_count, match, match_finished)
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
@@ -206,6 +199,36 @@ def handle_game_started(match: Match, finished_game_count: int) -> None:
                            url=stream_url)
 
 
+def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game_count: int, match: Match,
+                         match_finished: bool) -> None:
+    """Stop the download of the livestream, add post game data to game vod object, and extract game statistics."""
+    try:
+        # Stop the download of the livestream related to the game.
+        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
+    except ProcessLookupError as e:
+        logging.error(e)
+
+    try:
+        game_data = get_post_game_data(match_data, finished_game_count)
+        add_post_game_data(game_data, finished_game)
+
+        logging.info(f"Extracting game statistics for {finished_game}.")
+        extract_game_statistics(game_data, finished_game)
+
+        # If it is the last game of the match, mark the match as finished and delete the related periodic task.
+        if match_finished:
+            logging.info(f"{match} is finished. Deleting the periodic task.")
+            PeriodicTask.objects.filter(name=f"Check {match} status").delete()
+
+            match.finished = True
+            match.save()
+
+        finished_game.finished = True
+        finished_game.save(update_fields=["finished"])
+    except JSONDecodeError as e:
+        logging.error(f"Game data for {finished_game} could not be retrieved: {e}")
+
+
 def get_post_game_data(match_data: dict, game_count: int) -> dict:
     """Return the detailed game data related to a specific finished game of the match in the given match data."""
     game_id = match_data["matches"][game_count - 1]["id"]
@@ -215,24 +238,6 @@ def get_post_game_data(match_data: dict, game_count: int) -> dict:
     html = requests.get(url=url, headers=headers).text
 
     return json.loads(html) if len(html) > 0 else {}
-
-
-def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game_count: int) -> None:
-    """Stop the download of the livestream, add post game data to game vod object, and extract game statistics."""
-    try:
-        # Stop the download of the livestream related to the game.
-        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
-    except ProcessLookupError as e:
-        logging.error(e)
-
-    game_data = get_post_game_data(match_data, finished_game_count)
-    add_post_game_data(game_data, finished_game)
-
-    logging.info(f"Extracting game statistics for {finished_game}.")
-    extract_game_statistics(game_data, finished_game)
-
-    finished_game.finished = True
-    finished_game.save(update_fields=["finished"])
 
 
 def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
