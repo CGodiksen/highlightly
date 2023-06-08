@@ -248,7 +248,7 @@ def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:
     team_1 = game_data["teams"]["home"]
 
     # Set the winner of the match.
-    if team_1["is_winner"] is not None:
+    if team_1["is_winner"] is not None and team_1["is_winner"]:
         game_vod.team_1_round_count = 1
         game_vod.team_2_round_count = 0
     else:
