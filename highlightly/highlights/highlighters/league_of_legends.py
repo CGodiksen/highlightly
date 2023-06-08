@@ -18,6 +18,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
     """Highlighter that uses the PaddleOCR and template matching to extract highlights from League of Legends matches."""
 
     # TODO: Handle issue with multiple games being present in a single VOD.
+    # TODO: Handle issue with frames outside the game being included due to highlights after the game.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
 

@@ -165,6 +165,7 @@ def get_match_data(match: Match) -> dict:
             return m
 
 
+# TODO: Use the get game data function to check if the next game is done instead since there is a delay.
 def get_match_data_finished_game_counts(match_data: dict) -> tuple[int, int]:
     """Return a tuple with the format (team_1_wins, team_2_wins)."""
     team_1 = match_data["participants"][0]
@@ -207,6 +208,8 @@ def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game
         os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
     except ProcessLookupError as e:
         logging.error(e)
+
+    # TODO: Maybe fix any potential issues with the file metadata using: ffmpeg -err_detect ignore_err -i temp.mkv -c copy fixed.mkv
 
     try:
         game_data = get_post_game_data(match_data, finished_game_count)
