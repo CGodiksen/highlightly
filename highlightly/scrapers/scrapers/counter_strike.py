@@ -45,13 +45,14 @@ class CounterStrikeScraper(Scraper):
         for row in rows:
             match = extract_match_data(row, base_url)
 
-            is_tdb = match["team_1"]["name"] == "TBD" or match["team_2"]["name"] == "TBD"
-            is_showmatch = "showmatch" in match["tournament_name"].lower()
+            if match is not None:
+                is_tdb = match["team_1"]["name"] == "TBD" or match["team_2"]["name"] == "TBD"
+                is_showmatch = "showmatch" in match["tournament_name"].lower()
 
-            # Ignore the match if it currently still contains a "TBD" team or if it is a showmatch.
-            if match is not None and not is_tdb and not is_showmatch:
-                logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
-                upcoming_matches.append(match)
+                # Ignore the match if it currently still contains a "TBD" team or if it is a showmatch.
+                if not is_tdb and not is_showmatch:
+                    logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
+                    upcoming_matches.append(match)
 
         return upcoming_matches
 
