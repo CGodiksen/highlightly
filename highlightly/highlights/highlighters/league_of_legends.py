@@ -19,6 +19,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
 
     # TODO: Handle issue with multiple games being present in a single VOD.
     # TODO: Handle issue with frames outside the game being included due to highlights after the game.
+    # TODO: Maybe handle issue with end of game being missed due to the 1 minute window being too large (30 seconds instead).
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
 
