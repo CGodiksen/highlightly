@@ -22,3 +22,18 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: ../gcp_ocr.json
     volumes:
       - ./:/usr/src/app
+
+  celery-worker:
+    build: .
+    container_name: celery-worker
+    command: celery -A highlightly worker --beat --scheduler django --loglevel=info
+    env_file:
+      - ./.env
+    environment:
+      DEBUG: "True"
+      GOOGLE_APPLICATION_CREDENTIALS: ../gcp_ocr.json
+    volumes:
+      - ./:/usr/src/app
+    depends_on:
+      - rabbitmq
+      - highlightly-backend
