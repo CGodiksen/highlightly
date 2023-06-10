@@ -3,6 +3,7 @@ import os
 import signal
 import subprocess
 from datetime import datetime, timedelta
+from time import sleep
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -298,9 +299,13 @@ def finish_vod_stream_download(game: GameVod):
     except ProcessLookupError as e:
         logging.error(e)
 
+    # Sleep to ensure the VOD file is ready for further processing after the stream download is stopped.
+    sleep(5)
+
     # Fix any potential issues with the VOD file metadata.
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
     temp_vod_filepath = vod_filepath.replace(".mkv", "_temp.mkv")
 
     os.rename(vod_filepath, temp_vod_filepath)
     subprocess.run(f"ffmpeg -err_detect ignore_err -i {temp_vod_filepath} -c copy {vod_filepath}", shell=True)
+    os.remove(temp_vod_filepath)
