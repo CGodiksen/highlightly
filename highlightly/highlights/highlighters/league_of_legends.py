@@ -45,7 +45,7 @@ class LeagueOfLegendsHighlighter(Highlighter):
         shutil.rmtree(game_vod.match.create_unique_folder_path("frames"))
         shutil.rmtree(game_vod.match.create_unique_folder_path("last_frames"))
 
-        return get_game_events(video_capture, frame_rate, frames_to_check, end_second)
+        return get_game_events(game_vod, video_capture, frame_rate, frames_to_check, end_second)
 
     def combine_events(self, game: GameVod, events: list[Event]) -> None:
         """Combine the events based on time and create a highlight for each group of events."""
@@ -139,7 +139,8 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
 
 
 # TODO: Maybe include the object kills from the graphql match data to ensure they are included.
-def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int], end_second: int) -> list[dict]:
+def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_to_check: list[int],
+                    end_second: int) -> list[dict]:
     """Check each frame for events using template matching and return the list of found events."""
     events = []
 
@@ -153,7 +154,10 @@ def get_game_events(video_capture, frame_rate: float, frames_to_check: list[int]
 
         # Modify the image to best capture the kill feed.
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        cropped_frame_gray = frame_gray[480:750, 1655:1688]
+
+        # Handle slight differences in the placement of the area with the kill feed.
+        height, width = get_kill_feed_placement(game_vod)
+        cropped_frame_gray = frame_gray[height[0]:height[1], width[0]:width[1]]
 
         # Match on the different icons that can be in the kill feed.
         mask = np.zeros(cropped_frame_gray.shape[:2], np.uint8)
@@ -185,3 +189,15 @@ def get_highlight_value(events: list[Event]) -> int:
         value += event_values[event["name"]]
 
     return value
+
+
+def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return the height and width measurements to extract the center of the kill feed for the tournament."""
+    if game_vod.match.tournament.short_name.lower() == "cblol":
+        height = (480, 760)
+        width = (1661, 1694)
+    else:
+        height = (480, 750)
+        width = (1655, 1688)
+
+    return height, width
