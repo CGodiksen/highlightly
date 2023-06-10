@@ -13,7 +13,7 @@ from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization, GameVod, Player, Team
-from scrapers.scrapers.scraper import Scraper
+from scrapers.scrapers.scraper import Scraper, finish_vod_stream_download
 from scrapers.types import TeamData
 
 
@@ -130,12 +130,7 @@ class ValorantScraper(Scraper):
             if not finished_game.finished:
                 logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
 
-                try:
-                    # Stop the download of the livestream related to the game.
-                    os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
-                except ProcessLookupError as e:
-                    logging.error(e)
-
+                finish_vod_stream_download(finished_game)
                 self.add_post_game_data(finished_game, soup)
 
                 logging.info(f"Extracting game statistics for {finished_game}.")

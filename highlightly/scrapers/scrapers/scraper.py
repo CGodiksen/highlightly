@@ -1,5 +1,7 @@
 import logging
 import os
+import signal
+import subprocess
 from datetime import datetime, timedelta
 
 import requests
@@ -286,3 +288,19 @@ def convert_format_to_minimum_time(match_format: Match.Format) -> int:
         return (2 * 30) + 5
     else:
         return (3 * 30) + 10
+
+
+def finish_vod_stream_download(game: GameVod):
+    """Stop the download of the stream related to the game and fix any potential issues with the file metadata."""
+    try:
+        # Stop the download of the livestream related to the game.
+        os.killpg(os.getpgid(game.process_id), signal.SIGTERM)
+    except ProcessLookupError as e:
+        logging.error(e)
+
+    # Fix any potential issues with the VOD file metadata.
+    vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
+    temp_vod_filepath = vod_filepath.replace(".mkv", "_temp.mkv")
+
+    os.rename(vod_filepath, temp_vod_filepath)
+    subprocess.run(f"ffmpeg -err_detect ignore_err -i {temp_vod_filepath} -c copy {vod_filepath}", shell=True)

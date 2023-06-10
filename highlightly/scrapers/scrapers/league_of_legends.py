@@ -15,7 +15,7 @@ from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
 from scrapers.models import Match, Game, Organization, GameVod, Tournament, Player
-from scrapers.scrapers.scraper import Scraper
+from scrapers.scrapers.scraper import Scraper, finish_vod_stream_download
 from scrapers.types import TeamData
 
 
@@ -203,13 +203,7 @@ def handle_game_started(match: Match, finished_game_count: int) -> None:
 def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game_count: int, match: Match,
                          match_finished: bool) -> None:
     """Stop the download of the livestream, add post game data to game vod object, and extract game statistics."""
-    try:
-        # Stop the download of the livestream related to the game.
-        os.killpg(os.getpgid(finished_game.process_id), signal.SIGTERM)
-    except ProcessLookupError as e:
-        logging.error(e)
-
-    # TODO: Maybe fix any potential issues with the file metadata using: ffmpeg -err_detect ignore_err -i temp.mkv -c copy fixed.mkv
+    finish_vod_stream_download(finished_game)
 
     try:
         game_data = get_post_game_data(match_data, finished_game_count)
