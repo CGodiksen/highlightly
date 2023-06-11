@@ -107,7 +107,7 @@ class ValorantScraper(Scraper):
             logging.info(f"Game {finished_game_count + 1} for {match} has started. Creating object for game.")
 
             # Start downloading the livestream related to the game. This stream is only stopped when the game is finished.
-            stream_url = get_twitch_stream_url(soup)
+            stream_url = get_twitch_stream_url(match, soup)
             logging.info(f"Connecting to stream from {stream_url} to download VOD.")
 
             vod_filename = f"game_{finished_game_count + 1}.mkv"
@@ -258,13 +258,18 @@ def extract_match_page_tournament_data(match: Match, html: BeautifulSoup) -> Non
     match.save()
 
 
-def get_twitch_stream_url(html: BeautifulSoup) -> dict:
+def get_twitch_stream_url(match: Match, html: BeautifulSoup) -> dict:
     """Return the best Twitch stream URL related to the game."""
     stream_divs = html.findAll("div", class_="match-streams-btn")
     stream_url = stream_divs[0].find("a")["href"]
 
     valid_stream_languages = ["mod-un", "mod-eu", "mod-us", "mod-au"]
-    banned_streams = ["https://www.twitch.tv/valorant"]
+
+    # Only ban the main Valorant channel for non-international tournaments.
+    if match.tournament.name in ["Champions Tour 2023: Masters Tokyo"]:
+        banned_streams = []
+    else:
+        banned_streams = ["https://www.twitch.tv/valorant"]
 
     for stream_div in stream_divs:
         stream_flag = stream_div.find("i", class_="flag")
