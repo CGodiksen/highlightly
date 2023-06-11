@@ -149,12 +149,12 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
         team_1_data = get_team_statistics_data(game, game.match.team_1, 1, game_name)
         team_2_data = get_team_statistics_data(game, game.match.team_2, 2, game_name)
 
-        match_info = game.map if game.match.format == Match.Format.BEST_OF_1 else f"Map {game.game_count} - {game.map}"
-        match_info = f"Game {game.game_count}" if game_name == "league-of-legends" else match_info
+        if game.match.format != Match.Format.BEST_OF_1:
+            match_info = f"Game {game.game_count}" if game_name == "league-of-legends" else f"Game {game.game_count} - {game.map}"
+        else:
+            match_info = game.map
 
-        mvp_title_prefix = "Game" if game_name == "league-of-legends" else "Map"
-        mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"{mvp_title_prefix} {game.game_count} MVP"
-
+        mvp_title = "Match MVP" if game.match.format == Match.Format.BEST_OF_1 else f"Game {game.game_count} MVP"
         mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
         general_data = {"match_info": match_info, "mvp_title": mvp_title, "game": game_name,
