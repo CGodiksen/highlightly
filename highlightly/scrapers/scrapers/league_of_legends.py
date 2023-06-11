@@ -100,7 +100,7 @@ class LeagueOfLegendsScraper(Scraper):
         match_data = get_match_data(match)
 
         # Find the current number of finished games.
-        game_counts = get_match_data_finished_game_counts(match_data)
+        game_counts, next_game_data = get_match_data_finished_game_counts(match, match_data)
         finished_game_count = sum(game_counts)
 
         if finished_game_count > 0 or match_data["lifecycle"] == "live":
@@ -112,11 +112,11 @@ class LeagueOfLegendsScraper(Scraper):
                 handle_game_started(match, finished_game_count)
 
             # Check if the most recently finished game has been marked as finished.
-            if match.gamevod_set.filter(game_count=finished_game_count).exists():
+            if match.gamevod_set.filter(game_count=finished_game_count).exists() and next_game_data is not None:
                 finished_game = match.gamevod_set.get(game_count=finished_game_count)
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
-                    handle_game_finished(finished_game, match_data, finished_game_count, match, match_finished)
+                    handle_game_finished(finished_game, next_game_data, match, match_finished)
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
@@ -166,16 +166,29 @@ def get_match_data(match: Match) -> dict:
             return m
 
 
-# TODO: Use the get game data function to check if the next game is done instead since there is a delay.
-def get_match_data_finished_game_counts(match_data: dict) -> tuple[int, int]:
-    """Return a tuple with the format (team_1_wins, team_2_wins)."""
-    team_1 = match_data["participants"][0]
-    team_1_score = match_data["scores"][str(team_1["id"])]
+def get_match_data_finished_game_counts(match, match_data: dict) -> tuple[tuple[int, int], dict | None]:
+    """Return a tuple with the format ((team_1_wins, team_2_wins), next_game_data)."""
+    team_1_score = 0
+    team_2_score = 0
 
-    team_2 = match_data["participants"][1]
-    team_2_score = match_data["scores"][str(team_2["id"])]
+    for game in match.gamevod_set.filter(finished=True):
+        if game.team_1_round_count > game.team_2_round_count:
+            team_1_score += 1
+        else:
+            team_2_score += 1
 
-    return 0 if team_1_score is None else team_1_score, 0 if team_2_score is None else team_2_score
+    # Check if the next game is finished and return the game data if so.
+    next_game_data = get_post_game_data(match_data, team_1_score + team_2_score + 1)
+    if next_game_data and "match" in next_game_data and next_game_data["match"]["phase"] == "game-over":
+        team_1 = next_game_data["teams"]["home"]
+        if team_1["is_winner"] is not None and team_1["is_winner"]:
+            team_1_score += 1
+        else:
+            team_2_score += 1
+    else:
+        next_game_data = None
+
+    return (team_1_score, team_2_score), next_game_data
 
 
 def handle_game_started(match: Match, finished_game_count: int) -> None:
@@ -201,13 +214,11 @@ def handle_game_started(match: Match, finished_game_count: int) -> None:
                            url=stream_url)
 
 
-def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game_count: int, match: Match,
-                         match_finished: bool) -> None:
+def handle_game_finished(finished_game: GameVod, game_data: dict, match: Match, match_finished: bool) -> None:
     """Stop the download of the livestream, add post game data to game vod object, and extract game statistics."""
     finish_vod_stream_download(finished_game)
 
     try:
-        game_data = get_post_game_data(match_data, finished_game_count)
         add_post_game_data(game_data, finished_game)
 
         logging.info(f"Extracting game statistics for {finished_game}.")
