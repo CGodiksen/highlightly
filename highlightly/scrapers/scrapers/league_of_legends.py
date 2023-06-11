@@ -229,13 +229,16 @@ def handle_game_finished(finished_game: GameVod, match_data: dict, finished_game
 
 def get_post_game_data(match_data: dict, game_count: int) -> dict:
     """Return the detailed game data related to a specific finished game of the match in the given match data."""
-    game_id = match_data["matches"][game_count - 1]["id"]
+    try:
+        game_id = match_data["matches"][game_count - 1]["id"]
 
-    url = f"https://neptune.1337pro.com/matches/{game_id}/summary?seriesId={match_data['id']}"
-    headers = {"Accept": "application/vnd.neptune+json; version=1"}
-    html = requests.get(url=url, headers=headers).text
+        url = f"https://neptune.1337pro.com/matches/{game_id}/summary?seriesId={match_data['id']}"
+        headers = {"Accept": "application/vnd.neptune+json; version=1"}
+        html = requests.get(url=url, headers=headers).text
 
-    return json.loads(html) if len(html) > 0 else {}
+        return json.loads(html) if len(html) > 0 else {}
+    except IndexError:
+        return {}
 
 
 def add_post_game_data(game_data: dict, game_vod: GameVod) -> None:

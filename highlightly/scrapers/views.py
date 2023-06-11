@@ -14,7 +14,8 @@ from scrapers import serializers
 from scrapers import tasks
 from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.counter_strike import CounterStrikeScraper
-from scrapers.scrapers.league_of_legends import LeagueOfLegendsScraper
+from scrapers.scrapers.league_of_legends import LeagueOfLegendsScraper, get_match_data, get_post_game_data, \
+    get_match_data_finished_game_counts
 from scrapers.scrapers.valorant import ValorantScraper
 from scrapers.serializers import MatchSerializer
 from util.file_util import save_base64_image
@@ -65,11 +66,15 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
             scraper = CounterStrikeScraper()
         elif match.team_1.game == Game.LEAGUE_OF_LEGENDS:
             scraper = LeagueOfLegendsScraper()
+            match_data = get_match_data(match)
+            print(match_data)
+            next_game_data = get_match_data_finished_game_counts(match, match_data)
+            print(next_game_data)
         else:
             scraper = ValorantScraper()
 
-        scraper.scrape_finished_match(match)
-        match.refresh_from_db()
+        # scraper.scrape_finished_match(match)
+        # match.refresh_from_db()
 
         return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
 
