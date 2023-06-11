@@ -8,6 +8,10 @@ body {
     font-family: Open Sans, sans-serif;
 }
 
+body.league-of-legends {
+    background-color: #191919 !important;
+}
+
 .parent {
     display: grid;
     grid-template-columns: 1.1fr 0.8fr 1.1fr repeat(4, 1fr);

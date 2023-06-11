@@ -138,7 +138,6 @@ def save_match_frame(match: Match, frame_filepath: str, frame_time: float | None
 # TODO: Add flags to team names in table.
 # TODO: Replace the final map statistics with total match statistics.
 # TODO: Order the league of legends players according to position.
-# TODO: Maybe change the background color of the league of legends image to the player photo background.
 # TODO: Maybe change the table colors to league of legends colors.
 # TODO: Maybe change the table colors to valorant colors.
 def create_game_statistics_image(game: GameVod, folder_path: str, filename: str) -> None:
@@ -158,7 +157,7 @@ def create_game_statistics_image(game: GameVod, folder_path: str, filename: str)
 
         mvp_profile_picture = os.path.abspath(f"media/players/{game.mvp.profile_picture_filename}")
 
-        general_data = {"match_info": match_info, "mvp_title": mvp_title,
+        general_data = {"match_info": match_info, "mvp_title": mvp_title, "game": game_name,
                         "mvp_profile_picture": mvp_profile_picture, "mvp_name": str(game.mvp),
                         "mvp_team_logo": os.path.abspath(f"media/teams/{game.mvp.team.organization.logo_filename}")}
 
