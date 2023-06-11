@@ -129,7 +129,7 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_5
 
 
-# TODO: Fix issue with this function now downloading the tournament logo for new tournaments. The filename is only set.
+# TODO: Fix issue with this function not downloading the tournament logo for new tournaments. The filename is only set.
 def save_tournament_logo(match_data: dict) -> str:
     """if the tournament of the match does not already have a logo, save the logo and return the filename."""
     Path("media/tournaments").mkdir(parents=True, exist_ok=True)

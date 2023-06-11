@@ -195,9 +195,9 @@ def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[i
     """Return the height and width measurements to extract the center of the kill feed for the tournament."""
     if game_vod.match.tournament.short_name.lower() == "cblol":
         height = (480, 760)
-        width = (1661, 1694)
+        width = (1659, 1696)
     else:
         height = (480, 750)
-        width = (1655, 1688)
+        width = (1653, 1690)
 
     return height, width
