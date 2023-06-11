@@ -104,7 +104,10 @@ class LeagueOfLegendsScraper(Scraper):
         finished_game_count = sum(game_counts)
 
         if finished_game_count > 0 or match_data["lifecycle"] == "live":
-            match_finished = match_data["lifecycle"] == "over"
+            bo1_finished = match.format == Match.Format.BEST_OF_1 and max(game_counts) == 1
+            bo3_finished = match.format == Match.Format.BEST_OF_3 and max(game_counts) == 2
+            bo5_finished = match.format == Match.Format.BEST_OF_5 and max(game_counts) == 3
+            match_finished = bo1_finished or bo3_finished or bo5_finished
 
             # If a new game has started, create an object for the game.
             if not match_finished and not match.gamevod_set.filter(game_count=finished_game_count + 1).exists():

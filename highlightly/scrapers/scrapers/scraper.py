@@ -300,7 +300,7 @@ def finish_vod_stream_download(game: GameVod):
         logging.error(e)
 
     # Sleep to ensure the VOD file is ready for further processing after the stream download is stopped.
-    sleep(5)
+    sleep(10)
 
     # Fix any potential issues with the VOD file metadata.
     vod_filepath = f"{game.match.create_unique_folder_path('vods')}/{game.filename}"
