@@ -51,7 +51,7 @@ class ValorantHighlighter(Highlighter):
         """Combine multiple events happening in close succession together to create highlights."""
         clean_rounds(rounds)
 
-        for round, round_data in rounds.items():
+        for round_number, round_data in rounds.items():
             if len(round_data["events"]) > 0:
                 # Group the events within each round based on time.
                 grouped_events = group_events(round_data["events"], "spike_planted")
@@ -59,21 +59,21 @@ class ValorantHighlighter(Highlighter):
                 # Create a highlight object for each group of events.
                 for group in grouped_events:
                     # For each group of events, get the value of the group.
-                    value = get_highlight_value(group, round)
+                    value = get_highlight_value(group, round_number)
 
                     start = group[0]["time"]
                     end = group[-1]["time"]
                     events_str = " - ".join([f"{event['name']} ({event['time']})" for event in group])
 
-                    Highlight.objects.create(game_vod=game, start_time_seconds=start, round_number=round, value=value,
-                                             duration_seconds=max(end - start, 1), events=events_str)
+                    Highlight.objects.create(game_vod=game, start_time_seconds=start, round_number=round_number,
+                                             value=value, duration_seconds=max(end - start, 1), events=events_str)
 
 
 def extract_round_timeline(game: GameVod, vod_filepath: str, frame_rate: float) -> dict[int, dict]:
     """Parse through the VOD to find each round in the game."""
     folder_path = game.match.create_unique_folder_path("frames")
     total_seconds = get_video_length(vod_filepath)
-    frames = range(0, int(total_seconds) + 1, 10)
+    frames = list(range(0, int(total_seconds) + 1, 10))
 
     # Save the frames that should be analyzed to disk.
     save_video_frames(vod_filepath, frames, folder_path, frame_rate)
@@ -99,7 +99,7 @@ def save_video_frames(vod_filepath: str, frame_group: list[int], folder_path: st
         save_round_timer_image(video_capture, frame_rate, frame_second, f"{folder_path}/{frame_second}.png")
 
 
-def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, SecondData]:
+def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dict[int, dict[str, int]]:
     """Use the detections to create the initial round timeline with gaps."""
     round_timeline = {}
     most_recent_number = None
@@ -123,7 +123,8 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
             split_timer = detections[1].split(":")
 
             if split_timer[0] != "" and split_timer[1] != "":
-                second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+                second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]),
+                                                           seconds=int(split_timer[1])).seconds
 
         if len(detections) == 2 and "." in detections[1] and detections[1].replace(".", "").isdigit():
             second_data["round_time_left"] = timedelta(seconds=int(float(detections[1]))).seconds
@@ -133,45 +134,46 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
     return round_timeline
 
 
-def handle_round_detection_errors(most_recent_number: int, round: str, round_number: int | None) -> int | None:
+def handle_round_detection_errors(most_recent_number: int, round_detection: str,
+                                  round_number: int | None) -> int | None:
     """Handle common issues with missing number in round number detection."""
-    if most_recent_number == 1 and round.endswith("T"):
+    if most_recent_number == 1 and round_detection.endswith("T"):
         round_number = 1
-    elif most_recent_number in [10, 11] and round.endswith("T"):
+    elif most_recent_number in [10, 11] and round_detection.endswith("T"):
         round_number = 11
-    elif most_recent_number in [20, 21] and round.endswith("T"):
+    elif most_recent_number in [20, 21] and round_detection.endswith("T"):
         round_number = 21
-    elif most_recent_number in [1, 2] and round.endswith("Z"):
+    elif most_recent_number in [1, 2] and round_detection.endswith("Z"):
         round_number = 2
-    elif most_recent_number in [11, 12] and round.endswith("Z"):
+    elif most_recent_number in [11, 12] and round_detection.endswith("Z"):
         round_number = 12
-    elif most_recent_number in [21, 22] and round.endswith("Z"):
+    elif most_recent_number in [21, 22] and round_detection.endswith("Z"):
         round_number = 22
-    elif most_recent_number in [4, 5] and round.endswith("S"):
+    elif most_recent_number in [4, 5] and round_detection.endswith("S"):
         round_number = 5
-    elif most_recent_number in [14, 15] and round.endswith("S"):
+    elif most_recent_number in [14, 15] and round_detection.endswith("S"):
         round_number = 15
-    elif most_recent_number in [6, 7] and round.endswith("T"):
+    elif most_recent_number in [6, 7] and round_detection.endswith("T"):
         round_number = 7
-    elif most_recent_number in [16, 17] and round.endswith("T"):
+    elif most_recent_number in [16, 17] and round_detection.endswith("T"):
         round_number = 17
-    elif most_recent_number in [7, 8] and (round.endswith("B") or round.endswith("0")):
+    elif most_recent_number in [7, 8] and (round_detection.endswith("B") or round_detection.endswith("0")):
         round_number = 8
-    elif most_recent_number in [17, 18] and (round.endswith("B") or round.endswith("0")):
+    elif most_recent_number in [17, 18] and (round_detection.endswith("B") or round_detection.endswith("0")):
         round_number = 18
-    elif most_recent_number in [19, 20] and round.endswith("Z0") or round.endswith("ZO"):
+    elif most_recent_number in [19, 20] and round_detection.endswith("Z0") or round_detection.endswith("ZO"):
         round_number = 20
 
     most_recent_digits = list(str(most_recent_number))
-    if most_recent_number >= 10 and "." in round:
+    if most_recent_number >= 10 and "." in round_detection:
         number = f"{most_recent_digits[0]}.{most_recent_digits[1]}"
-        if number == round.split(" ")[-1]:
+        if number == round_detection.split(" ")[-1]:
             round_number = most_recent_number
 
     if most_recent_number >= 20:
-        if round.split(" ")[-1] == f"Z{most_recent_digits[1]}" or round.split(" ")[-1] == f"1{most_recent_digits[1]}":
+        if round_detection.split(" ")[-1] == f"Z{most_recent_digits[1]}" or round_detection.split(" ")[-1] == f"1{most_recent_digits[1]}":
             round_number = most_recent_number
-        elif most_recent_number == 22 and (round.split(" ")[-1] == "2Z"):
+        elif most_recent_number == 22 and (round_detection.split(" ")[-1] == "2Z"):
             round_number = 22
 
     return round_number
@@ -243,7 +245,6 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
             elif second_data["round_number"] == current_round + 1 and first_round_found:
                 rounds[current_round] = current_round_timeline
                 current_round += 1
-                # TODO: Test if this causes issues.
                 current_round_timeline = [data]
             elif second_data["round_number"] == 1 and current_round == round_count:
                 # If reaching round 1 again we break to avoid adding events from the potentially next game in the VOD.
@@ -256,8 +257,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
         rounds[current_round] = current_round_timeline
 
     # Find the starting point and estimated end point of each round.
-    for count, (round, timeline) in enumerate(rounds.items()):
-        logging.info(f"Finding starting point and estimated end point of round {round} using timeline: {timeline}")
+    for count, (round_number, timeline) in enumerate(rounds.items()):
+        logging.info(f"Finding start and estimated end of round {round_number} using timeline: {timeline}")
 
         first_live_frame = get_first_frame_in_round(timeline)
         start_time = first_live_frame["second"] - (100 - first_live_frame["round_time_left"])
@@ -275,8 +276,8 @@ def split_timeline_into_rounds(round_timeline: dict[int, SecondData], round_coun
             # Limit the end time since there might be a long halftime pause, technical pauses, or timeouts.
             estimated_end_time = min(timeline[-1]["second"] + 10, estimated_end_time)
 
-        rounds[round] = {"start_time": start_time, "estimated_end_time": estimated_end_time, "timeline": timeline,
-                         "events": []}
+        rounds[round_number] = {"start_time": start_time, "estimated_end_time": estimated_end_time,
+                                "timeline": timeline, "events": []}
 
     return rounds
 
@@ -290,7 +291,7 @@ def add_frames_to_check(rounds: dict, game: GameVod) -> None:
     """Add the frames that should be checked for spike events and kills events to each round."""
     round_spike_info = get_round_spike_info(game)
 
-    for round, round_data in rounds.items():
+    for round_number, round_data in rounds.items():
         # Find the frames where the spike is planted.
         live_frames = [frame for frame in round_data["timeline"] if frame["second"] > round_data["start_time"]]
         spike_planted_frames = [frame for frame in live_frames if frame["round_time_left"] is None]
@@ -303,7 +304,7 @@ def add_frames_to_check(rounds: dict, game: GameVod) -> None:
             spike_planted_start = spike_planted_frames[0]["second"]
             frames_to_check_for_spike_planted = list(range(spike_planted_start - 9, spike_planted_start))
 
-            if round in round_spike_info["spike_defused"] or round in round_spike_info["spike_exploded"]:
+            if round_number in round_spike_info["spike_defused"] or round_number in round_spike_info["spike_exploded"]:
                 spike_planted_end = spike_planted_frames[-1]["second"]
                 frames_to_check_for_spike_stopped = list(range(spike_planted_end + 1, spike_planted_end + 10))
 
@@ -312,7 +313,7 @@ def add_frames_to_check(rounds: dict, game: GameVod) -> None:
         start = round_data["start_time"] + 1
         end = round_data["estimated_end_time"]
 
-        if max(rounds.keys()) == round:
+        if max(rounds.keys()) == round_number:
             frames_to_check_for_kills = list(range(start, end))
         else:
             frames_to_check_for_kills = list(range(start, end, 2))
@@ -329,7 +330,7 @@ def get_round_spike_info(game: GameVod) -> dict:
     html = requests.get(url=game.match.url).text
     soup = BeautifulSoup(html, "html.parser")
 
-    game_map = next(map for map in soup.findAll("div", class_="map") if game.map in map.text)
+    game_map = next(map_div for map_div in soup.findAll("div", class_="map") if game.map in map_div.text)
     game_statistics = game_map.parent.parent
     round_results = game_statistics.findAll("div", class_="vlr-rounds-row-col")
 
@@ -351,8 +352,9 @@ def get_round_spike_info(game: GameVod) -> dict:
 def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for spike events and add each found event to the round."""
     # Extract the round and timer for each frame to check.
-    for round, data in rounds.items():
-        for frame_second in data["frames_to_check_for_spike_planted"] + data["frames_to_check_for_spike_stopped"]:
+    for _, round_data in rounds.items():
+        frames = round_data["frames_to_check_for_spike_planted"] + round_data["frames_to_check_for_spike_stopped"]
+        for frame_second in frames:
             file_path = f"{folder_path}/{frame_second}.png"
             save_round_timer_image(video_capture, frame_rate, frame_second, file_path)
 
@@ -361,34 +363,34 @@ def add_spike_events(rounds: dict[int, dict], video_capture, frame_rate: float, 
     spike_round_timeline = create_initial_round_timeline(frame_detections)
     fill_in_round_timeline_gaps(spike_round_timeline)
 
-    for round, data in rounds.items():
+    for _, round_data in rounds.items():
         # Add a spike planted event on the exact second the timer is no longer visible.
-        frames_to_check_for_planted = data["frames_to_check_for_spike_planted"]
+        frames_to_check_for_planted = round_data["frames_to_check_for_spike_planted"]
         for count, frame_second in enumerate(frames_to_check_for_planted):
             if "round_time_left" not in spike_round_timeline[frame_second]:
-                data["events"].append({"name": "spike_planted", "time": frame_second})
+                round_data["events"].append({"name": "spike_planted", "time": frame_second})
                 break
 
             if count + 1 == len(frames_to_check_for_planted):
-                data["events"].append({"name": "spike_planted", "time": frames_to_check_for_planted[-1] + 1})
+                round_data["events"].append({"name": "spike_planted", "time": frames_to_check_for_planted[-1] + 1})
 
         # Add a spike stopped event on the exact second the timer is visible again.
-        frames_to_check_for_stopped = data["frames_to_check_for_spike_stopped"]
+        frames_to_check_for_stopped = round_data["frames_to_check_for_spike_stopped"]
         for count, frame_second in enumerate(frames_to_check_for_stopped):
             frame = spike_round_timeline[frame_second]
             if "round_time_left" in frame or "round_number" not in frame:
-                data["events"].append({"name": "spike_stopped", "time": frame_second})
+                round_data["events"].append({"name": "spike_stopped", "time": frame_second})
                 break
 
             if count + 1 == len(frames_to_check_for_stopped):
-                data["events"].append({"name": "spike_stopped", "time": frames_to_check_for_stopped[-1] + 1})
+                round_data["events"].append({"name": "spike_stopped", "time": frames_to_check_for_stopped[-1] + 1})
 
 
 def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, folder_path: str) -> None:
     """Check the seconds for kill events and add each found event to the round."""
     # Extract the kill feed for each frame to check.
-    for round, data in rounds.items():
-        for frame_second in data["frames_to_check_for_kills"]:
+    for _, round_data in rounds.items():
+        for frame_second in round_data["frames_to_check_for_kills"]:
             file_path = f"{folder_path}/{frame_second}.png"
 
             video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_rate * frame_second)
@@ -420,7 +422,7 @@ def add_kill_events(rounds: dict[int, dict], video_capture, frame_rate: float, f
 
     # Add the kill events to the correct rounds in the round data.
     for frame_second, frame_events in events.items():
-        corresponding_round = next(round_data for round, round_data in rounds.items() if
+        corresponding_round = next(round_data for _, round_data in rounds.items() if
                                    round_data["start_time"] <= frame_second <= round_data["estimated_end_time"])
 
         corresponding_round["events"].extend(frame_events)
@@ -438,7 +440,7 @@ def save_round_timer_image(video_capture, frame_rate: float, frame_second: int, 
 
 def clean_rounds(rounds: dict[int, dict]) -> None:
     """For each round, sort the events in the round and remove irrelevant spike events."""
-    for round, round_data in rounds.items():
+    for _, round_data in rounds.items():
         round_data["events"] = sorted(round_data["events"], key=lambda event: event["time"])
 
         if len(round_data["events"]) >= 2:
@@ -449,7 +451,7 @@ def clean_rounds(rounds: dict[int, dict]) -> None:
                 del round_data["events"][-1]
 
 
-def get_highlight_value(events: list[Event], round) -> int:
+def get_highlight_value(events: list[Event], round_number: int) -> int:
     """Return a number that signifies how "good" the highlight is based on the content and context of the events."""
     value = 0
     event_values = {"player_death": 1, "spike_planted": 2, "spike_stopped": 2}
@@ -462,8 +464,8 @@ def get_highlight_value(events: list[Event], round) -> int:
     original_event_value = value
 
     # Add context scaling based on how late in the game the highlight is.
-    round_scaler = 0.01 if round <= 24 else 0.015
-    value += original_event_value * (round_scaler * round)
+    round_scaler = 0.01 if round_number <= 24 else 0.015
+    value += original_event_value * (round_scaler * round_number)
 
     # TODO: Add context scaling based on how close the round is in terms of how many players are left alive on each team.
     # TODO: Add context scaling based on the economy of the teams in the round.
