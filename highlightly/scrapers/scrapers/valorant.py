@@ -1,7 +1,6 @@
 import csv
 import logging
 import os
-import signal
 import subprocess
 import urllib.request
 from datetime import datetime, timedelta

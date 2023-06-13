@@ -2,7 +2,6 @@ import csv
 import json
 import logging
 import os
-import signal
 import subprocess
 import urllib.request
 from datetime import datetime, timedelta
@@ -22,7 +21,7 @@ from scrapers.types import TeamData
 class LeagueOfLegendsScraper(Scraper):
     """Webscraper that scrapes op.gg for upcoming League of Legends matches."""
 
-    included_tournaments = ["LEC", "LPL", "LCK", "LCS", "LCO", "CBLOL"]
+    included_tournaments = ["LEC", "LPL", "LCK", "LCS", "CBLOL"]
 
     def list_upcoming_matches(self) -> list[dict]:
         """Use GraphQL to retrieve the upcoming matches from op.gg."""
