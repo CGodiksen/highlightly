@@ -26,6 +26,7 @@ def create_pre_match_video_metadata(scheduled_match: Match):
                                  tags=tags, thumbnail_filename=thumbnail_filename)
 
 
+# TODO: Maybe include the week and day in the league of legends matches that are from longer season tournaments.
 def create_video_title(scheduled_match: Match) -> str:
     """Use the teams, tournament, and, if necessary, extra match information to create a video title."""
     # TODO: Generate an eye catching initial part of the video title based on the context of the match.

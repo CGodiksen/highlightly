@@ -165,16 +165,26 @@ def handle_round_detection_errors(most_recent_number: int, round_detection: str,
         round_number = 20
 
     most_recent_digits = list(str(most_recent_number))
+    next_digits = list(str(most_recent_number + 1))
     if most_recent_number >= 10 and "." in round_detection:
         number = f"{most_recent_digits[0]}.{most_recent_digits[1]}"
         if number == round_detection.split(" ")[-1]:
             round_number = most_recent_number
 
+
+    number = round_detection.split(" ")[-1]
     if most_recent_number >= 20:
-        if round_detection.split(" ")[-1] == f"Z{most_recent_digits[1]}" or round_detection.split(" ")[-1] == f"1{most_recent_digits[1]}":
+        if number == f"Z{most_recent_digits[1]}" or number == f"1{most_recent_digits[1]}":
             round_number = most_recent_number
-        elif most_recent_number == 22 and (round_detection.split(" ")[-1] == "2Z"):
+        elif most_recent_number == 22 and (number == "2Z"):
             round_number = 22
+
+    if most_recent_number >= 19:
+        if number == f"Z{next_digits[1]}" or number == f"1{next_digits[1]}":
+            round_number = most_recent_number + 1
+
+    if round_detection == "ROUND Z8":
+        round_number = 28
 
     return round_number
 
