@@ -17,6 +17,7 @@ from scrapers.models import GameVod
 from videos.editors.editor import get_video_length, get_video_frame_rate
 
 
+# TODO: Fix problem with the last kill of the game being missed by increasing the frames more in the last round.
 class ValorantHighlighter(Highlighter):
     """Highlighter that uses PaddleOCR to extract highlights from Valorant matches."""
 
@@ -120,7 +121,9 @@ def create_initial_round_timeline(frame_detections: dict[int, list[str]]) -> dic
 
         if len(detections) == 2 and ":" in detections[1] and detections[1].replace(":", "").isdigit():
             split_timer = detections[1].split(":")
-            second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+
+            if split_timer[0] != "" and split_timer[1] != "":
+                second_data["round_time_left"] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
         if len(detections) == 2 and "." in detections[1] and detections[1].replace(".", "").isdigit():
             second_data["round_time_left"] = timedelta(seconds=int(float(detections[1]))).seconds
@@ -156,6 +159,8 @@ def handle_round_detection_errors(most_recent_number: int, round: str, round_num
         round_number = 8
     elif most_recent_number in [17, 18] and (round.endswith("B") or round.endswith("0")):
         round_number = 18
+    elif most_recent_number in [19, 20] and round.endswith("Z0") or round.endswith("ZO"):
+        round_number = 20
 
     most_recent_digits = list(str(most_recent_number))
     if most_recent_number >= 10 and "." in round:
