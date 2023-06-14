@@ -108,7 +108,7 @@ def finish_video_thumbnail(match: Match, video_metadata: VideoMetadata, match_fr
 
     # Add the tournament logo in the top right of the thumbnail.
     tournament_logo = Image.open(f"media/tournaments/{match.tournament.logo_filename}").convert("RGBA")
-    tournament_logo = tournament_logo.resize((150, 150))
+    tournament_logo.thumbnail((150, 150), Image.ANTIALIAS)
     thumbnail.paste(tournament_logo, (1250 - tournament_logo.width, 30), tournament_logo)
 
     thumbnail.save(f"{thumbnail_folder}/{video_metadata.thumbnail_filename}")
