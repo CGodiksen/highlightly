@@ -131,14 +131,13 @@ def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:
         return Match.Format.BEST_OF_5
 
 
-# TODO: Fix issue with this function not downloading the tournament logo for new tournaments. The filename is only set.
 def save_tournament_logo(match_data: dict) -> str:
     """if the tournament of the match does not already have a logo, save the logo and return the filename."""
     Path("media/tournaments").mkdir(parents=True, exist_ok=True)
     logo_filename = f"{match_data['tournament_name'].replace(' ', '_')}.png"
 
     # Only download the tournament logo if it does not already exist.
-    if Tournament.objects.filter(name=match_data["tournament_name"], logo_filename=logo_filename) is None:
+    if not Tournament.objects.filter(name=match_data["tournament_name"], logo_filename=logo_filename).exists():
         image_url = match_data["tournament"]["serie"]["league"]["imageUrl"]
         urllib.request.urlretrieve(image_url, f"media/tournaments/{logo_filename}")
 
