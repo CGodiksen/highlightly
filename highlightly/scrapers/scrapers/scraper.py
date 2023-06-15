@@ -236,6 +236,8 @@ def get_liquipedia_tournament_url(tournament_name: str, game: Game) -> str | Non
         for suffix in suffixes_to_remove:
             tournament_url = tournament_url.removesuffix(f"/{suffix}")
 
+    logging.info(f"Found url '{tournament_url}' for tournament '{tournament_name}'.")
+
     return tournament_url
 
 
@@ -270,7 +272,7 @@ def get_tournament_table_data(html: BeautifulSoup, row_text: str) -> str:
 
 def convert_letter_tier_to_number_tier(letter_tier: str) -> int:
     """Convert the given letter tier to the corresponding number tier."""
-    if "qualifier" in letter_tier:
+    if "qualifier" in letter_tier or "showmatch" in letter_tier:
         letter_tier = letter_tier[letter_tier.find("(") + 1:letter_tier.find(")")]
 
     conversion = {"s": 5, "s-tier": 5, "a": 4, "a-tier": 4, "b": 3, "b-tier": 3, "c": 2, "c-tier": 2, "d": 1}
