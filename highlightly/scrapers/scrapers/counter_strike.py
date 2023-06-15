@@ -37,22 +37,24 @@ class CounterStrikeScraper(Scraper):
 
         # Find the table with matches from today.
         upcoming_matches_tables = soup.find_all("div", class_="upcomingMatchesSection")
-        rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch")
-        rows = [row for row in rows if row["stars"] != "0"]
-        logging.info(f"Found {len(rows)} potential upcoming matches.")
 
-        # For each row in the table, extract the teams, tournament, and match.
-        for row in rows:
-            match = extract_match_data(row, base_url)
+        if len(upcoming_matches_tables) > 0:
+            rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch")
+            rows = [row for row in rows if row["stars"] != "0" and row.get("team1", "") != "11135"]
+            logging.info(f"Found {len(rows)} potential upcoming matches.")
 
-            if match is not None:
-                is_tdb = match["team_1"]["name"] == "TBD" or match["team_2"]["name"] == "TBD"
-                is_showmatch = "showmatch" in match["tournament_name"].lower()
+            # For each row in the table, extract the teams, tournament, and match.
+            for row in rows:
+                match = extract_match_data(row, base_url)
 
-                # Ignore the match if it currently still contains a "TBD" team or if it is a showmatch.
-                if not is_tdb and not is_showmatch:
-                    logging.info(f"Extracted initial data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
-                    upcoming_matches.append(match)
+                if match is not None:
+                    is_tdb = match["team_1"]["name"] == "TBD" or match["team_2"]["name"] == "TBD"
+                    is_showmatch = "showmatch" in match["tournament_name"].lower()
+
+                    # Ignore the match if it currently still contains a "TBD" team or if it is a showmatch.
+                    if not is_tdb and not is_showmatch:
+                        logging.info(f"Extracted data for {match['team_1']['name']} VS. {match['team_2']['name']}.")
+                        upcoming_matches.append(match)
 
         return upcoming_matches
 
