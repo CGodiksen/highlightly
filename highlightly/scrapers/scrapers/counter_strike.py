@@ -64,13 +64,18 @@ class CounterStrikeScraper(Scraper):
         team_name = match_team_data["name"]
         team_url = f"https://www.hltv.org/team/{match_team_data['id']}/{team_name.replace(' ', '-').lower()}"
 
+        logging.info(f"Extracting team data for '{team_name}' from url '{team_url}'.")
+
         # Extract the nationality and world ranking of the team.
         html = requests.get(url=team_url).text
         soup = BeautifulSoup(html, "html.parser")
 
-        nationality = soup.find("div", class_="team-country text-ellipsis").text.strip()
-        ranking = soup.find("b", text="World ranking").find_next_sibling().text[1:]
-        ranking = int(ranking) if ranking.isdigit() else None
+        nationality_div = soup.find("div", class_="team-country text-ellipsis")
+        nationality = nationality_div.text.strip() if nationality_div is not None else None
+
+        ranking_bold = soup.find("b", text="World ranking")
+        ranking = ranking_bold.find_next_sibling().text[1:] if ranking_bold is not None else None
+        ranking = int(ranking) if ranking is not None and ranking.isdigit() else None
 
         # Retrieve the team logo if necessary.
         if organization.logo_filename is None:

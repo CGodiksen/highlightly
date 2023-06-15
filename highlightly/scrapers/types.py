@@ -27,5 +27,5 @@ class TournamentData(TypedDict):
 
 class TeamData(TypedDict):
     url: str
-    nationality: str
+    nationality: str | None
     ranking: int | None
