@@ -163,7 +163,7 @@ def get_match_data(match: Match) -> dict:
         team_1_matches = team_names[0].lower() in [name.lower() for name in match.team_1.organization.get_names()]
         team_2_matches = team_names[1].lower() in [name.lower() for name in match.team_2.organization.get_names()]
 
-        if team_1_matches or team_2_matches:
+        if team_1_matches and team_2_matches:
             return m
 
 
