@@ -29,7 +29,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "logo", "background_color", "teams"]
+        fields = ["id", "name", "logo", "background_color", "display_name", "alternate_names", "teams"]
 
     @staticmethod
     def get_logo(organization: Organization) -> str:
@@ -41,7 +41,7 @@ class OrganizationUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["name", "background_color", "logo_base64"]
+        fields = ["name", "background_color", "logo_base64", "display_name", "alternate_names"]
 
     def to_representation(self, organization: Organization) -> dict:
         return OrganizationSerializer(organization).data
