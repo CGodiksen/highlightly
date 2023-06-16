@@ -19,7 +19,6 @@ class LeagueOfLegendsHighlighter(Highlighter):
 
     # TODO: Handle issue with multiple games being present in a single VOD.
     # TODO: Handle issue with frames outside the game being included due to highlights after the game.
-    # TODO: Maybe handle issue with end of game being missed due to the 1 minute window being too large (30 seconds instead).
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
 
@@ -71,9 +70,9 @@ def extract_game_timeline(game_vod: GameVod, video_capture, frame_rate: float, t
     """
     logging.info(f"Extracting game timeline from VOD at {game_vod.filename} for {game_vod}.")
 
-    frames = range(0, int(total_seconds) + 1, 60)
+    frames = range(0, int(total_seconds) + 1, 20)
 
-    # Save a frame for each minute in the full VOD.
+    # Save a frame for every 20 seconds in the full VOD.
     frame_folder_path = game_vod.match.create_unique_folder_path("frames")
     for frame_second in frames:
         save_timer_image(video_capture, frame_rate, frame_second, f"{frame_folder_path}/{frame_second}.png")
@@ -118,7 +117,7 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
 
 def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
     """Using the given timeline, extract frames near the end of the timeline to find the exact end second."""
-    frames_to_check = range(max(timeline.keys()), max(timeline.keys()) + 61)
+    frames_to_check = range(max(timeline.keys()), max(timeline.keys()) + 21)
     frame_folder_path = game_vod.match.create_unique_folder_path("last_frames")
 
     for frame_second in frames_to_check:
