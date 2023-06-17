@@ -121,6 +121,8 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
 
 def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
     """Using the given timeline, extract frames near the end of the timeline to find the exact end second."""
+    # TODO: Find the last element in the timeline that is related to the game.
+
     frames_to_check = range(max(timeline.keys()), max(timeline.keys()) + 21)
     frame_folder_path = game_vod.match.create_unique_folder_path("last_frames")
 
@@ -147,8 +149,7 @@ def get_game_events(game_vod: GameVod, video_capture, frame_rate: float, frames_
     """Check each frame for events using template matching and return the list of found events."""
     events = []
 
-    template_paths = ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
-                      "media/templates/single_big_sword_red.png"]
+    template_paths = get_kill_feed_templates(game_vod)
     template_images = [cv2.imread(template_path, cv2.IMREAD_GRAYSCALE) for template_path in template_paths]
 
     for frame_second in frames_to_check:
@@ -207,3 +208,13 @@ def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[i
         width = (1653, 1690)
 
     return height, width
+
+
+def get_kill_feed_templates(game_vod: GameVod) -> list[str]:
+    """Return the path to the templates of the icons that can be in the kill feed for the specific tournament."""
+    if game_vod.match.tournament.short_name.lower() == "lec":
+        return ["media/templates/single_sword_lec.png", "media/templates/multiple_sword_lec.png",
+                "media/templates/single_big_sword_lec.png"]
+    else:
+        return ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
+                "media/templates/single_big_sword_red.png"]
