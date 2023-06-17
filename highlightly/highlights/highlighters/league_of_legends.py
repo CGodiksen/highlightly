@@ -213,8 +213,7 @@ def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[i
 def get_kill_feed_templates(game_vod: GameVod) -> list[str]:
     """Return the path to the templates of the icons that can be in the kill feed for the specific tournament."""
     if game_vod.match.tournament.short_name.lower() == "lec":
-        return ["media/templates/single_sword_lec.png", "media/templates/multiple_sword_lec.png",
-                "media/templates/single_big_sword_lec.png"]
+        return ["media/templates/single_sword_lec.png", "media/templates/multiple_sword_lec.png"]
     else:
         return ["media/templates/single_sword_red.png", "media/templates/multiple_sword_red.png",
                 "media/templates/single_big_sword_red.png"]
