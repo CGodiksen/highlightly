@@ -198,6 +198,11 @@ class Scraper:
             game.mvp = mvp
             game.save()
 
+    @staticmethod
+    def check_match_status(match: Match) -> None:
+        """Check the current match status and start the highlighting process if a game is finished."""
+        raise NotImplementedError
+
     def scrape_finished_match(self, match: Match) -> None:
         """
         Check if the scheduled match is finished. If so, scrape all data required from the match page to create
