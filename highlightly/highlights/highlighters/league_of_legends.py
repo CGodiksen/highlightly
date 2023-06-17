@@ -203,6 +203,9 @@ def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[i
     elif game_vod.match.tournament.short_name.lower() == "lcs":
         height = (480, 770)
         width = (1659, 1702)
+    elif game_vod.match.tournament.short_name.lower() == "lec":
+        height = (420, 715)
+        width = (1672, 1712)
     else:
         height = (480, 750)
         width = (1653, 1690)
