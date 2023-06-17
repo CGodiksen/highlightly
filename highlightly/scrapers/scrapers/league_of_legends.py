@@ -88,6 +88,8 @@ class LeagueOfLegendsScraper(Scraper):
     @staticmethod
     def check_match_status(match: Match) -> None:
         """Check the current match status and start the highlighting process if a game is finished."""
+        logging.info(f"Checking the status of {match}.")
+
         # Check that the previous matches in the same tournament are done first.
         previous_matches = Match.objects.filter(tournament=match.tournament, start_datetime__lt=match.start_datetime,
                                                 finished=False)
@@ -119,6 +121,8 @@ class LeagueOfLegendsScraper(Scraper):
                 if not finished_game.finished:
                     logging.info(f"Game {finished_game_count} for {match} is finished. Starting highlighting process.")
                     handle_game_finished(finished_game, next_game_data, match, match_finished)
+        else:
+            logging.info(f"{match} has not started yet.")
 
 
 def convert_number_of_games_to_format(number_of_games: int) -> Match.Format:

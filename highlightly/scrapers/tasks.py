@@ -29,7 +29,6 @@ def scrape_league_of_legends_matches() -> None:
 def check_match_status(match_id: int) -> None:
     """Check the current match status."""
     match = Match.objects.get(id=match_id)
-    logging.info(f"Checking the status of {match}.")
 
     if not match.finished:
         if match.team_1.game == Game.VALORANT:

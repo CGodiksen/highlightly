@@ -83,6 +83,8 @@ class ValorantScraper(Scraper):
 
     def check_match_status(self, match: Match):
         """Check the current match status and start the highlighting process if a game is finished."""
+        logging.info(f"Checking the status of {match}.")
+
         html = requests.get(url=match.url).text
         soup = BeautifulSoup(html, "html.parser")
 
