@@ -17,8 +17,6 @@ from videos.editors.editor import get_video_frame_rate, get_video_length
 class LeagueOfLegendsHighlighter(Highlighter):
     """Highlighter that uses the PaddleOCR and template matching to extract highlights from League of Legends matches."""
 
-    # TODO: Handle issue with multiple games being present in a single VOD.
-    # TODO: Handle issue with frames outside the game being included due to highlights after the game.
     def extract_events(self, game_vod: GameVod) -> list[Event]:
         """Use PaddleOCR and template matching to extract events from the game vod."""
 
@@ -112,7 +110,13 @@ def get_game_start_second(timeline: dict[int, int]) -> int:
     for frame_second, timer in timeline.items():
         start_times[frame_second - timer] += 1
 
-    return max(1, int(max(start_times, key=start_times.get)))
+    # Find each valid start time.
+    valid_start_times = []
+    for start_time, count in start_times.items():
+        if count > 10:
+            valid_start_times.append(start_time)
+
+    return max(1, int(min(valid_start_times)))
 
 
 def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_capture, frame_rate: float) -> int:
