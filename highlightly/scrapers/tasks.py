@@ -1,5 +1,3 @@
-import logging
-
 from highlightly.celery import app
 from scrapers.models import Match, Game
 from scrapers.scrapers.counter_strike import CounterStrikeScraper

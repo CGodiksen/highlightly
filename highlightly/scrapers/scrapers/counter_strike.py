@@ -40,7 +40,7 @@ class CounterStrikeScraper(Scraper):
 
         if len(upcoming_matches_tables) > 0:
             rows: list[Tag] = upcoming_matches_tables[0].find_all("div", class_="upcomingMatch")
-            rows = [row for row in rows if row["stars"] != "0" and row.get("team1", "") != "11135"]
+            rows = [row for row in rows if row["stars"] != "0"]
             logging.info(f"Found {len(rows)} potential upcoming matches.")
 
             # For each row in the table, extract the teams, tournament, and match.

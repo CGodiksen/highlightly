@@ -15,9 +15,9 @@ from scrapers import tasks
 from scrapers.models import Match, Game, Organization
 from scrapers.scrapers.counter_strike import CounterStrikeScraper
 from scrapers.scrapers.league_of_legends import LeagueOfLegendsScraper
-from scrapers.scrapers.scraper import Scraper
 from scrapers.scrapers.valorant import ValorantScraper
 from scrapers.serializers import MatchSerializer
+from scrapers.tasks import check_match_status
 from util.file_util import save_base64_image
 from videos.metadata.post_match import finish_video_thumbnail
 
@@ -62,7 +62,13 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
     def scrape_finished_match(self, request: Request, pk: int) -> Response:
         match: Match = get_object_or_404(Match, id=pk)
 
-        scraper = get_scraper_for_match(match)
+        if match.team_1.game == Game.COUNTER_STRIKE:
+            scraper = CounterStrikeScraper()
+        elif match.team_1.game == Game.LEAGUE_OF_LEGENDS:
+            scraper = LeagueOfLegendsScraper()
+        else:
+            scraper = ValorantScraper()
+
         scraper.scrape_finished_match(match)
         match.refresh_from_db()
 
@@ -70,13 +76,8 @@ class MatchViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.Lis
 
     @action(detail=True, methods=["POST"])
     def check_match_status(self, request: Request, pk: int) -> Response:
-        match: Match = get_object_or_404(Match, id=pk)
-
-        scraper = get_scraper_for_match(match)
-        scraper.check_match_status(match)
-        match.refresh_from_db()
-
-        return Response(MatchSerializer(match).data, status=status.HTTP_201_CREATED)
+        check_match_status.delay(match_id=pk)
+        return Response({}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["POST"])
     def refresh_match_frame(self, request: Request, pk: int) -> Response:
@@ -123,13 +124,3 @@ class OrganizationViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mix
     @action(detail=True, methods=["POST"])
     def refresh_from_url(self, request: Request) -> Response:
         return Response({}, status=status.HTTP_200_OK)
-
-
-def get_scraper_for_match(match: Match) -> Scraper:
-    """Return the game Scraper that should be used for the match."""
-    if match.team_1.game == Game.COUNTER_STRIKE:
-        return CounterStrikeScraper()
-    elif match.team_1.game == Game.LEAGUE_OF_LEGENDS:
-        return LeagueOfLegendsScraper()
-    else:
-        return ValorantScraper()
