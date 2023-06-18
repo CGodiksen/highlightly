@@ -83,11 +83,13 @@ def extract_game_timeline(game_vod: GameVod, video_capture, frame_rate: float, t
 
     # Use the detections to create the timeline.
     for frame_second, detections in frame_detections.items():
-        detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
+        detected_timer = get_timer_from_text_detections(game_vod, detections)
 
         if detected_timer is not None:
-            split_timer = detected_timer.split(":")
-            timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
+            split_timer = detected_timer.split(":") if ":" in detected_timer else detected_timer.split(".")
+
+            if split_timer[0] != "" and split_timer[1] != "":
+                timeline[frame_second] = timedelta(minutes=int(split_timer[0]), seconds=int(split_timer[1])).seconds
 
     return timeline
 
@@ -135,7 +137,7 @@ def get_game_end_second(game_vod: GameVod, timeline: dict[int, int], video_captu
     # Get the last frame second that includes a timer.
     frames_with_timer = []
     for frame_second, detections in frame_detections.items():
-        detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
+        detected_timer = get_timer_from_text_detections(game_vod, detections)
 
         if detected_timer is not None:
             frames_with_timer.append(frame_second)
@@ -193,6 +195,18 @@ def get_highlight_value(events: list[Event]) -> int:
         value += event_values[event["name"]]
 
     return value
+
+
+def get_timer_from_text_detections(game_vod: GameVod, detections: str) -> str | None:
+    """If a timer can be found in the given text detections, return it, otherwise return None."""
+    detected_timer = next((text for text in detections if ":" in text and text.replace(":", "").isdigit()), None)
+
+    # Handle timer issues specific to the LEC.
+    if detected_timer is None and game_vod.match.tournament.short_name.lower() == "lec":
+        detected_timer = next((text for text in detections if
+                               "." in text and text.replace(".", "").isdigit() and len(text) in [4, 5]), None)
+
+    return detected_timer
 
 
 def get_kill_feed_placement(game_vod: GameVod) -> tuple[tuple[int, int], tuple[int, int]]:
