@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  highlightly-frontend:
+    container_name: highlightly-frontend
+    build: . # Build with the Dockerfile here.
+    command: npm start
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/usr/src/app # Lets us modify the contents of the container locally.
+      - node_modules:/usr/src/app/node_modules
+
+volumes: # This is required for the node_modules named volume.
+  node_modules:

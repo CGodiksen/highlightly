@@ -1,0 +1,9 @@
+{
+	"short_name": "Highlightly",
+	"name": "Highlightly",
+	"icons": [],
+	"start_url": ".",
+	"display": "standalone",
+	"theme_color": "#000000",
+	"background_color": "#121212"
+}

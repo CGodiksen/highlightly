@@ -1,0 +1,65 @@
+#search-teams {
+	border: none !important;
+	border-right: 2px solid #353339 !important;
+}
+
+#background-color {
+	border: none !important;
+	border-left: 2px solid #353339 !important;
+}
+
+.sketch-picker {
+	background: #121212 !important;
+	color: white;
+}
+
+.sketch-picker input {
+	-webkit-box-shadow: none !important;
+	box-shadow: none !important;
+	border: 1px solid #353339 !important;
+}
+
+.sketch-picker .flexbox-fix {
+	border: none !important;
+}
+
+#search-teams, .update-team-form input {
+	-webkit-box-shadow: none !important;
+	box-shadow: none !important;
+	background: #121212 !important;
+	color: white;
+	border: 2px solid #353339;
+}
+
+.update-team-form input:focus {
+	color: white;
+}
+
+.input-group {
+	border: 2px solid #353339;
+	border-radius: 5px;
+}
+
+.input-group button {
+	color: white;
+}
+
+.team-card {
+	height: 305px !important;
+	margin-bottom: 40px;
+	margin-right: 10px;
+	margin-left: 10px;
+}
+
+.team-card:hover .team-dropdown, .team-card:hover .game-icon {
+	opacity: 1;
+}
+
+.team-card .game-icon, .team-dropdown {
+	opacity: 0;
+}
+
+.team-icon {
+	max-height: 175px;
+	max-width: 350px;
+}

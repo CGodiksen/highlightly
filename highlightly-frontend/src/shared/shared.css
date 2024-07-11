@@ -1,0 +1,46 @@
+body {
+	font-family: Arial;
+	padding: 0 !important;
+	background: #121212 !important;
+	color: white !important;
+}
+
+.shadow-card {
+	background-color: #1d1d1d !important;
+	border: none;
+	box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.game-icon {
+	height: 40px;
+}
+
+.icon {
+	font-size: 25px;
+	cursor: pointer;
+}
+
+.dropdown-menu {
+	background: #353535 !important;
+}
+
+.dropdown-item {
+	color: white !important;
+	cursor: pointer;
+}
+
+.dropdown-item:hover {
+	background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.modal-content {
+	background: #121212 !important;
+}
+
+.modal-header {
+	border-bottom: 1px solid #353535 !important;
+}
+
+.modal-footer {
+	border-top: 1px solid #353535 !important;
+}
