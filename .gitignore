@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /highlightly/media/
-/data/demos/
+/highlightly-backend/data/demos/
 /gcp_ocr.json
 /credentials.json
 ocr/paddlepaddle-2.4.2-cp310-cp310-manylinux1_x86_64.whl

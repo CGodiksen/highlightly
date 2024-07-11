@@ -3,7 +3,8 @@ Highlightly website for generating highlight videos for E-sport matches. Current
 and League of Legends is implemented. It should be noted that Highlightly was created as a project for automatically 
 creating highlight videos that were uploaded to three different YouTube channels, one for each supported game. However, 
 due to copyright issues, the project was discontinued. The project is still available for anyone who wants to use it as 
-inspiration for their own purposes.
+inspiration for their own purposes. The backend is written in Python using Django and the frontend is written in 
+TypeScript using React.
 
 The backend is responsible for scraping for matches, creating video metadata, extracting highlights, and creating 
 and uploading videos. The frontend is responsible for displaying the matches that have been scraped and allowing the 
