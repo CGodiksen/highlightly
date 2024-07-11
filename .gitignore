@@ -132,3 +132,25 @@ dmypy.json
 /gcp_ocr.json
 /credentials.json
 ocr/paddlepaddle-2.4.2-cp310-cp310-manylinux1_x86_64.whl
+
+# dependencies
+*/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
