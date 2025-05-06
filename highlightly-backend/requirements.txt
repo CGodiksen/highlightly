@@ -49,7 +49,7 @@ opencv-python==4.7.0.72
 packaging==23.1
 pandas==2.0.0
 patool==1.12
-Pillow==9.5.0
+Pillow==10.3.0
 pipx==1.2.0
 polars==0.17.6
 prompt-toolkit==3.0.38
